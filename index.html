@@ -2127,12 +2127,23 @@ var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 // MODO DE LA PÁGINA — leído de URL params (?mode=...)
 // =================================================================
 // PAGE_MODE: 'general' | 'mayorista' | 'minorista'
-// El modo 'admin' sigue viviendo en Google Apps Script (URL aparte) —
-// esta PWA es solo lectura del catálogo.
+// Aliases cortos aceptados:
+//   ?mode=ma  → mayorista
+//   ?mode=mi  → minorista
+//   ?mode=g   → general (o sin parámetro)
+// Las URLs largas (?mode=mayorista, ?mode=minorista) siguen funcionando
+// para no romper bookmarks viejos. El modo 'admin' vive en Apps Script.
 window.PAGE_MODE = (function () {
-  var m = (new URLSearchParams(location.search)).get('mode') || 'general';
-  if (m !== 'general' && m !== 'mayorista' && m !== 'minorista') m = 'general';
-  return m;
+  var raw = (new URLSearchParams(location.search)).get('mode') || 'general';
+  var aliases = {
+    'g':         'general',
+    'general':   'general',
+    'ma':        'mayorista',
+    'mayorista': 'mayorista',
+    'mi':        'minorista',
+    'minorista': 'minorista'
+  };
+  return aliases[raw.toLowerCase()] || 'general';
 })();
 
 // Configs hardcoded — espejo de DEFAULT_CONFIGS en Code.gs.
