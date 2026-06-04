@@ -1396,12 +1396,6 @@
       color: white;
     }
     .sidebar-footer .btn-excel-side:hover { filter: brightness(1.1); }
-    .sidebar-footer .btn-excel-grade-side {
-      border: 1px solid #16a34a;
-      background: white;
-      color: #16a34a;
-    }
-    .sidebar-footer .btn-excel-grade-side:hover { background: #f0fdf4; }
     .sidebar-footer .btn-pdf-mobile-side {
       border: 1px dashed #f59e0b;
       background: rgba(245,158,11,.10);
@@ -1410,11 +1404,62 @@
     }
     .sidebar-footer .btn-pdf-mobile-side:hover { background: rgba(245,158,11,.20); }
 
-    .footer-export-row {
+    /* ============ EXPORT SECTIONS (PDF / Excel) ============ */
+    .sidebar-footer .export-section {
+      border-top: 1px solid var(--gray-200);
+      padding-top: 10px;
+      margin-top: 2px;
+    }
+    .sidebar-footer .export-section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--gray-500);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .sidebar-footer .export-buttons-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px;
+      gap: 6px;
     }
+    /* Switch tipo iOS para "Incluir talle" */
+    .sidebar-footer .export-switch {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--gray-700);
+      user-select: none;
+      padding: 4px 0;
+    }
+    .sidebar-footer .export-switch input { display: none; }
+    .sidebar-footer .export-switch-track {
+      width: 38px; height: 22px;
+      background: var(--gray-300);
+      border-radius: 11px;
+      position: relative;
+      transition: background .15s;
+      flex-shrink: 0;
+    }
+    .sidebar-footer .export-switch-thumb {
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 18px; height: 18px;
+      background: white;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+      transition: left .15s;
+    }
+    .sidebar-footer .export-switch input:checked + .export-switch-track {
+      background: #16a34a;
+    }
+    .sidebar-footer .export-switch input:checked + .export-switch-track .export-switch-thumb {
+      left: 18px;
+    }
+    .sidebar-footer .export-switch-label { flex: 1; }
 
     .sidebar-backdrop {
       position: fixed;
@@ -1990,12 +2035,26 @@
 
   <div class="sidebar-footer">
     <button class="btn-clear-side" id="btn-clear">✕ Limpiar filtros</button>
-    <div class="footer-export-row">
-      <button class="btn-pdf-side"   id="btn-pdf"   onclick="generatePDF()"   title="Generar catálogo PDF del filtro actual">📄 PDF</button>
-      <button class="btn-excel-side" id="btn-excel" onclick="exportToExcel({ withGrade: false })" title="Exportar a Excel (CSV) sin desglose por talle — 1 fila por color">📊 Excel</button>
+
+    <!-- Sección PDF -->
+    <div class="export-section">
+      <div class="export-section-title">📄 Exportar a PDF</div>
+      <div class="export-buttons-row">
+        <button class="btn-pdf-side"        id="btn-pdf"        onclick="generatePDF()"       title="Generar catálogo PDF del filtro actual">Normal</button>
+        <button class="btn-pdf-mobile-side" id="btn-pdf-mobile" onclick="generatePDFMobile()" title="Generador de PDF optimizado para móviles">📱 Móvil (beta)</button>
+      </div>
     </div>
-    <button class="btn-excel-grade-side" id="btn-excel-grade" onclick="exportToExcel({ withGrade: true })" title="Exportar a Excel (CSV) con columna de talle — 1 fila por color × talle">📏 Excel con talle</button>
-    <button class="btn-pdf-mobile-side" id="btn-pdf-mobile" onclick="generatePDFMobile()" title="Probar generador de PDF optimizado para móviles">📱 PDF (móvil — beta)</button>
+
+    <!-- Sección Excel -->
+    <div class="export-section">
+      <div class="export-section-title">📊 Exportar a Excel</div>
+      <label class="export-switch" for="excel-with-grade">
+        <input type="checkbox" id="excel-with-grade">
+        <span class="export-switch-track"><span class="export-switch-thumb"></span></span>
+        <span class="export-switch-label">Incluir talle (1 fila por talle)</span>
+      </label>
+      <button class="btn-excel-side" id="btn-excel" onclick="exportExcelFromSwitch_()" title="Exportar a Excel (CSV) el filtro actual">Exportar Excel</button>
+    </div>
   </div>
 </aside>
 
@@ -4219,6 +4278,15 @@ function confirmDialog(opts) {
 //   - Si no: todas las que aparezcan con stock > 0 en los productos filtrados.
 //
 // Celdas sin stock → vacías. Separador ';' (más compatible con Excel es-PY).
+
+/**
+ * Wrapper llamado por el botón "Exportar Excel" del sidebar.
+ * Lee el estado del switch "Incluir talle" y delega a exportToExcel.
+ */
+function exportExcelFromSwitch_() {
+  var sw = document.getElementById('excel-with-grade');
+  exportToExcel({ withGrade: sw ? sw.checked : false });
+}
 
 /**
  * Exporta a CSV el filtro actual.
