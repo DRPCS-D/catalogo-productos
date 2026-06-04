@@ -3204,61 +3204,64 @@ function buildMultiSelect(id, opts, selectedArr) {
   };
 }
 
-function applyFilters() {
-  currentPage = 1;
-  var q = searchText.toLowerCase().trim();
+/**
+ * Devuelve true si el producto `p` pasa todos los filtros activos del sidebar.
+ * @param {boolean} skipSearch  Si true, ignora el filtro de búsqueda por texto.
+ *                              Útil para "Productos similares" cuando hay search:
+ *                              queremos respetar todos los demás filtros (talle,
+ *                              sucursal, marca, etc.) pero no limitar los similares
+ *                              al texto buscado.
+ */
+function _productPassesFilters_(p, skipSearch) {
+  if (filterMarca.length    && filterMarca.indexOf(p.marca)       < 0) return false;
+  if (filterGrupo.length    && filterGrupo.indexOf(p.grupo)       < 0) return false;
+  if (filterSubgrupo.length && filterSubgrupo.indexOf(p.subgrupo) < 0) return false;
+  if (filterColecao.length  && filterColecao.indexOf(p.colecao)   < 0) return false;
 
-  filteredProducts = products.filter(function (p) {
-    if (filterMarca.length    && filterMarca.indexOf(p.marca)       < 0) return false;
-    if (filterGrupo.length    && filterGrupo.indexOf(p.grupo)       < 0) return false;
-    if (filterSubgrupo.length && filterSubgrupo.indexOf(p.subgrupo) < 0) return false;
-    if (filterColecao.length  && filterColecao.indexOf(p.colecao)   < 0) return false;
-
-    // Talle: producto pasa si alguno de sus colores tiene alguna talla
-    // dentro de la selección.
-    if (filterTalle.length) {
-      var hasTalle = false;
-      for (var ci = 0; ci < p.colorsArr.length && !hasTalle; ci++) {
-        var grades = p.colorsArr[ci].gradesArr;
-        for (var gi = 0; gi < grades.length; gi++) {
-          if (filterTalle.indexOf(grades[gi].grade) >= 0) { hasTalle = true; break; }
-        }
+  // Talle: producto pasa si alguno de sus colores tiene alguna talla en la selección.
+  if (filterTalle.length) {
+    var hasTalle = false;
+    for (var ci = 0; ci < p.colorsArr.length && !hasTalle; ci++) {
+      var grades = p.colorsArr[ci].gradesArr;
+      for (var gi = 0; gi < grades.length; gi++) {
+        if (filterTalle.indexOf(grades[gi].grade) >= 0) { hasTalle = true; break; }
       }
-      if (!hasTalle) return false;
     }
+    if (!hasTalle) return false;
+  }
 
-    // Sucursal: producto pasa si tiene stock > 0 en alguna sucursal activa.
-    // effectiveSucursalFilter_ contempla el caso "modo locked + desmarcado todo"
-    // (devuelve cfg.sucursales en vez de []), así el modo nunca se rompe.
-    var activeSuc = effectiveSucursalFilter_();
-    if (activeSuc.length && getProductStock(p) <= 0) return false;
+  // Sucursal: producto pasa si tiene stock > 0 en alguna sucursal activa.
+  var activeSuc = effectiveSucursalFilter_();
+  if (activeSuc.length && getProductStock(p) <= 0) return false;
 
-    var precio = getActivePrice(p).price || 0;
-    if (filterPrecioMin !== null && precio < filterPrecioMin) return false;
-    if (filterPrecioMax !== null && precio > filterPrecioMax) return false;
+  var precio = getActivePrice(p).price || 0;
+  if (filterPrecioMin !== null && precio < filterPrecioMin) return false;
+  if (filterPrecioMax !== null && precio > filterPrecioMax) return false;
 
-    // Stock por color: el producto pasa si AL MENOS UN color cumple el rango.
-    // colorPassesStock_ ya usa getColorStock (recalculado por sucursal).
-    if (filterStockMin !== null || filterStockMax !== null) {
-      var anyColorOk = p.colorsArr.some(colorPassesStock_);
-      if (!anyColorOk) return false;
-    }
+  // Stock por color: producto pasa si AL MENOS UN color cumple el rango.
+  if (filterStockMin !== null || filterStockMax !== null) {
+    var anyColorOk = p.colorsArr.some(colorPassesStock_);
+    if (!anyColorOk) return false;
+  }
 
-    // Rango de fecha de última compra (sobre p._ultCompraMaxIso precomputado)
-    if (filterUltCompraDesde || filterUltCompraHasta) {
-      var iso = p._ultCompraMaxIso;
-      if (!iso) return false;                                        // producto sin fechas: no pasa
-      if (filterUltCompraDesde && iso < filterUltCompraDesde) return false;
-      if (filterUltCompraHasta && iso > filterUltCompraHasta) return false;
-    }
+  // Rango de fecha de última compra
+  if (filterUltCompraDesde || filterUltCompraHasta) {
+    var iso = p._ultCompraMaxIso;
+    if (!iso) return false;
+    if (filterUltCompraDesde && iso < filterUltCompraDesde) return false;
+    if (filterUltCompraHasta && iso > filterUltCompraHasta) return false;
+  }
 
-    // Foto: el producto pasa si AL MENOS UN color cumple
-    if (filterFoto !== 'all' && !p.colorsArr.some(colorPassesFoto_)) return false;
+  // Foto: producto pasa si AL MENOS UN color cumple
+  if (filterFoto !== 'all' && !p.colorsArr.some(colorPassesFoto_)) return false;
 
-    // Promo (sobre el precio activo): producto pasa si tiene/no tiene promo activa
-    if (filterPromo === 'with' && !productHasActivePromo_(p)) return false;
-    if (filterPromo === 'without' && productHasActivePromo_(p)) return false;
+  // Promo (sobre el precio activo)
+  if (filterPromo === 'with' && !productHasActivePromo_(p)) return false;
+  if (filterPromo === 'without' && productHasActivePromo_(p)) return false;
 
+  // Búsqueda por texto (se puede saltar para los similares)
+  if (!skipSearch) {
+    var q = searchText.toLowerCase().trim();
     if (q) {
       var inProd = [p.codFabrica, p.nmProduto, p.marca, p.grupo, p.subgrupo, p.colecao]
         .some(function (v) { return v && String(v).toLowerCase().indexOf(q) >= 0; });
@@ -3267,7 +3270,14 @@ function applyFilters() {
       });
       if (!inProd && !inColor) return false;
     }
-    return true;
+  }
+  return true;
+}
+
+function applyFilters() {
+  currentPage = 1;
+  filteredProducts = products.filter(function (p) {
+    return _productPassesFilters_(p, false);   // false = aplicar todos los filtros (incluye search)
   });
 
   if (sortField) {
@@ -3892,17 +3902,28 @@ function scoreSimilarity_(candidate, ref) {
 
 /**
  * Devuelve hasta `max` productos similares al producto dado, con stock > 0.
- * Ordenados por score descendente. Si no hay candidatos relevantes,
- * devuelve [].
+ * Ordenados por score descendente. Si no hay candidatos relevantes, devuelve [].
  *
- * IMPORTANTE: recorre `filteredProducts` (no `products`), así los similares
- * respetan TODOS los filtros activos del sidebar — talle, sucursal, marca,
- * grupo, precio, stock, foto, promo. Si el usuario filtró por talle 43, los
- * similares solo van a tener talle 43 disponible.
+ * Los similares respetan los filtros del sidebar (talle, sucursal, marca, grupo,
+ * precio, stock, foto, promo) PERO no respetan la búsqueda por texto. Si el
+ * usuario buscó "8700SP" y abrió ese producto, querría ver otros similares —
+ * no solo el código exacto que escribió.
  */
 function findSimilarProducts_(product, max) {
   max = max || 6;
-  var pool = (filteredProducts && filteredProducts.length) ? filteredProducts : products;
+
+  var hasSearch = searchText && searchText.trim().length > 0;
+  var pool;
+  if (hasSearch) {
+    // Recomputar el pool ignorando el search filter — el resto sigue aplicando.
+    pool = products.filter(function (p) {
+      return _productPassesFilters_(p, true);
+    });
+  } else {
+    // Sin búsqueda: reutilizar filteredProducts (más rápido)
+    pool = (filteredProducts && filteredProducts.length) ? filteredProducts : products;
+  }
+
   var results = [];
   for (var i = 0; i < pool.length; i++) {
     var p = pool[i];
