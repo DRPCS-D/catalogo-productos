@@ -2026,19 +2026,19 @@
       <button type="button" data-value="without">Sin promo</button>
     </div>
 
-    <label class="sidebar-label" data-section="pdf-promo">Mostrar precio promo en PDF</label>
-    <div class="segmented" id="pdf-include-promo" role="radiogroup" data-section="pdf-promo">
-      <button type="button" data-value="yes">Sí</button>
-      <button type="button" data-value="no" class="active">No</button>
-    </div>
   </div>
 
   <div class="sidebar-footer">
     <button class="btn-clear-side" id="btn-clear">✕ Limpiar filtros</button>
 
     <!-- Sección PDF -->
-    <div class="export-section">
+    <div class="export-section" data-section="pdf-promo-wrap">
       <div class="export-section-title">📄 Exportar a PDF</div>
+      <label class="export-switch" for="pdf-include-promo-switch" data-section="pdf-promo">
+        <input type="checkbox" id="pdf-include-promo-switch">
+        <span class="export-switch-track"><span class="export-switch-thumb"></span></span>
+        <span class="export-switch-label">Mostrar precio promo</span>
+      </label>
       <div class="export-buttons-row">
         <button class="btn-pdf-side"        id="btn-pdf"        onclick="generatePDF()"       title="Generar catálogo PDF del filtro actual">Normal</button>
         <button class="btn-pdf-mobile-side" id="btn-pdf-mobile" onclick="generatePDFMobile()" title="Generador de PDF optimizado para móviles">📱 Móvil (beta)</button>
@@ -2589,10 +2589,9 @@ function applyPageConfig() {
   if (!cfg.promoVisible) {
     pdfIncludePromo = false;
     document.body.classList.add('hide-promo');
-    // Sincronizar el segmented de pdfIncludePromo visualmente
-    document.querySelectorAll('#pdf-include-promo button').forEach(function (b) {
-      b.classList.toggle('active', b.getAttribute('data-value') === 'no');
-    });
+    // Sincronizar el switch de pdfIncludePromo visualmente (queda oculto por CSS pero igual)
+    var sw = document.getElementById('pdf-include-promo-switch');
+    if (sw) sw.checked = false;
   }
 
   // Marcas excluidas — filtrar el array products
@@ -2899,15 +2898,14 @@ function setupEvents() {
     });
   });
 
-  // Segmented control para incluir precio promo en PDF
-  document.querySelectorAll('#pdf-include-promo button').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      pdfIncludePromo = (this.getAttribute('data-value') === 'yes');
-      document.querySelectorAll('#pdf-include-promo button').forEach(function (b) {
-        b.classList.toggle('active', b === btn);
-      });
+  // Switch para incluir precio promo en PDF (vive en la sección Exportar a PDF)
+  var promoSwitch = document.getElementById('pdf-include-promo-switch');
+  if (promoSwitch) {
+    promoSwitch.checked = pdfIncludePromo;  // sync inicial con el global
+    promoSwitch.addEventListener('change', function () {
+      pdfIncludePromo = this.checked;
     });
-  });
+  }
 
   // Segmented control de precio (Minorista / Mayorista)
   document.querySelectorAll('#filter-pricemode button').forEach(function (btn) {
