@@ -2842,6 +2842,13 @@ function setupEvents() {
   // Modal — cerrar + click en card de "Productos similares"
   document.getElementById('modal-close').addEventListener('click', closeModal);
   document.getElementById('modal').addEventListener('click', function (e) {
+    // Click en botón de copiar código (al lado del código en el título)
+    var copyBtn = closest(e.target, '.btn-copy-code');
+    if (copyBtn) {
+      e.stopPropagation();
+      copyCodeToClipboard_(copyBtn);
+      return;
+    }
     // Click en la foto del color → abrir lightbox (no cerrar modal)
     var modalImg = closest(e.target, '.modal-color-img');
     if (modalImg && modalImg.getAttribute('data-img')) {
@@ -3762,7 +3769,10 @@ function openModal(codFabrica, colorName) {
   }
   if (!product) return;
 
-  document.getElementById('modal-title').textContent = product.codFabrica;
+  document.getElementById('modal-title').innerHTML =
+    escHtml(product.codFabrica) +
+    ' <button class="btn-copy-code" data-copy="' + escHtml(product.codFabrica) +
+    '" title="Copiar código" aria-label="Copiar código">📋</button>';
   document.getElementById('modal-subtitle').textContent =
     product.nmProduto +
     ' · Marca: ' + product.marca +
