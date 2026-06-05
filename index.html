@@ -108,12 +108,18 @@
       background: var(--primary);
       color: white;
       box-shadow: 0 2px 8px rgba(0,0,0,.22);
+      /* Modo PWA en iPad/iPhone: el header se extiende debajo del notch /
+         status bar. Pintar el fondo hasta el borde físico de la pantalla. */
+      padding-top: env(safe-area-inset-top, 0px);
     }
 
     .header-inner {
       max-width: 1440px;
       margin: 0 auto;
       padding: 10px 16px;
+      /* Respetar safe-area horizontal (modo landscape iPhone con notch) */
+      padding-left:  calc(16px + env(safe-area-inset-left, 0px));
+      padding-right: calc(16px + env(safe-area-inset-right, 0px));
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -1904,6 +1910,10 @@
       background: var(--primary);
       color: white;
       padding: 10px 12px;
+      /* Safe-area: el notch/status bar del iPad/iPhone en modo PWA */
+      padding-top:   calc(10px + env(safe-area-inset-top, 0px));
+      padding-left:  calc(12px + env(safe-area-inset-left, 0px));
+      padding-right: calc(12px + env(safe-area-inset-right, 0px));
       display: flex;
       align-items: center;
       gap: 8px;
