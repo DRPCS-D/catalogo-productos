@@ -1270,14 +1270,30 @@
       text-align: center;
     }
 
-    #pagination-bar,
-    #gallery-pagination-bar {
+    /* Chip de estado al final del listado (infinite scroll) */
+    .infinite-footer {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      padding: 14px 8px 4px;
+      gap: 8px;
+      padding: 18px 12px 28px;
+      font-size: 13px;
+      color: var(--gray-500);
+      font-weight: 500;
     }
+    .infinite-footer.is-end {
+      color: var(--primary);
+      font-weight: 600;
+    }
+    .infinite-footer .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid var(--gray-300);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: ifs-spin .8s linear infinite;
+      display: inline-block;
+    }
+    @keyframes ifs-spin { to { transform: rotate(360deg); } }
 
     /* ===== CONFIRM DIALOG (popup propio) ===== */
     .confirm-overlay {
@@ -1958,6 +1974,19 @@
         margin: 0 !important;
         padding: 0 !important;
         box-shadow: none !important;
+        /* Cada .pmo-page es UNA hoja: salto de página forzado después,
+           y no permitir que se corte por dentro. iOS Safari respeta
+           break-after:page sobre bloques mucho mejor que break-inside:avoid
+           sobre grid items. */
+        break-after: page !important;
+        page-break-after: always !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+      /* La última hoja NO necesita salto (evita una hoja en blanco final) */
+      body.pmo-active #pdf-mobile-overlay .pmo-page:last-child {
+        break-after: auto !important;
+        page-break-after: auto !important;
       }
 
       body.pmo-active, body.pmo-active html {
@@ -2002,7 +2031,8 @@
     @media print {
       /* Ocultar toda la UI de la pantalla */
       header, .filter-bar, .main-content,
-      #pagination-bar, #gallery-pagination-bar,
+      #table-footer-chip, #gallery-footer-chip,
+      #table-sentinel, #gallery-sentinel,
       .lightbox, .modal-overlay,
       #table-view, #gallery-view, #loading-state, #error-state,
       .multi-select-panel,
@@ -2370,12 +2400,9 @@
         </table>
       </div>
     </div>
-    <!-- Paginación tabla -->
-    <div id="pagination-bar" style="display:none">
-      <button id="btn-prev" class="pg-btn">&#8592; Anterior</button>
-      <span id="page-info" class="pg-info"></span>
-      <button id="btn-next" class="pg-btn">Siguiente &#8594;</button>
-    </div>
+    <!-- Sentinel infinite scroll tabla + chip de estado -->
+    <div id="table-sentinel" style="height:1px"></div>
+    <div id="table-footer-chip" class="infinite-footer" style="display:none"></div>
   </div>
 
   <!-- Vista Galería -->
@@ -2384,12 +2411,9 @@
       <span id="gallery-count-txt"></span>
     </div>
     <div class="gallery-grid" id="gallery-container"></div>
-    <!-- Paginación galería -->
-    <div id="gallery-pagination-bar" style="display:none">
-      <button id="gal-btn-prev" class="pg-btn">&#8592; Anterior</button>
-      <span id="gal-page-info" class="pg-info"></span>
-      <button id="gal-btn-next" class="pg-btn">Siguiente &#8594;</button>
-    </div>
+    <!-- Sentinel infinite scroll galería + chip de estado -->
+    <div id="gallery-sentinel" style="height:1px"></div>
+    <div id="gallery-footer-chip" class="infinite-footer" style="display:none"></div>
   </div>
 
 </div>
@@ -2635,8 +2659,12 @@ var filterFoto       = 'all';  // 'all' | 'with' | 'without'
 var filterPromo      = 'all';  // 'all' | 'with' | 'without' (sobre el precio activo)
 var pdfIncludePromo  = false;  // PDF: mostrar precio promo cuando esté activo (default: No)
 var productsLoaded   = false;
-var currentPage      = 1;
-var PAGE_SIZE        = 50;
+// Scroll infinito: cuántos items ya están en el DOM y lotes a renderizar
+var renderedCount    = 0;
+var BATCH_SIZE       = 50;
+var galleryAllCards  = [];   // se rearma en cada renderGallery()
+var tableAllProducts = [];   // se rearma en cada renderTable()
+var sentinelObserver = null; // IntersectionObserver para infinite scroll
 var lastUpdateTs     = 0;                       // timestamp del último fetch exitoso
 var STALE_THRESHOLD_MS = 90 * 60 * 1000;        // 90 min → chip pasa a estado "stale"
 var refreshChipTicker = null;
@@ -2951,36 +2979,28 @@ function silentRefresh_() {
   if (isUserBusy_()) return;
 
   // Snapshot del estado que applyFilters/renderCurrentView resetean
-  var savedPage   = currentPage;
-  var scrollY     = window.scrollY || window.pageYOffset || 0;
+  var savedRendered = renderedCount;
+  var scrollY       = window.scrollY || window.pageYOffset || 0;
 
   fetchSupabaseCatalog_()
     .then(function (data) {
       if (!data || !Array.isArray(data)) return;
 
       products = data;
-
-      // Re-precomputar fecha de última compra por producto con los nuevos datos
       precomputeLastPurchaseDates_();
-
-      // populateFilters reconstruye los multi-selects y reutiliza los arrays
-      // globales (filterMarca, filterGrupo, etc.), así que las selecciones
-      // del usuario se mantienen automáticamente. Si alguna opción ya no
-      // existe en los nuevos datos, queda marcada pero sin efecto.
       populateFilters();
 
-      // applyFilters re-evalúa con los filtros actuales y resetea currentPage=1.
-      // Lo restauramos a la página donde estaba el usuario (renderTable hace
-      // clamp si quedó fuera de rango).
+      // applyFilters resetea renderedCount=0. Después del renderCurrentView,
+      // appendeamos batches adicionales hasta restaurar la cantidad que el
+      // usuario tenía cargada.
       applyFilters();
-      currentPage = savedPage;
-
       renderCurrentView();
+      restoreRenderedCount_(savedRendered);
+
       updateStats();
       markDataFresh();
-      saveCatalogToLocal_(data);   // refresca el cache local con datos frescos
+      saveCatalogToLocal_(data);
 
-      // Restaurar scroll (el re-render reemplaza el DOM y resetea la posición)
       window.scrollTo(0, scrollY);
     })
     .catch(function () {
@@ -3035,8 +3055,8 @@ function manualRefresh() {
   if (chip && chip.classList.contains('refreshing')) return;
   if (chip) chip.classList.add('refreshing');
 
-  var savedPage = currentPage;
-  var scrollY   = window.scrollY || window.pageYOffset || 0;
+  var savedRendered = renderedCount;
+  var scrollY       = window.scrollY || window.pageYOffset || 0;
 
   fetchSupabaseCatalog_()
     .then(function (data) {
@@ -3045,8 +3065,8 @@ function manualRefresh() {
         precomputeLastPurchaseDates_();
         populateFilters();
         applyFilters();
-        currentPage = savedPage;
         renderCurrentView();
+        restoreRenderedCount_(savedRendered);
         updateStats();
         window.scrollTo(0, scrollY);
         markDataFresh();
@@ -3303,12 +3323,9 @@ function setupEvents() {
   });
 
   // Paginación tabla
-  document.getElementById('btn-prev').addEventListener('click', function () { goPage(-1); });
-  document.getElementById('btn-next').addEventListener('click', function () { goPage(1);  });
+  // Paginación reemplazada por scroll infinito — no hay botones que cablear
 
-  // Paginación galería
-  document.getElementById('gal-btn-prev').addEventListener('click', function () { goPage(-1); });
-  document.getElementById('gal-btn-next').addEventListener('click', function () { goPage(1);  });
+  // Paginación galería: reemplazada por scroll infinito
 }
 
 // Polyfill seguro de closest para GAS
@@ -3651,7 +3668,7 @@ function _productPassesFilters_(p, skipSearch) {
 }
 
 function applyFilters() {
-  currentPage = 1;
+  renderedCount = 0;   // al filtrar volvemos a renderizar desde el inicio
   filteredProducts = products.filter(function (p) {
     return _productPassesFilters_(p, false);   // false = aplicar todos los filtros (incluye search)
   });
@@ -3906,26 +3923,31 @@ function updateSortHeaders() {
 // RENDER — TABLA
 // =================================================================
 function renderTable() {
-  var tbody  = document.getElementById('table-body');
-  var total  = filteredProducts.length;
-  var pages  = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  if (currentPage > pages) currentPage = pages;
+  var tbody = document.getElementById('table-body');
+  tableAllProducts = filteredProducts.slice();
+  var total = tableAllProducts.length;
 
   document.getElementById('result-count-txt').textContent =
     total + ' producto' + (total !== 1 ? 's' : '');
-  updatePagination(total, pages);
+
+  renderedCount = 0;
+  tbody.innerHTML = '';
 
   if (!total) {
     tbody.innerHTML = '<tr class="empty-row"><td colspan="10">No se encontraron productos con los filtros actuales</td></tr>';
+    updateInfiniteFooter_('table', 0, 0);
     updateSortHeaders();
     return;
   }
 
-  var start        = (currentPage - 1) * PAGE_SIZE;
-  var pageProducts = filteredProducts.slice(start, start + PAGE_SIZE);
-  var html         = '';
+  appendNextTableBatch();
+  attachSentinel_('table');
+  updateSortHeaders();
+}
 
-  pageProducts.forEach(function (p) {
+// Construye el HTML de UN producto + sus filas hijo (colores, tallas, stock)
+function buildTableRowsHtml_(p) {
+    var html    = '';
     var pKey    = String(p.codFabrica);
     var pExpand = !!expandedProducts[pKey];
 
@@ -4002,52 +4024,66 @@ function renderTable() {
         });
       });
     });
-  });
 
-  tbody.innerHTML = html;
-  updateSortHeaders();
+  return html;
+}
+
+// Append del siguiente lote de productos a la tabla
+function appendNextTableBatch() {
+  if (renderedCount >= tableAllProducts.length) return;
+  var tbody = document.getElementById('table-body');
+  var next  = tableAllProducts.slice(renderedCount, renderedCount + BATCH_SIZE);
+  var html  = next.map(buildTableRowsHtml_).join('');
+
+  var tmp = document.createElement('tbody');
+  tmp.innerHTML = html;
+  var frag = document.createDocumentFragment();
+  while (tmp.firstChild) frag.appendChild(tmp.firstChild);
+  tbody.appendChild(frag);
+
+  renderedCount += next.length;
+  updateInfiniteFooter_('table', renderedCount, tableAllProducts.length);
 }
 
 // =================================================================
-// RENDER — GALERÍA (con paginación)
+// RENDER — GALERÍA (scroll infinito)
 // =================================================================
 function renderGallery() {
   var container = document.getElementById('gallery-container');
 
-  // Construir lista completa de tarjetas (producto × color)
-  var allCards = [];
+  // Construir lista completa de tarjetas (producto × color) — una sola vez
+  galleryAllCards = [];
   var stockFilterActive    = (filterStockMin !== null || filterStockMax !== null);
   var sucursalFilterActive = effectiveSucursalFilter_().length > 0;
   var fotoFilterActive     = (filterFoto !== 'all');
   filteredProducts.forEach(function (p) {
     p.colorsArr.forEach(function (c) {
-      // Filtro de sucursal: ocultar colores sin stock en las sucursales elegidas
       if (sucursalFilterActive && getColorStock(c) <= 0) return;
-      // Filtro de stock (recalculado por sucursal vía colorPassesStock_)
       if (stockFilterActive && !colorPassesStock_(c)) return;
-      // Filtro de foto
       if (fotoFilterActive && !colorPassesFoto_(c)) return;
-      allCards.push({ p: p, c: c });
+      galleryAllCards.push({ p: p, c: c });
     });
   });
 
-  var totalCards = allCards.length;
-  var pages      = Math.max(1, Math.ceil(totalCards / PAGE_SIZE));
-  if (currentPage > pages) currentPage = pages;
-
+  var totalCards = galleryAllCards.length;
   document.getElementById('gallery-count-txt').textContent =
     totalCards + ' variante' + (totalCards !== 1 ? 's' : '');
-  updateGalleryPagination(totalCards, pages);
+
+  renderedCount = 0;
+  container.innerHTML = '';
 
   if (!totalCards) {
     container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:64px 20px;color:var(--gray-400)">No se encontraron productos</div>';
+    updateInfiniteFooter_('gallery', 0, 0);
     return;
   }
 
-  var start     = (currentPage - 1) * PAGE_SIZE;
-  var pageCards = allCards.slice(start, start + PAGE_SIZE);
+  appendNextGalleryBatch();
+  attachSentinel_('gallery');
+}
 
-  container.innerHTML = pageCards.map(function (item) {
+// Construye el HTML de UNA card (producto × color)
+function buildGalleryCardHtml_(item) {
     var p = item.p, c = item.c;
     var imgUrl     = getImgUrl(c.imgId, 400);     // thumbnail 400px para la card
     var imgFullUrl = getImgUrl(c.imgId, 1600);    // versión grande para el lightbox
@@ -4089,9 +4125,77 @@ function renderGallery() {
         '<button class="btn-card-detail" data-cod="' + escHtml(p.codFabrica) + '" data-color="' + escHtml(c.color) + '">Ver detalles</button>' +
       '</div>' +
     '</div>';
-  }).join('');
+}
 
+// Append del siguiente lote de cards a la galería
+function appendNextGalleryBatch() {
+  if (renderedCount >= galleryAllCards.length) return;
+  var container = document.getElementById('gallery-container');
+  var next = galleryAllCards.slice(renderedCount, renderedCount + BATCH_SIZE);
+  var html = next.map(buildGalleryCardHtml_).join('');
+
+  var tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  var frag = document.createDocumentFragment();
+  while (tmp.firstChild) frag.appendChild(tmp.firstChild);
+  container.appendChild(frag);
+
+  renderedCount += next.length;
+  updateInfiniteFooter_('gallery', renderedCount, galleryAllCards.length);
   observeLazyImages();
+}
+
+// =================================================================
+// INFINITE SCROLL — sentinel + IntersectionObserver
+// =================================================================
+function attachSentinel_(view) {
+  var sentinelId = view === 'gallery' ? 'gallery-sentinel' : 'table-sentinel';
+  var sentinel = document.getElementById(sentinelId);
+  if (!sentinel) return;
+
+  if (!sentinelObserver) {
+    sentinelObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        if (currentView === 'gallery') appendNextGalleryBatch();
+        else                            appendNextTableBatch();
+      });
+    }, { rootMargin: '400px 0px' });
+  }
+  // Re-observar: el sentinel sigue siendo el mismo nodo, pero unobserve+observe
+  // garantiza que dispare aunque ya estuviera dentro del viewport.
+  sentinelObserver.unobserve(sentinel);
+  sentinelObserver.observe(sentinel);
+}
+
+// Después de un refresh silencioso, appendea lotes adicionales hasta llegar al
+// renderedCount que el usuario tenía cargado antes del refresh.
+function restoreRenderedCount_(targetCount) {
+  if (!targetCount || targetCount <= renderedCount) return;
+  var guard = 200; // tope defensivo (10k items)
+  while (renderedCount < targetCount && guard-- > 0) {
+    var before = renderedCount;
+    if (currentView === 'gallery') appendNextGalleryBatch();
+    else                            appendNextTableBatch();
+    if (renderedCount === before) break; // ya no hay más para appendear
+  }
+}
+
+function updateInfiniteFooter_(view, shown, total) {
+  var chipId = view === 'gallery' ? 'gallery-footer-chip' : 'table-footer-chip';
+  var chip = document.getElementById(chipId);
+  if (!chip) return;
+  if (!total) { chip.style.display = 'none'; return; }
+  chip.style.display = 'flex';
+  if (shown >= total) {
+    chip.classList.add('is-end');
+    chip.innerHTML = '✓ Fin del catálogo (' + total + ' ' +
+      (view === 'gallery' ? 'variantes' : 'productos') + ')';
+  } else {
+    chip.classList.remove('is-end');
+    chip.innerHTML = '<span class="spinner"></span> Mostrando ' + shown +
+      ' de ' + total + ' — desliza para ver más';
+  }
 }
 
 // =================================================================
@@ -4451,7 +4555,7 @@ function toggleColor(cKey) {
 // =================================================================
 function switchView(view) {
   currentView = view;
-  currentPage = 1;  // resetear paginación al cambiar de vista
+  renderedCount = 0;  // al cambiar de vista volvemos a renderizar desde el inicio
   var isTable = view === 'table';
 
   document.getElementById('table-view').style.display   = isTable ? 'block' : 'none';
@@ -4909,21 +5013,53 @@ function generatePDFMobile() {
   var fecha          = new Date().toLocaleDateString('es-PY',
                           { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-  var cardCount = 0;
-  var cardsHtml = '';
+  // Recolectar las cards filtradas (una entrada por producto×color)
+  var cardsHtmlArr = [];
   filteredProducts.forEach(function (p) {
     p.colorsArr.forEach(function (c) {
       if (sucursalActive && getColorStock(c) <= 0) return;
       if (stockActive    && !colorPassesStock_(c)) return;
       if (fotoActive     && !colorPassesFoto_(c)) return;
-      cardsHtml += renderPdfCard_(p, c);
-      cardCount++;
+      cardsHtmlArr.push(renderPdfCard_(p, c));
     });
   });
+  var cardCount = cardsHtmlArr.length;
 
   if (cardCount === 0) {
     alert('Los filtros activos no dejan ningún producto/color para imprimir.');
     return;
+  }
+
+  // Pre-paginación: chunkear las cards en bloques de tamaño fijo para que
+  // cada bloque sea una hoja A4. Esto evita que iOS Safari corte cards a la
+  // mitad (page-break-inside: avoid sobre items de un display:grid no es
+  // confiable en Safari iOS — sí lo es page-break-after: always sobre un
+  // bloque que ya cabe entero).
+  //
+  // En print el grid se fuerza a 3 columnas. Cada card ocupa ~70mm de alto
+  // y la hoja útil mide ~277mm. La primera hoja lleva el header (~25mm),
+  // por eso entran menos cards que en las siguientes.
+  var FIRST_PAGE_CARDS = 6;   // 2 filas × 3 cols + header
+  var OTHER_PAGE_CARDS = 9;   // 3 filas × 3 cols
+
+  var pagesHtml = '';
+  var idx = 0;
+  var pageIdx = 0;
+  while (idx < cardCount) {
+    var perPage = (pageIdx === 0) ? FIRST_PAGE_CARDS : OTHER_PAGE_CARDS;
+    var chunk = cardsHtmlArr.slice(idx, idx + perPage).join('');
+    var headerHtml = (pageIdx === 0)
+      ? '<div class="pdf-header">' +
+          '<h1>Catálogo de Productos</h1>' +
+          '<div class="pdf-meta">' + escHtml(filtroResumen) +
+            ' · ' + cardCount + ' artículos · ' + fecha + '</div>' +
+        '</div>'
+      : '';
+    pagesHtml += '<div class="pmo-page">' + headerHtml +
+                   '<div class="pdf-grid">' + chunk + '</div>' +
+                 '</div>';
+    idx += perPage;
+    pageIdx++;
   }
 
   // Mostrar/crear el overlay
@@ -4940,14 +5076,7 @@ function generatePDFMobile() {
       '<div class="pmo-hint">Usá el menú del navegador <strong>⋮ → Imprimir</strong> y elegí <strong>"Guardar como PDF"</strong></div>' +
       '<button class="pmo-print" onclick="window.print()">🖨️ Imprimir</button>' +
     '</div>' +
-    '<div class="pmo-page">' +
-      '<div class="pdf-header">' +
-        '<h1>Catálogo de Productos</h1>' +
-        '<div class="pdf-meta">' + escHtml(filtroResumen) +
-          ' · ' + cardCount + ' artículos · ' + fecha + '</div>' +
-      '</div>' +
-      '<div class="pdf-grid">' + cardsHtml + '</div>' +
-    '</div>';
+    pagesHtml;
 
   overlay.classList.add('open');
   document.body.classList.add('pmo-active');   // necesario para @media print
@@ -5160,40 +5289,9 @@ function buildFilterSummary_() {
   return parts.join(' · ');
 }
 
-// =================================================================
-// PAGINACIÓN
-// =================================================================
-function updatePagination(total, pages) {
-  var bar = document.getElementById('pagination-bar');
-  if (!bar) return;
-  if (pages <= 1) { bar.style.display = 'none'; return; }
-  bar.style.display = 'flex';
-  document.getElementById('page-info').textContent = 'Página ' + currentPage + ' de ' + pages;
-  document.getElementById('btn-prev').disabled = currentPage <= 1;
-  document.getElementById('btn-next').disabled = currentPage >= pages;
-}
-
-function updateGalleryPagination(total, pages) {
-  var bar = document.getElementById('gallery-pagination-bar');
-  if (!bar) return;
-  if (pages <= 1) { bar.style.display = 'none'; return; }
-  bar.style.display = 'flex';
-  document.getElementById('gal-page-info').textContent = 'Página ' + currentPage + ' de ' + pages;
-  document.getElementById('gal-btn-prev').disabled = currentPage <= 1;
-  document.getElementById('gal-btn-next').disabled = currentPage >= pages;
-}
-
-function goPage(delta) {
-  currentPage += delta;
-  expandedProducts = {};
-  expandedColors   = {};
-  renderCurrentView();
-  // Scroll al inicio del contenido
-  var ref = currentView === 'table'
-    ? document.getElementById('table-view')
-    : document.getElementById('gallery-view');
-  if (ref) ref.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
+// Paginación clásica reemplazada por scroll infinito.
+// La lógica vive en attachSentinel_, appendNextGalleryBatch, appendNextTableBatch
+// y updateInfiniteFooter_ (ver bloque RENDER — GALERÍA arriba).
 </script>
 </body>
 </html>
