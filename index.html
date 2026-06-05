@@ -1437,18 +1437,45 @@
     }
     .sidebar-footer .btn-pdf-mobile-side:hover { background: rgba(245,158,11,.20); }
 
-    /* ============ EXPORT SECTIONS (PDF / Excel) ============ */
+    /* ============ EXPORT SECTIONS (PDF / Excel) — <details>/<summary> ============ */
     .sidebar-footer .export-section {
       border-top: 1px solid var(--gray-200);
       padding-top: 10px;
       margin-top: 2px;
     }
     .sidebar-footer .export-section-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--gray-500);
       font-weight: 700;
+      padding: 4px 0;
+      cursor: pointer;
+      user-select: none;
+      list-style: none;        /* Firefox/Safari */
+      transition: color .12s;
+    }
+    .sidebar-footer .export-section-title::-webkit-details-marker { display: none; }
+    .sidebar-footer .export-section-title:hover { color: var(--gray-700); }
+
+    /* Caret ▸ que rota a ▾ al abrirse — al final para que no compita con el emoji */
+    .sidebar-footer .export-section-title::after {
+      content: '▸';
+      margin-left: auto;
+      color: var(--gray-400);
+      font-size: 10px;
+      transition: transform .15s ease;
+    }
+    .sidebar-footer .export-section[open] > .export-section-title::after {
+      transform: rotate(90deg);
+      color: var(--primary);
+    }
+
+    /* Espacio entre el summary y el contenido al abrir */
+    .sidebar-footer .export-section[open] > .export-section-title {
       margin-bottom: 8px;
     }
     .sidebar-footer .export-buttons-row {
@@ -2064,9 +2091,9 @@
   <div class="sidebar-footer">
     <button class="btn-clear-side" id="btn-clear">✕ Limpiar filtros</button>
 
-    <!-- Sección PDF -->
-    <div class="export-section" data-section="pdf-promo-wrap">
-      <div class="export-section-title">📄 Exportar a PDF</div>
+    <!-- Sección PDF (desplegable, colapsada por default) -->
+    <details class="export-section" data-section="pdf-promo-wrap">
+      <summary class="export-section-title">📄 Exportar a PDF</summary>
       <label class="export-switch" for="pdf-include-promo-switch" data-section="pdf-promo">
         <input type="checkbox" id="pdf-include-promo-switch">
         <span class="export-switch-track"><span class="export-switch-thumb"></span></span>
@@ -2076,18 +2103,18 @@
         <button class="btn-pdf-side"        id="btn-pdf"        onclick="generatePDF()"       title="Generar catálogo PDF del filtro actual">Normal</button>
         <button class="btn-pdf-mobile-side" id="btn-pdf-mobile" onclick="generatePDFMobile()" title="Generador de PDF optimizado para móviles">📱 Móvil (beta)</button>
       </div>
-    </div>
+    </details>
 
-    <!-- Sección Excel -->
-    <div class="export-section">
-      <div class="export-section-title">📊 Exportar a Excel</div>
+    <!-- Sección Excel (desplegable, colapsada por default) -->
+    <details class="export-section">
+      <summary class="export-section-title">📊 Exportar a Excel</summary>
       <label class="export-switch" for="excel-with-grade">
         <input type="checkbox" id="excel-with-grade">
         <span class="export-switch-track"><span class="export-switch-thumb"></span></span>
         <span class="export-switch-label">Incluir talle (1 fila por talle)</span>
       </label>
       <button class="btn-excel-side" id="btn-excel" onclick="exportExcelFromSwitch_()" title="Exportar a Excel (CSV) el filtro actual">Exportar Excel</button>
-    </div>
+    </details>
   </div>
 </aside>
 
