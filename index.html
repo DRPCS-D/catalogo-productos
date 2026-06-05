@@ -257,7 +257,7 @@
 
     .search-input {
       width: 100%;
-      padding: 7px 10px 7px 30px;
+      padding: 7px 34px 7px 30px;     /* derecha: espacio para boton clear/paste */
       border: 1px solid var(--gray-200);
       border-radius: 6px;
       font-size: 13px;
@@ -265,11 +265,40 @@
       transition: border-color .15s, box-shadow .15s;
       background: var(--gray-50);
     }
+    /* Oculta la X nativa del <input type=search> en Chrome/Edge — usamos la nuestra */
+    .search-input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
 
     .search-input:focus {
       border-color: var(--blue);
       box-shadow: 0 0 0 3px rgba(37,99,235,.12);
       background: white;
+    }
+
+    /* Botones de accion dentro del search (clear y paste) */
+    .search-action-btn {
+      position: absolute;
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--gray-400);
+      font-size: 13px;
+      width: 26px;
+      height: 26px;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      transition: background .12s, color .12s;
+    }
+    .search-action-btn:hover { background: var(--gray-100); color: var(--gray-700); }
+    .search-action-btn:active { transform: translateY(-50%) scale(.92); }
+    .search-action-btn.copied {
+      background: var(--green);
+      color: white;
     }
 
     .filter-select {
@@ -2056,6 +2085,10 @@
       <span class="search-icon">🔍</span>
       <input type="search" id="search-input" class="search-input"
         placeholder="Buscar código, producto, marca, color...">
+      <button type="button" id="btn-search-clear" class="search-action-btn"
+              style="display:none" title="Borrar búsqueda" aria-label="Borrar">✕</button>
+      <button type="button" id="btn-search-paste" class="search-action-btn"
+              title="Pegar del portapapeles" aria-label="Pegar">📋</button>
     </div>
   </div>
 </div>
@@ -2922,14 +2955,71 @@ function isUserBusy_() {
 function setupEvents() {
   // Búsqueda con debounce
   var timer;
-  document.getElementById('search-input').addEventListener('input', function () {
+  var searchInput = document.getElementById('search-input');
+  var btnClear    = document.getElementById('btn-search-clear');
+  var btnPaste    = document.getElementById('btn-search-paste');
+
+  // Mostrar boton clear o paste segun haya texto. Llamar tambien al cargar
+  // por si algun browser preserva el valor del input.
+  function updateSearchActionButtons_() {
+    var hasText = !!searchInput.value;
+    btnClear.style.display = hasText ? '' : 'none';
+    btnPaste.style.display = hasText ? 'none' : '';
+  }
+  updateSearchActionButtons_();
+
+  searchInput.addEventListener('input', function () {
     clearTimeout(timer);
     var val = this.value;
+    updateSearchActionButtons_();
     timer = setTimeout(function () {
       searchText = val;
       applyFilters();
       renderCurrentView();
     }, 220);
+  });
+
+  // Boton ✕ — limpia el buscador
+  btnClear.addEventListener('click', function () {
+    searchInput.value = '';
+    searchText = '';
+    updateSearchActionButtons_();
+    applyFilters();
+    renderCurrentView();
+    searchInput.focus();
+  });
+
+  // Boton 📋 — pega contenido del portapapeles
+  btnPaste.addEventListener('click', function () {
+    if (!navigator.clipboard || !navigator.clipboard.readText) {
+      alert('Tu navegador no soporta acceso al portapapeles. Pegá manualmente con Ctrl+V (o tap-hold → Pegar en móvil).');
+      searchInput.focus();
+      return;
+    }
+    navigator.clipboard.readText().then(function (text) {
+      var trimmed = String(text || '').trim();
+      if (!trimmed) {
+        // Portapapeles vacío — feedback breve y enfocar input
+        btnPaste.textContent = '∅';
+        setTimeout(function () { btnPaste.textContent = '📋'; }, 800);
+        searchInput.focus();
+        return;
+      }
+      searchInput.value = trimmed;
+      searchText = trimmed;
+      updateSearchActionButtons_();
+      applyFilters();
+      renderCurrentView();
+      // Feedback visual breve
+      btnClear.classList.add('copied');
+      setTimeout(function () { btnClear.classList.remove('copied'); }, 600);
+      searchInput.focus();
+    }).catch(function (e) {
+      // Usuario denegó permisos o error de seguridad (HTTP sin HTTPS)
+      console.warn('clipboard read denied:', e);
+      alert('No pude leer el portapapeles. Si te aparece un popup pidiendo permiso, aceptalo. O pegá manualmente con Ctrl+V / tap-hold.');
+      searchInput.focus();
+    });
   });
 
   // Los multi-select se cablean dentro de buildMultiSelect() — no se necesita listener aquí.
@@ -3571,6 +3661,14 @@ function clearFilters() {
    'filter-stock-min',  'filter-stock-max',
    'filter-ultcmp-desde', 'filter-ultcmp-hasta'
   ].forEach(function (id) { document.getElementById(id).value = ''; });
+
+  // Despues de clear: actualizar la visibilidad del boton ✕/📋 del buscador
+  var btnClearSearch = document.getElementById('btn-search-clear');
+  var btnPasteSearch = document.getElementById('btn-search-paste');
+  if (btnClearSearch && btnPasteSearch) {
+    btnClearSearch.style.display = 'none';
+    btnPasteSearch.style.display = '';
+  }
 
   // Limpiar multi-selects de marca/grupo/subgrupo/colección/talle (siempre)
   ['filter-marca', 'filter-grupo', 'filter-subgrupo', 'filter-colecao', 'filter-talle'].forEach(function (id) {
