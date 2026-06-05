@@ -9,8 +9,8 @@ service-account.json
 
 # Apps Script (vive en script.google.com, no en el repo)
 Code.gs
-# admin.html sigue viviendo en Google Apps Script. La PWA es solo lectura.
-admin.html
+# admin.html SE incluye en el repo (versión PWA con PIN auth + Supabase).
+# Si quisieras ocultarlo del deploy, agrega "admin.html" acá.
 
 # Sync server (vive en el servidor Docker, no en el repo)
 sync-server/

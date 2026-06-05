@@ -2530,25 +2530,71 @@ window.onload = function () {
   setupEvents();
   registerServiceWorker_();
 
-  // Intentar primero el cache local en IndexedDB (carga instantánea)
-  idbGet_(IDB_KEY).then(function (cached) {
-    var ageMs = cached && cached.ts ? (Date.now() - cached.ts) : Infinity;
-    var fresh = cached && cached.data && ageMs < IDB_TTL_MS;
-    if (fresh) {
-      console.log('[cache local] hit, edad:', Math.floor(ageMs/60000), 'min');
-      onProductsLoaded(cached.data);
-      lastUpdateTs = cached.ts;       // chip muestra la edad real
-      // El silentRefresh_ que arranca con el timer se va a encargar de
-      // traer datos frescos en background, así que no hacemos fetch acá.
-      return;
-    }
-    console.log('[cache local] miss o expirado, fetch del server');
-    fetchCatalogFromServer_();
-  }).catch(function () {
-    // IDB no disponible o falló: fetch normal sin caché
-    fetchCatalogFromServer_();
+  // 1) Cargar la config del modo activo desde Supabase (page_config table).
+  //    Esto sobrescribe el PAGE_CONFIG hardcoded con lo que el admin guardó.
+  //    Si falla la red, el hardcoded queda como fallback — la app sigue funcionando.
+  // 2) Luego cargar el catálogo (desde IDB cache o Supabase).
+  fetchPageConfigFromSupabase_().finally(function () {
+    idbGet_(IDB_KEY).then(function (cached) {
+      var ageMs = cached && cached.ts ? (Date.now() - cached.ts) : Infinity;
+      var fresh = cached && cached.data && ageMs < IDB_TTL_MS;
+      if (fresh) {
+        console.log('[cache local] hit, edad:', Math.floor(ageMs/60000), 'min');
+        onProductsLoaded(cached.data);
+        lastUpdateTs = cached.ts;       // chip muestra la edad real
+        return;
+      }
+      console.log('[cache local] miss o expirado, fetch del server');
+      fetchCatalogFromServer_();
+    }).catch(function () {
+      // IDB no disponible o falló: fetch normal sin caché
+      fetchCatalogFromServer_();
+    });
   });
 };
+
+/**
+ * Lee la config del modo activo desde Supabase y la mergea en window.PAGE_CONFIG.
+ * Las claves de la tabla (snake_case) se mapean a camelCase para mantener
+ * compatibilidad con el resto del código que ya espera camelCase.
+ *
+ * Si falla (red caída, RLS, etc.) se mantiene el PAGE_CONFIG hardcoded como
+ * fallback — la app sigue funcionando con la config del último deploy.
+ */
+function fetchPageConfigFromSupabase_() {
+  var endpoint = SUPABASE_URL.replace(/\/$/, '') +
+                 '/rest/v1/page_config?select=*&mode=eq.' + encodeURIComponent(window.PAGE_MODE);
+  return fetch(endpoint, {
+    method: 'GET',
+    headers: {
+      'apikey':        SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      'Accept':        'application/json'
+    }
+  }).then(function (resp) {
+    if (!resp.ok) throw new Error('page_config HTTP ' + resp.status);
+    return resp.json();
+  }).then(function (rows) {
+    if (!rows || !rows.length) {
+      console.warn('[page_config] sin fila para mode=' + window.PAGE_MODE + ', usando hardcoded');
+      return;
+    }
+    var row = rows[0];
+    window.PAGE_CONFIG = {
+      mode:                    row.mode,
+      title:                   row.title,
+      priceMode:               row.price_mode || null,
+      sucursales:              row.sucursales || [],
+      marcasExcluidas:         row.marcas_excluidas || [],
+      promoVisible:            row.promo_visible,
+      locked:                  row.locked,
+      restrictModalSucursales: row.restrict_modal_sucursales
+    };
+    console.log('[page_config] cargada desde Supabase, mode=' + window.PAGE_MODE);
+  }).catch(function (e) {
+    console.warn('[page_config] error, uso hardcoded:', e.message || e);
+  });
+}
 
 function fetchCatalogFromServer_() {
   fetchSupabaseCatalog_()

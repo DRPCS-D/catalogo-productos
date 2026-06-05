@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuración — Catálogo La Costa</title>
+  <meta name="theme-color" content="#1e3a5f">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+  <style>
+    :root {
+      --primary: #1e3a5f;
+      --primary-dark: #152c47;
+      --blue: #2563eb;
+      --gray-50: #f8fafc;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-300: #cbd5e1;
+      --gray-400: #94a3b8;
+      --gray-500: #64748b;
+      --gray-600: #475569;
+      --gray-700: #334155;
+      --gray-900: #0f172a;
+      --green: #16a34a;
+      --red: #dc2626;
+      --amber: #d97706;
+      --radius: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,.08);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--gray-100);
+      color: var(--gray-900);
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* =========== HEADER =========== */
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 14px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    header h1 { margin: 0; font-size: 17px; font-weight: 600; }
+    header .sub { font-size: 12px; opacity: .8; margin-top: 2px; }
+    header a {
+      color: white;
+      text-decoration: none;
+      opacity: .85;
+      font-size: 13px;
+    }
+    header a:hover { opacity: 1; text-decoration: underline; }
+    header .header-actions { display: flex; gap: 10px; align-items: center; }
+    header button.btn-logout {
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.25);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    header button.btn-logout:hover { background: rgba(255,255,255,.28); }
+
+    .container {
+      max-width: 1000px;
+      margin: 24px auto;
+      padding: 0 20px;
+    }
+
+    /* =========== LOGIN VIEW =========== */
+    .login-wrap {
+      min-height: calc(100vh - 60px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.08);
+      padding: 36px 32px;
+      width: 100%;
+      max-width: 380px;
+    }
+    .login-card h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      color: var(--primary);
+    }
+    .login-sub {
+      color: var(--gray-500);
+      font-size: 13px;
+      margin-bottom: 24px;
+    }
+    .login-card label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gray-700);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 6px;
+    }
+    .login-card input[type="password"],
+    .login-card input[type="text"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--gray-300);
+      border-radius: 8px;
+      font-size: 16px;
+      letter-spacing: 2px;
+      text-align: center;
+      transition: border-color .15s, box-shadow .15s;
+      font-family: inherit;
+    }
+    .login-card input:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.15);
+    }
+    .login-card .btn-primary {
+      width: 100%;
+      margin-top: 16px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .login-card .btn-primary:hover { background: var(--primary-dark); }
+    .login-card .btn-primary:disabled { opacity: .65; cursor: wait; }
+    .login-error {
+      display: none;
+      background: #fef2f2;
+      color: var(--red);
+      border: 1px solid #fecaca;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-top: 12px;
+    }
+    .login-error.show { display: block; }
+
+    /* =========== CONFIG VIEW =========== */
+    .page-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+    .page-sub {
+      color: var(--gray-500);
+      font-size: 13px;
+      margin-bottom: 24px;
+    }
+
+    .config-grid {
+      display: grid;
+      gap: 18px;
+    }
+    .config-card {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .config-card-header {
+      background: var(--gray-50);
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .config-card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .config-card-url {
+      font-size: 11px;
+      color: var(--gray-500);
+      font-family: monospace;
+      background: white;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--gray-200);
+    }
+    .config-card-body {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 5px;
+    }
+    .field label {
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: var(--gray-500);
+    }
+    .field input[type="text"],
+    .field select {
+      padding: 9px 12px;
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+      font-family: inherit;
+      width: 100%;
+    }
+    .field input:focus,
+    .field select:focus {
+      outline: none;
+      border-color: var(--blue);
+    }
+
+    /* Multi-select tipo checklist con buscador */
+    .ms-wrap {
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      background: white;
+      max-height: 220px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .ms-search {
+      padding: 7px 10px;
+      border: none;
+      border-bottom: 1px solid var(--gray-200);
+      font-size: 13px;
+      outline: none;
+      font-family: inherit;
+    }
+    .ms-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 0;
+    }
+    .ms-list label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--gray-700);
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 400;
+    }
+    .ms-list label:hover { background: var(--gray-50); }
+    .ms-list label input { cursor: pointer; }
+    .ms-actions {
+      display: flex;
+      gap: 6px;
+      padding: 6px;
+      border-top: 1px solid var(--gray-200);
+      background: var(--gray-50);
+    }
+    .ms-actions button {
+      flex: 1;
+      padding: 4px 8px;
+      border: 1px solid var(--gray-300);
+      background: white;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+      color: var(--gray-600);
+      font-weight: 600;
+    }
+    .ms-actions button:hover { background: var(--gray-100); }
+    .ms-count {
+      font-size: 11px;
+      color: var(--gray-500);
+      padding: 6px 10px;
+      background: var(--gray-50);
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    /* Switch toggle (estilo iOS) */
+    .switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 0;
+    }
+    .switch-row .switch-label {
+      font-size: 13px;
+      color: var(--gray-700);
+      flex: 1;
+    }
+    .switch {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+    .switch input { display: none; }
+    .switch .slider {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--gray-300);
+      border-radius: 22px;
+      transition: background .15s;
+      cursor: pointer;
+    }
+    .switch .slider::before {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 18px;
+      height: 18px;
+      background: white;
+      border-radius: 50%;
+      transition: transform .15s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .switch input:checked + .slider { background: var(--green); }
+    .switch input:checked + .slider::before { transform: translateX(18px); }
+
+    /* Card footer con boton guardar */
+    .config-card-footer {
+      padding: 12px 18px;
+      background: var(--gray-50);
+      border-top: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .config-card-footer .updated {
+      font-size: 11px;
+      color: var(--gray-500);
+    }
+    .btn-save {
+      background: var(--green);
+      color: white;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: filter .15s;
+    }
+    .btn-save:hover { filter: brightness(1.08); }
+    .btn-save:disabled { opacity: .6; cursor: wait; }
+    .btn-save.saved {
+      background: var(--blue);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--gray-500);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--gray-900);
+      color: white;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-size: 13px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.3);
+      transition: transform .25s ease-out;
+      z-index: 1000;
+      max-width: 90vw;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.error { background: var(--red); }
+    .toast.ok    { background: var(--green); }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 15px; }
+      .page-title { font-size: 18px; }
+      .config-card-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+      .config-card-url { font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============== HEADER ============== -->
+<header id="header" style="display: none;">
+  <div>
+    <h1>⚙️ Configuración del Catálogo</h1>
+    <div class="sub">La Costa SRL</div>
+  </div>
+  <div class="header-actions">
+    <a href="./" title="Volver al catálogo">← Volver al catálogo</a>
+    <button class="btn-logout" id="btn-logout">Cerrar sesión</button>
+  </div>
+</header>
+
+<!-- ============== LOGIN VIEW ============== -->
+<div class="login-wrap" id="view-login">
+  <div class="login-card">
+    <h2>🔒 Acceso de Configuración</h2>
+    <div class="login-sub">Ingresá el PIN para editar los modos del catálogo</div>
+    <form id="login-form">
+      <label for="login-pin">PIN</label>
+      <input type="password" id="login-pin" autocomplete="off" inputmode="numeric" maxlength="32" autofocus>
+      <button type="submit" class="btn-primary" id="btn-login">Ingresar</button>
+      <div class="login-error" id="login-error"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ============== ADMIN VIEW ============== -->
+<div class="container" id="view-admin" style="display: none;">
+  <div class="page-title">Configuración de modos del catálogo</div>
+  <div class="page-sub">
+    Cambios se aplican a la PWA al recargar (o cuando expira el caché local de 1h).
+    Modo Admin protegido por PIN — no compartir esta URL públicamente.
+  </div>
+
+  <div id="loading-state" class="loading">Cargando configuraciones…</div>
+
+  <div id="config-grid" class="config-grid" style="display: none;"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===================================================================
+// CONFIG GLOBAL — Supabase
+// ===================================================================
+var SUPABASE_URL      = 'https://uhodmtxzpvilnxyjleri.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVob2RtdHh6cHZpbG54eWpsZXJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NzMyMzQsImV4cCI6MjA5NjA0OTIzNH0.s9Axz-7qqUj6RFFL2Yh47cPIypDZ6RorUq9-RGNa6rw';
+
+// PIN se guarda en sessionStorage para que no haya que reingresarlo en cada save.
+// Al cerrar el tab desaparece. NO se persiste en localStorage por seguridad.
+var SESSION_PIN_KEY = 'lc_admin_pin';
+
+// State global
+var allSucursales = [];   // populada desde catalog_cache
+var allMarcas     = [];
+var allConfigs    = {};   // mode → row de page_config
+
+var MODE_INFO = {
+  general:   { icon: '🌐', label: 'General',   url: '?mode=g'  },
+  mayorista: { icon: '📦', label: 'Mayorista', url: '?mode=ma' },
+  minorista: { icon: '🛍️', label: 'Minorista', url: '?mode=mi' }
+};
+
+// ===================================================================
+// HELPERS — fetch Supabase
+// ===================================================================
+function supaFetch_(path, opts) {
+  opts = opts || {};
+  var headers = Object.assign({
+    'apikey':        SUPABASE_ANON_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+    'Content-Type':  'application/json',
+    'Accept':        'application/json'
+  }, opts.headers || {});
+  return fetch(SUPABASE_URL.replace(/\/$/, '') + path, {
+    method:  opts.method || 'GET',
+    headers: headers,
+    body:    opts.body
+  });
+}
+
+function supaRpc_(name, params) {
+  return supaFetch_('/rest/v1/rpc/' + name, {
+    method: 'POST',
+    body:   JSON.stringify(params)
+  });
+}
+
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function fmtDateTime(iso) {
+  if (!iso) return '—';
+  try {
+    var d = new Date(iso);
+    return d.toLocaleString('es-PY', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  } catch (e) { return iso; }
+}
+
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (type || '');
+  setTimeout(function () { t.classList.remove('show'); }, 3000);
+}
+
+// ===================================================================
+// LOGIN
+// ===================================================================
+window.addEventListener('load', function () {
+  setupLoginForm_();
+  document.getElementById('btn-logout').addEventListener('click', logout_);
+
+  // Si hay PIN en sessionStorage, validarlo y saltear el login
+  var savedPin = sessionStorage.getItem(SESSION_PIN_KEY);
+  if (savedPin) {
+    verifyPin_(savedPin).then(function (ok) {
+      if (ok) {
+        showAdminView_();
+        loadEverything_();
+      } else {
+        sessionStorage.removeItem(SESSION_PIN_KEY);
+      }
+    });
+  }
+});
+
+function setupLoginForm_() {
+  document.getElementById('login-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var pin = document.getElementById('login-pin').value.trim();
+    var btn = document.getElementById('btn-login');
+    var err = document.getElementById('login-error');
+
+    btn.disabled = true;
+    btn.textContent = 'Verificando…';
+    err.classList.remove('show');
+
+    verifyPin_(pin).then(function (ok) {
+      btn.disabled = false;
+      btn.textContent = 'Ingresar';
+      if (ok) {
+        sessionStorage.setItem(SESSION_PIN_KEY, pin);
+        document.getElementById('login-pin').value = '';
+        showAdminView_();
+        loadEverything_();
+      } else {
+        err.textContent = 'PIN incorrecto';
+        err.classList.add('show');
+      }
+    }).catch(function (e) {
+      btn.disabled = false;
+      btn.textContent = 'Ingresar';
+      err.textContent = 'Error de red: ' + (e.message || e);
+      err.classList.add('show');
+    });
+  });
+}
+
+function verifyPin_(pin) {
+  return supaRpc_('verify_admin_pin', { pin: pin })
+    .then(function (resp) { return resp.json(); })
+    .then(function (result) { return result === true; })
+    .catch(function () { return false; });
+}
+
+function logout_() {
+  sessionStorage.removeItem(SESSION_PIN_KEY);
+  document.getElementById('view-admin').style.display = 'none';
+  document.getElementById('header').style.display = 'none';
+  document.getElementById('view-login').style.display = '';
+  setTimeout(function () { document.getElementById('login-pin').focus(); }, 50);
+}
+
+function showAdminView_() {
+  document.getElementById('view-login').style.display = 'none';
+  document.getElementById('header').style.display = '';
+  document.getElementById('view-admin').style.display = '';
+}
+
+// ===================================================================
+// CARGAR DATOS (configs + sucursales + marcas)
+// ===================================================================
+function loadEverything_() {
+  document.getElementById('loading-state').style.display = '';
+  document.getElementById('config-grid').style.display = 'none';
+
+  Promise.all([fetchConfigs_(), fetchCatalogMeta_()]).then(function () {
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('config-grid').style.display = '';
+    renderConfigs_();
+  }).catch(function (e) {
+    document.getElementById('loading-state').innerHTML =
+      '<div style="color:var(--red)">Error al cargar: ' + escHtml(e.message || e) + '</div>';
+  });
+}
+
+function fetchConfigs_() {
+  return supaFetch_('/rest/v1/page_config?select=*&order=mode')
+    .then(function (r) { return r.json(); })
+    .then(function (rows) {
+      allConfigs = {};
+      rows.forEach(function (r) { allConfigs[r.mode] = r; });
+    });
+}
+
+// Extrae sucursales y marcas únicas del catálogo activo
+function fetchCatalogMeta_() {
+  return supaFetch_('/rest/v1/catalog_cache?select=data&id=eq.1')
+    .then(function (r) { return r.json(); })
+    .then(function (arr) {
+      if (!arr || !arr.length || !arr[0].data) return;
+      var products = arr[0].data;
+      var sucSet = {};
+      var marSet = {};
+      products.forEach(function (p) {
+        if (p.marca) marSet[p.marca] = 1;
+        (p.colorsArr || []).forEach(function (c) {
+          (c.gradesArr || []).forEach(function (g) {
+            (g.stock || []).forEach(function (s) {
+              if (s.sucursal) sucSet[s.sucursal] = 1;
+            });
+          });
+        });
+      });
+      allSucursales = Object.keys(sucSet).sort();
+      allMarcas     = Object.keys(marSet).sort();
+    });
+}
+
+// ===================================================================
+// RENDER DE LAS 3 CARDS
+// ===================================================================
+function renderConfigs_() {
+  var modes = ['general', 'mayorista', 'minorista'];
+  var grid = document.getElementById('config-grid');
+  grid.innerHTML = modes.map(function (mode) {
+    var cfg = allConfigs[mode] || defaultConfig_(mode);
+    return renderConfigCard_(mode, cfg);
+  }).join('');
+
+  modes.forEach(function (mode) { wireCard_(mode); });
+}
+
+function defaultConfig_(mode) {
+  return {
+    mode: mode,
+    title: MODE_INFO[mode].label,
+    price_mode: mode === 'general' ? null : mode,
+    sucursales: [],
+    marcas_excluidas: [],
+    promo_visible: true,
+    locked: mode !== 'general',
+    restrict_modal_sucursales: mode !== 'general',
+    updated_at: null
+  };
+}
+
+function renderConfigCard_(mode, cfg) {
+  var info = MODE_INFO[mode];
+  var pm = cfg.price_mode || '';
+  return '<div class="config-card" data-mode="' + mode + '">' +
+    '<div class="config-card-header">' +
+      '<div class="config-card-title">' + info.icon + ' Catálogo ' + escHtml(info.label) + '</div>' +
+      '<div class="config-card-url">URL: ' + escHtml(info.url) + '</div>' +
+    '</div>' +
+    '<div class="config-card-body">' +
+      // Título
+      '<div class="field">' +
+        '<label>Título (lo que se muestra en el header)</label>' +
+        '<input type="text" data-field="title" value="' + escHtml(cfg.title || '') + '" placeholder="Catálogo de Productos">' +
+      '</div>' +
+      // priceMode
+      '<div class="field">' +
+        '<label>Modo de precio forzado</label>' +
+        '<select data-field="price_mode">' +
+          '<option value=""' + (pm === '' ? ' selected' : '') + '>— Ninguno (usuario decide) —</option>' +
+          '<option value="minorista"' + (pm === 'minorista' ? ' selected' : '') + '>Minorista</option>' +
+          '<option value="mayorista"' + (pm === 'mayorista' ? ' selected' : '') + '>Mayorista</option>' +
+        '</select>' +
+      '</div>' +
+      // Sucursales
+      '<div class="field">' +
+        '<label>Sucursales visibles (vacío = todas)</label>' +
+        renderMultiSelect_('sucursales', allSucursales, cfg.sucursales || []) +
+      '</div>' +
+      // Marcas excluidas
+      '<div class="field">' +
+        '<label>Marcas a excluir</label>' +
+        renderMultiSelect_('marcas_excluidas', allMarcas, cfg.marcas_excluidas || []) +
+      '</div>' +
+      // Toggles
+      '<div>' +
+        renderSwitch_('promo_visible', 'Promociones visibles', cfg.promo_visible) +
+        renderSwitch_('locked', 'Controles bloqueados (usuario no puede cambiar precio ni sucursal)', cfg.locked) +
+        renderSwitch_('restrict_modal_sucursales', 'En modal de detalle, mostrar solo las sucursales seleccionadas', cfg.restrict_modal_sucursales) +
+      '</div>' +
+    '</div>' +
+    '<div class="config-card-footer">' +
+      '<div class="updated">Última actualización: ' + escHtml(fmtDateTime(cfg.updated_at)) + '</div>' +
+      '<button class="btn-save" data-action="save">💾 Guardar</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderMultiSelect_(field, allOpts, selected) {
+  if (!allOpts.length) {
+    return '<div style="font-size:12px;color:var(--gray-400);padding:8px">Sin datos en el catálogo todavía…</div>';
+  }
+  var sel = {};
+  selected.forEach(function (s) { sel[s] = 1; });
+  return '<div class="ms-wrap" data-field="' + field + '">' +
+    '<input type="text" class="ms-search" placeholder="Buscar…">' +
+    '<div class="ms-count">' + selected.length + ' de ' + allOpts.length + ' seleccionadas</div>' +
+    '<div class="ms-list">' +
+      allOpts.map(function (opt) {
+        var checked = sel[opt] ? ' checked' : '';
+        return '<label><input type="checkbox" value="' + escHtml(opt) + '"' + checked + '> ' + escHtml(opt) + '</label>';
+      }).join('') +
+    '</div>' +
+    '<div class="ms-actions">' +
+      '<button type="button" data-ms="all">Todas</button>' +
+      '<button type="button" data-ms="none">Ninguna</button>' +
+      '<button type="button" data-ms="invert">Invertir</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderSwitch_(field, label, checked) {
+  return '<label class="switch-row">' +
+    '<span class="switch-label">' + escHtml(label) + '</span>' +
+    '<span class="switch">' +
+      '<input type="checkbox" data-field="' + field + '"' + (checked ? ' checked' : '') + '>' +
+      '<span class="slider"></span>' +
+    '</span>' +
+  '</label>';
+}
+
+// ===================================================================
+// WIRING (interacciones de cada card)
+// ===================================================================
+function wireCard_(mode) {
+  var card = document.querySelector('.config-card[data-mode="' + mode + '"]');
+  if (!card) return;
+
+  // Buscador y acciones en cada multi-select
+  card.querySelectorAll('.ms-wrap').forEach(function (wrap) {
+    var search = wrap.querySelector('.ms-search');
+    var count  = wrap.querySelector('.ms-count');
+    var list   = wrap.querySelector('.ms-list');
+
+    function updateCount() {
+      var total    = list.querySelectorAll('input[type="checkbox"]').length;
+      var selected = list.querySelectorAll('input[type="checkbox"]:checked').length;
+      count.textContent = selected + ' de ' + total + ' seleccionadas';
+    }
+    list.addEventListener('change', updateCount);
+
+    search.addEventListener('input', function () {
+      var q = this.value.toLowerCase();
+      list.querySelectorAll('label').forEach(function (lab) {
+        lab.style.display = lab.textContent.toLowerCase().indexOf(q) >= 0 ? '' : 'none';
+      });
+    });
+
+    wrap.querySelectorAll('.ms-actions button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var action = this.getAttribute('data-ms');
+        list.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
+          if (action === 'all')    cb.checked = true;
+          if (action === 'none')   cb.checked = false;
+          if (action === 'invert') cb.checked = !cb.checked;
+        });
+        updateCount();
+      });
+    });
+  });
+
+  // Botón guardar
+  card.querySelector('button[data-action="save"]').addEventListener('click', function () {
+    saveCard_(mode, this);
+  });
+}
+
+function saveCard_(mode, btn) {
+  var card = document.querySelector('.config-card[data-mode="' + mode + '"]');
+  if (!card) return;
+
+  var cfg = {
+    title:                   card.querySelector('input[data-field="title"]').value.trim() || 'Catálogo',
+    priceMode:               card.querySelector('select[data-field="price_mode"]').value,
+    sucursales:              collectChecked_(card, 'sucursales'),
+    marcasExcluidas:         collectChecked_(card, 'marcas_excluidas'),
+    promoVisible:            card.querySelector('input[data-field="promo_visible"]').checked,
+    locked:                  card.querySelector('input[data-field="locked"]').checked,
+    restrictModalSucursales: card.querySelector('input[data-field="restrict_modal_sucursales"]').checked
+  };
+
+  var pin = sessionStorage.getItem(SESSION_PIN_KEY);
+  if (!pin) {
+    showToast('Sesión expirada — recargá la página', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Guardando…';
+  btn.classList.remove('saved');
+
+  supaRpc_('save_page_config', { pin: pin, p_mode: mode, p_config: cfg })
+    .then(function (r) {
+      if (!r.ok) return r.json().then(function (e) { throw new Error(e.message || ('HTTP ' + r.status)); });
+      return r.json();
+    })
+    .then(function (saved) {
+      btn.disabled = false;
+      btn.textContent = '✓ Guardado';
+      btn.classList.add('saved');
+      // Actualizar timestamp visible
+      card.querySelector('.updated').textContent = 'Última actualización: ' + fmtDateTime(saved.updated_at);
+      allConfigs[mode] = saved;
+      showToast('Modo ' + mode + ' guardado correctamente', 'ok');
+      setTimeout(function () {
+        btn.textContent = '💾 Guardar';
+        btn.classList.remove('saved');
+      }, 2000);
+    })
+    .catch(function (e) {
+      btn.disabled = false;
+      btn.textContent = '💾 Guardar';
+      var msg = (e && e.message) ? e.message : String(e);
+      // Si el PIN dejó de funcionar (rotación en server), forzar logout
+      if (/PIN invalido/i.test(msg)) {
+        showToast('PIN inválido — sesión cerrada', 'error');
+        logout_();
+      } else {
+        showToast('Error al guardar: ' + msg, 'error');
+      }
+    });
+}
+
+function collectChecked_(card, field) {
+  var wrap = card.querySelector('.ms-wrap[data-field="' + field + '"]');
+  if (!wrap) return [];
+  return Array.prototype.slice.call(wrap.querySelectorAll('input[type="checkbox"]:checked'))
+    .map(function (cb) { return cb.value; });
+}
+</script>
+
+</body>
+</html>
