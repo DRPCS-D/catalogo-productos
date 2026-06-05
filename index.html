@@ -4,11 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Catálogo de Productos</title>
-  <!-- PWA — manifest dinámico por modo. Si en la URL hay ?mode=ma o ?mode=mi
-       (o el alias largo), apuntamos a un manifest específico con su propio
-       start_url y nombre. Así "Agregar a pantalla de inicio" en iOS guarda
-       un acceso directo que abre el modo correcto, no siempre el general. -->
-  <link id="manifest-link" rel="manifest" href="./manifest.json">
+  <!-- PWA — el <link rel="manifest"> NO se declara estaticamente. Lo inserta
+       el script de abajo segun ?mode=. Razon: iOS Safari lee el manifest
+       MUY temprano (antes de window.onload). Si declaramos manifest.json
+       hardcodeado, iOS lo cachea y "Add to Home Screen" siempre guarda
+       el start_url del general, aunque despues lo cambiemos por JS.
+       Insertandolo solo via JS, iOS ve UN solo manifest correcto. -->
   <meta name="theme-color" content="#1e3a5f">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -18,9 +19,9 @@
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png">
   <script>
-    // IMPORTANTE: corre ANTES de cualquier interaccion del usuario para que
-    // "Agregar a pantalla de inicio" (iOS) o "Instalar app" (Chrome) ya tengan
-    // el manifest correcto. Por eso es inline en <head>, no en un .js externo.
+    // IMPORTANTE: corre durante el parsing del <head>, antes de cualquier
+    // network request del browser. Inserta el <link rel="manifest"> con
+    // el archivo correcto segun ?mode=. iOS / Chrome ven solo ese.
     (function () {
       var raw = (new URLSearchParams(location.search)).get('mode') || 'g';
       var aliases = { g: 'general', general: 'general',
@@ -33,8 +34,12 @@
         minorista: { file: './manifest-minorista.json', title: 'Minorista' }
       };
       var m = manifests[mode];
-      document.getElementById('manifest-link').setAttribute('href', m.file);
-      document.getElementById('apple-title').setAttribute('content', m.title);
+      var link = document.createElement('link');
+      link.rel  = 'manifest';
+      link.href = m.file;
+      document.head.appendChild(link);
+      var t = document.getElementById('apple-title');
+      if (t) t.setAttribute('content', m.title);
     })();
   </script>
   <style>

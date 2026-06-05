@@ -10,8 +10,9 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v2: manifests por modo (general/mayorista/minorista) + index nuevo
-const CACHE_VERSION = 'v2';
+// v3: manifest sin <link> hardcodeado, insertado solo via JS para que iOS
+// no cachee el general primero. Bumpeamos version para invalidar cache v2.
+const CACHE_VERSION = 'v3';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
