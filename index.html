@@ -1373,7 +1373,9 @@
     }
 
     .sidebar-label {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 6px;
       font-size: 10.5px;
       font-weight: 700;
       text-transform: uppercase;
@@ -1382,6 +1384,13 @@
       margin: 14px 0 4px;
     }
     .sidebar-label:first-child { margin-top: 0; }
+    .sidebar-label .sl-icon {
+      font-size: 13px;
+      line-height: 1;
+      letter-spacing: 0;
+      flex-shrink: 0;
+      filter: saturate(.85);
+    }
 
     .sidebar-footer {
       padding: 12px 16px;
@@ -1989,31 +1998,31 @@
   </div>
 
   <div class="sidebar-body">
-    <label class="sidebar-label" data-section="pricemode">Precio a mostrar</label>
+    <label class="sidebar-label" data-section="pricemode"><span class="sl-icon">💲</span>Precio a mostrar</label>
     <div class="segmented" id="filter-pricemode" role="radiogroup" data-section="pricemode">
       <button type="button" data-value="minorista" class="active">💰 Minorista</button>
       <button type="button" data-value="mayorista">📦 Mayorista</button>
     </div>
 
-    <label class="sidebar-label">Marca</label>
+    <label class="sidebar-label"><span class="sl-icon">🏷️</span>Marca</label>
     <div class="multi-select" id="filter-marca" data-placeholder="Todas las marcas" data-noun="marca"></div>
 
-    <label class="sidebar-label">Grupo</label>
+    <label class="sidebar-label"><span class="sl-icon">👥</span>Grupo</label>
     <div class="multi-select" id="filter-grupo" data-placeholder="Todos los grupos" data-noun="grupo"></div>
 
-    <label class="sidebar-label">Subgrupo</label>
+    <label class="sidebar-label"><span class="sl-icon">📂</span>Subgrupo</label>
     <div class="multi-select" id="filter-subgrupo" data-placeholder="Todos los subgrupos" data-noun="subgrupo"></div>
 
-    <label class="sidebar-label">Colección</label>
+    <label class="sidebar-label"><span class="sl-icon">🗓️</span>Colección</label>
     <div class="multi-select" id="filter-colecao" data-placeholder="Todas las colecciones" data-noun="colección"></div>
 
-    <label class="sidebar-label">Talle</label>
+    <label class="sidebar-label"><span class="sl-icon">📏</span>Talle</label>
     <div class="multi-select" id="filter-talle" data-placeholder="Todos los talles" data-noun="talle"></div>
 
-    <label class="sidebar-label" data-section="sucursal">Sucursal</label>
+    <label class="sidebar-label" data-section="sucursal"><span class="sl-icon">🏬</span>Sucursal</label>
     <div class="multi-select" id="filter-sucursal" data-placeholder="Todas las sucursales" data-noun="sucursal" data-section="sucursal"></div>
 
-    <label class="sidebar-label">Precio (₲)</label>
+    <label class="sidebar-label"><span class="sl-icon">₲</span>Precio (₲)</label>
     <div class="price-range" title="Rango de precio en guaraníes">
       <span class="price-label">₲</span>
       <input type="number" id="filter-precio-min" min="0" step="1000" placeholder="Mín" inputmode="numeric">
@@ -2021,7 +2030,7 @@
       <input type="number" id="filter-precio-max" min="0" step="1000" placeholder="Máx" inputmode="numeric">
     </div>
 
-    <label class="sidebar-label">Stock por color</label>
+    <label class="sidebar-label"><span class="sl-icon">📦</span>Stock por color</label>
     <div class="stock-range" title="Stock total por color del producto">
       <span class="price-label">#</span>
       <input type="number" id="filter-stock-min" min="0" step="1" placeholder="Mín" inputmode="numeric">
@@ -2029,21 +2038,21 @@
       <input type="number" id="filter-stock-max" min="0" step="1" placeholder="Máx" inputmode="numeric">
     </div>
 
-    <label class="sidebar-label">Última compra (rango de fechas)</label>
+    <label class="sidebar-label"><span class="sl-icon">📅</span>Última compra (rango de fechas)</label>
     <div class="date-range" title="Rango de fecha de última compra. La fecha es la más reciente entre todas las sucursales del producto.">
       <input type="date" id="filter-ultcmp-desde" placeholder="Desde">
       <span class="price-sep">—</span>
       <input type="date" id="filter-ultcmp-hasta" placeholder="Hasta">
     </div>
 
-    <label class="sidebar-label">Imagen</label>
+    <label class="sidebar-label"><span class="sl-icon">📷</span>Imagen</label>
     <div class="segmented" id="filter-foto" role="radiogroup">
       <button type="button" data-value="all"     class="active">Todos</button>
       <button type="button" data-value="with">Con foto</button>
       <button type="button" data-value="without">Sin foto</button>
     </div>
 
-    <label class="sidebar-label" data-section="promo">Promoción (sobre el precio activo)</label>
+    <label class="sidebar-label" data-section="promo"><span class="sl-icon">🔥</span>Promoción (sobre el precio activo)</label>
     <div class="segmented" id="filter-promo" role="radiogroup" data-section="promo">
       <button type="button" data-value="all"     class="active">Todos</button>
       <button type="button" data-value="with">En promo</button>
