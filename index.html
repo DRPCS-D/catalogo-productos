@@ -4,16 +4,39 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Catálogo de Productos</title>
-  <!-- PWA -->
-  <link rel="manifest" href="./manifest.json">
+  <!-- PWA — manifest dinámico por modo. Si en la URL hay ?mode=ma o ?mode=mi
+       (o el alias largo), apuntamos a un manifest específico con su propio
+       start_url y nombre. Así "Agregar a pantalla de inicio" en iOS guarda
+       un acceso directo que abre el modo correcto, no siempre el general. -->
+  <link id="manifest-link" rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#1e3a5f">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Catálogo">
+  <meta id="apple-title" name="apple-mobile-web-app-title" content="Catálogo">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png">
+  <script>
+    // IMPORTANTE: corre ANTES de cualquier interaccion del usuario para que
+    // "Agregar a pantalla de inicio" (iOS) o "Instalar app" (Chrome) ya tengan
+    // el manifest correcto. Por eso es inline en <head>, no en un .js externo.
+    (function () {
+      var raw = (new URLSearchParams(location.search)).get('mode') || 'g';
+      var aliases = { g: 'general', general: 'general',
+                      ma: 'mayorista', mayorista: 'mayorista',
+                      mi: 'minorista', minorista: 'minorista' };
+      var mode = aliases[raw.toLowerCase()] || 'general';
+      var manifests = {
+        general:   { file: './manifest.json',           title: 'Catálogo'  },
+        mayorista: { file: './manifest-mayorista.json', title: 'Mayorista' },
+        minorista: { file: './manifest-minorista.json', title: 'Minorista' }
+      };
+      var m = manifests[mode];
+      document.getElementById('manifest-link').setAttribute('href', m.file);
+      document.getElementById('apple-title').setAttribute('content', m.title);
+    })();
+  </script>
   <style>
     /* ===== RESET & VARIABLES ===== */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
