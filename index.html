@@ -1974,19 +1974,20 @@
         margin: 0 !important;
         padding: 0 !important;
         box-shadow: none !important;
-        /* Cada .pmo-page es UNA hoja: salto de página forzado después,
-           y no permitir que se corte por dentro. iOS Safari respeta
-           break-after:page sobre bloques mucho mejor que break-inside:avoid
-           sobre grid items. */
-        break-after: page !important;
-        page-break-after: always !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
+        /* Cada .pmo-page arranca en una hoja nueva. NO uso break-inside:avoid
+           sobre el bloque: si el chunk roza el límite vertical, el navegador
+           empuja la primera fila a la siguiente hoja y deja arriba restos
+           recortados (bug visto en Chrome desktop). El break-inside:avoid de
+           cada .pdf-card ya garantiza que ninguna card individual se corte. */
+        break-before: page !important;
+        page-break-before: always !important;
+        break-inside: auto !important;
+        page-break-inside: auto !important;
       }
-      /* La última hoja NO necesita salto (evita una hoja en blanco final) */
-      body.pmo-active #pdf-mobile-overlay .pmo-page:last-child {
-        break-after: auto !important;
-        page-break-after: auto !important;
+      /* La primera hoja NO necesita el salto previo (evita hoja en blanco al inicio) */
+      body.pmo-active #pdf-mobile-overlay .pmo-page:first-child {
+        break-before: auto !important;
+        page-break-before: auto !important;
       }
 
       body.pmo-active, body.pmo-active html {
@@ -5039,8 +5040,11 @@ function generatePDFMobile() {
   // En print el grid se fuerza a 3 columnas. Cada card ocupa ~70mm de alto
   // y la hoja útil mide ~277mm. La primera hoja lleva el header (~25mm),
   // por eso entran menos cards que en las siguientes.
-  var FIRST_PAGE_CARDS = 6;   // 2 filas × 3 cols + header
-  var OTHER_PAGE_CARDS = 9;   // 3 filas × 3 cols
+  // Conservador: 6 cards por hoja (2 filas × 3 cols). Le dejamos margen
+  // vertical para que cards con muchos tallas (chips que ocupan 2-3 líneas)
+  // o nombres largos no empujen una fila a la siguiente hoja.
+  var FIRST_PAGE_CARDS = 6;
+  var OTHER_PAGE_CARDS = 6;
 
   var pagesHtml = '';
   var idx = 0;
