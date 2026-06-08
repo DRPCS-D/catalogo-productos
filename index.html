@@ -5085,11 +5085,10 @@ function generatePDFMobile() {
   // En print el grid se fuerza a 3 columnas. Cada card ocupa ~70mm de alto
   // y la hoja útil mide ~277mm. La primera hoja lleva el header (~25mm),
   // por eso entran menos cards que en las siguientes.
-  // Conservador: 6 cards por hoja (2 filas × 3 cols). Le dejamos margen
-  // vertical para que cards con muchos tallas (chips que ocupan 2-3 líneas)
-  // o nombres largos no empujen una fila a la siguiente hoja.
-  var FIRST_PAGE_CARDS = 6;
-  var OTHER_PAGE_CARDS = 6;
+  // 9 cards por hoja (3 filas × 3 cols). Cabe holgado en A4 con la
+  // compactación de print (img 38mm + gap 3mm + @page margin 8mm).
+  var FIRST_PAGE_CARDS = 9;
+  var OTHER_PAGE_CARDS = 9;
 
   var pagesHtml = '';
   var idx = 0;
