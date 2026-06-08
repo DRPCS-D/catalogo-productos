@@ -5085,9 +5085,11 @@ function generatePDFMobile() {
   // En print el grid se fuerza a 3 columnas. Cada card ocupa ~70mm de alto
   // y la hoja útil mide ~277mm. La primera hoja lleva el header (~25mm),
   // por eso entran menos cards que en las siguientes.
-  // 9 cards por hoja (3 filas × 3 cols). Cabe holgado en A4 con la
-  // compactación de print (img 38mm + gap 3mm + @page margin 8mm).
-  var FIRST_PAGE_CARDS = 9;
+  // Primera hoja: 6 cards (2 filas × 3 cols) — el header le come ~15-20mm
+  // y en iPhone Safari la 3ra fila no entra al 100% (en Android sí, pero
+  // diferenciamos para mantener compatibilidad cross-platform).
+  // Hojas siguientes: 9 cards (3 filas × 3 cols) — sin header entran holgadas.
+  var FIRST_PAGE_CARDS = 6;
   var OTHER_PAGE_CARDS = 9;
 
   var pagesHtml = '';
