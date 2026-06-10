@@ -2038,21 +2038,19 @@
         display: block !important;
       }
 
-      /* Achicar las cards en print para que 6 entren con holgura en A4
-         a escala 100%. iOS Safari al 100% derramaba ~5mm de cada .pmo-page
-         a la siguiente hoja física, lo que causaba una hoja vacía en medio
-         (porque la próxima .pmo-page tiene break-before:page). Bajando la
-         imagen de 45mm a 38mm ganamos ~14mm verticales por hoja: margen
-         de sobra. */
+      /* Achicar las cards en print. Al pasar a 3x3 (9 cards/hoja) iOS Safari
+         al 100% volvió a derramar ~10% de altura y dejaba una hoja vacía en
+         medio. Bajando la imagen a 32mm + paddings y gap más chicos ganamos
+         ~25mm verticales por hoja: cuadra al 100% en iPhone/iPad. */
       body.pmo-active #pdf-mobile-overlay .pdf-card-img,
       body.pmo-active #pdf-mobile-overlay .pdf-card-img-ph {
-        height: 38mm !important;
+        height: 32mm !important;
       }
       body.pmo-active #pdf-mobile-overlay .pdf-card-body {
-        padding: 1.5mm 2.5mm 2mm !important;
+        padding: 1mm 2mm 1.5mm !important;
       }
       body.pmo-active #pdf-mobile-overlay .pdf-grid {
-        gap: 3mm !important;
+        gap: 2mm !important;
       }
       /* Encabezado más compacto solo en print */
       body.pmo-active #pdf-mobile-overlay .pdf-header {
