@@ -2268,6 +2268,7 @@
     #pdf-mobile-overlay .pdf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; }
     #pdf-mobile-overlay .pdf-card { border: 1px solid #cbd5e1; border-radius: 2.5mm; overflow: hidden;
       page-break-inside: avoid; break-inside: avoid; display: flex; flex-direction: column; background: white; }
+    #pdf-mobile-overlay .pdf-card-img-link { display: block; line-height: 0; text-decoration: none; color: inherit; }
     #pdf-mobile-overlay .pdf-card-img { width: 100%; height: var(--pmo-img-height, 45mm); object-fit: contain; background: #f1f5f9; display: block; }
     #pdf-mobile-overlay .pdf-card-img-ph { width: 100%; height: var(--pmo-img-height, 45mm); background: #f1f5f9; display: flex;
       align-items: center; justify-content: center; color: #94a3b8; font-size: 18pt; }
@@ -5592,9 +5593,15 @@ function renderPdfCard_(p, c) {
     priceHtml = fmtPrice(basePrice);
   }
 
+  // Link a la versión grande de la foto: clickeable en el PDF guardado
+  // (Safari, Chrome, Preview en iOS/Android conservan los <a href>).
+  var fullImgUrl = getImgUrl(c.imgId, 1600);
+
   return '<div class="pdf-card">' +
     (imgUrl
-      ? '<img class="pdf-card-img" src="' + imgUrl + '" alt="">'
+      ? '<a class="pdf-card-img-link" href="' + fullImgUrl + '" target="_blank" rel="noopener">' +
+          '<img class="pdf-card-img" src="' + imgUrl + '" alt="">' +
+        '</a>'
       : '<div class="pdf-card-img-ph">&#x1F45F;</div>') +
     '<div class="pdf-card-body">' +
       '<div class="pdf-card-cod">Cód: ' + escHtml(p.codFabrica) +
