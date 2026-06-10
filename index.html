@@ -5052,7 +5052,7 @@ function exportToExcel(opts) {
   var baseHeaders = ['codFabrica', 'nmProduto', 'marca', 'color'];
   if (withGrade) baseHeaders.push('talle');
   baseHeaders.push('imagen', 'top_venta');
-  var headers = baseHeaders.concat(sucursales);
+  var headers = baseHeaders.concat(sucursales).concat(['total']);
   var rows    = [headers];
 
   // Acumulador para fila TOTAL al final
@@ -5084,10 +5084,13 @@ function exportToExcel(opts) {
           if (totalGrade <= 0) return;
 
           var row = [p.codFabrica, p.nmProduto, p.marca, c.color, g.grade, c.imagen || '', topVenta];
+          var rowTotal = 0;
           sucursales.forEach(function (suc) {
-            var q = stockBySucursal[suc];
+            var q = stockBySucursal[suc] || 0;
+            rowTotal += q;
             row.push(q ? q : '');
           });
+          row.push(rowTotal);
           rows.push(row);
         });
       } else {
@@ -5101,10 +5104,13 @@ function exportToExcel(opts) {
         });
 
         var row = [p.codFabrica, p.nmProduto, p.marca, c.color, c.imagen || '', topVenta];
+        var rowTotal = 0;
         sucursales.forEach(function (suc) {
-          var q = stockBySucursal[suc];
+          var q = stockBySucursal[suc] || 0;
+          rowTotal += q;
           row.push(q ? q : '');
         });
+        row.push(rowTotal);
         rows.push(row);
       }
     });
@@ -5127,10 +5133,13 @@ function exportToExcel(opts) {
   // Fila TOTAL: etiqueta en la primera columna, vacías hasta las sucursales, luego sumas
   var totalRow = new Array(baseHeaders.length).fill('');
   totalRow[0] = 'TOTAL';
+  var grandTotal = 0;
   sucursales.forEach(function (suc) {
     var q = sucTotals[suc] || 0;
+    grandTotal += q;
     totalRow.push(q ? q : '');
   });
+  totalRow.push(grandTotal);
   rows.push(totalRow);
 
   // 4) Serializar a CSV. Separador ';' para Excel en es-PY/AR.
