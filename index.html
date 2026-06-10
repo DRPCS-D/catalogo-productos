@@ -2391,9 +2391,14 @@
     <details class="export-section">
       <summary class="export-section-title">📊 Exportar a Excel</summary>
       <label class="export-switch" for="excel-with-grade">
-        <input type="checkbox" id="excel-with-grade">
+        <input type="checkbox" id="excel-with-grade" onchange="onExcelSwitchChange_('grade')">
         <span class="export-switch-track"><span class="export-switch-thumb"></span></span>
         <span class="export-switch-label">Incluir talle (1 fila por talle)</span>
+      </label>
+      <label class="export-switch" for="excel-totals-marca">
+        <input type="checkbox" id="excel-totals-marca" onchange="onExcelSwitchChange_('marca')">
+        <span class="export-switch-track"><span class="export-switch-thumb"></span></span>
+        <span class="export-switch-label">Solo totales por marca por tienda</span>
       </label>
       <button class="btn-excel-side" id="btn-excel" onclick="exportExcelFromSwitch_()" title="Exportar a Excel (CSV) el filtro actual">Exportar Excel</button>
     </details>
@@ -4862,11 +4867,121 @@ function confirmDialog(opts) {
 
 /**
  * Wrapper llamado por el botón "Exportar Excel" del sidebar.
- * Lee el estado del switch "Incluir talle" y delega a exportToExcel.
+ * Lee el estado de los switches y delega a exportToExcel.
  */
 function exportExcelFromSwitch_() {
-  var sw = document.getElementById('excel-with-grade');
-  exportToExcel({ withGrade: sw ? sw.checked : false });
+  var swGrade  = document.getElementById('excel-with-grade');
+  var swMarca  = document.getElementById('excel-totals-marca');
+  if (swMarca && swMarca.checked) {
+    exportToExcelTotalsByMarca_();
+    return;
+  }
+  exportToExcel({ withGrade: swGrade ? swGrade.checked : false });
+}
+
+/**
+ * Los dos switches son mutuamente excluyentes (uno cambia la granularidad
+ * a "más detalle", el otro a "menos detalle"). Activar uno desactiva el otro.
+ */
+function onExcelSwitchChange_(which) {
+  var swGrade = document.getElementById('excel-with-grade');
+  var swMarca = document.getElementById('excel-totals-marca');
+  if (which === 'grade' && swGrade && swGrade.checked && swMarca) swMarca.checked = false;
+  if (which === 'marca' && swMarca && swMarca.checked && swGrade) swGrade.checked = false;
+}
+
+/**
+ * Export agregado: 1 fila por marca, con totales de unidades por sucursal.
+ * Mismo formato general (separador ;, BOM UTF-8). Respeta los filtros
+ * activos (sucursal, stock, foto) igual que el export normal.
+ */
+function exportToExcelTotalsByMarca_() {
+  if (!filteredProducts || !filteredProducts.length) {
+    alert('No hay productos para exportar. Ajustá los filtros.');
+    return;
+  }
+
+  var sucursalActive = effectiveSucursalFilter_().length > 0;
+  var stockActive    = (filterStockMin !== null || filterStockMax !== null);
+  var fotoActive     = (filterFoto !== 'all');
+
+  // 1) Lista de sucursales (columnas)
+  var sucursales;
+  if (sucursalActive) {
+    sucursales = effectiveSucursalFilter_().slice().sort();
+  } else {
+    var sucSet = {};
+    filteredProducts.forEach(function (p) {
+      p.colorsArr.forEach(function (c) {
+        c.gradesArr.forEach(function (g) {
+          g.stock.forEach(function (s) {
+            if ((s.cantidad || 0) > 0) sucSet[s.sucursal] = 1;
+          });
+        });
+      });
+    });
+    sucursales = Object.keys(sucSet).sort();
+  }
+  if (!sucursales.length) {
+    alert('No hay sucursales con stock para exportar.');
+    return;
+  }
+
+  // 2) Agregar: marca → { sucursal → totalUds }
+  var byMarca = {};   // { marca: { sucursal: cantidad } }
+  filteredProducts.forEach(function (p) {
+    var marca = p.marca || '(sin marca)';
+    p.colorsArr.forEach(function (c) {
+      if (sucursalActive && getColorStock(c) <= 0) return;
+      if (stockActive    && !colorPassesStock_(c)) return;
+      if (fotoActive     && !colorPassesFoto_(c)) return;
+
+      c.gradesArr.forEach(function (g) {
+        g.stock.forEach(function (s) {
+          if (sucursales.indexOf(s.sucursal) < 0) return;
+          if (!byMarca[marca]) byMarca[marca] = {};
+          byMarca[marca][s.sucursal] =
+            (byMarca[marca][s.sucursal] || 0) + (s.cantidad || 0);
+        });
+      });
+    });
+  });
+
+  // 3) Filas: marca + 1 columna por sucursal + total
+  var headers = ['marca'].concat(sucursales).concat(['total']);
+  var rows = [headers];
+
+  Object.keys(byMarca).sort().forEach(function (marca) {
+    var perSuc = byMarca[marca];
+    var total = 0;
+    var row = [marca];
+    sucursales.forEach(function (suc) {
+      var q = perSuc[suc] || 0;
+      total += q;
+      row.push(q ? q : '');
+    });
+    row.push(total);
+    if (total > 0) rows.push(row);   // omitir marcas sin stock en las sucursales del set
+  });
+
+  if (rows.length <= 1) {
+    alert('Los filtros activos no dejan ninguna fila para exportar.');
+    return;
+  }
+
+  // 4) Serializar y disparar la descarga
+  var csv = rows.map(function (r) { return r.map(csvCell_).join(';'); }).join('\r\n');
+  var bom  = '﻿';
+  var blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+  var fecha = new Date().toISOString().slice(0, 10);
+  var url   = URL.createObjectURL(blob);
+  var a     = document.createElement('a');
+  a.href     = url;
+  a.download = 'catalogo-totales-marca-' + fecha + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
 }
 
 /**
