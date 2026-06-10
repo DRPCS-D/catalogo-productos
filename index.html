@@ -1942,6 +1942,42 @@
       text-align: center;
     }
     .pmo-toolbar .pmo-hint strong { color: white; }
+    /* Control de escala persistente */
+    .pmo-scale {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(255,255,255,.12);
+      border-radius: 6px;
+      padding: 3px 5px;
+      flex-shrink: 0;
+    }
+    .pmo-scale-label {
+      font-size: 11px;
+      color: rgba(255,255,255,.85);
+      margin-right: 2px;
+    }
+    .pmo-scale-btn {
+      background: rgba(255,255,255,.18);
+      border: none;
+      color: white;
+      width: 26px;
+      height: 26px;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+    }
+    .pmo-scale-btn:hover { background: rgba(255,255,255,.30); }
+    .pmo-scale-val {
+      min-width: 38px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: white;
+    }
 
     .pmo-page {
       background: white;
@@ -1975,6 +2011,9 @@
         max-height: none !important;
         overflow: visible !important;
         background: white !important;
+        /* Escalado configurable por usuario (persistido en localStorage).
+           1 = 100%. iOS Safari y Chrome respetan `zoom` en print. */
+        zoom: var(--pmo-print-scale, 1);
       }
 
       .pmo-toolbar { display: none !important; }
@@ -5316,7 +5355,12 @@ function generatePDFMobile() {
   overlay.innerHTML =
     '<div class="pmo-toolbar">' +
       '<button class="pmo-close" onclick="closePdfMobile_()">✕ Cerrar</button>' +
-      '<div class="pmo-hint">Usá el menú del navegador <strong>⋮ → Imprimir</strong> y elegí <strong>"Guardar como PDF"</strong></div>' +
+      '<div class="pmo-scale" title="Ajusta el tamaño con el que se imprime. Se guarda en este dispositivo.">' +
+        '<span class="pmo-scale-label">Escala</span>' +
+        '<button class="pmo-scale-btn" onclick="adjustPmoScale_(-1)" aria-label="Reducir escala">−</button>' +
+        '<span class="pmo-scale-val" id="pmo-scale-val">100%</span>' +
+        '<button class="pmo-scale-btn" onclick="adjustPmoScale_(1)" aria-label="Aumentar escala">+</button>' +
+      '</div>' +
       '<button class="pmo-print" onclick="window.print()">🖨️ Imprimir</button>' +
     '</div>' +
     pagesHtml;
@@ -5324,6 +5368,7 @@ function generatePDFMobile() {
   overlay.classList.add('open');
   document.body.classList.add('pmo-active');   // necesario para @media print
   document.body.style.overflow = 'hidden';
+  applyPmoScale_(getPmoScale_());
 }
 
 function closePdfMobile_() {
@@ -5334,6 +5379,32 @@ function closePdfMobile_() {
   }
   document.body.classList.remove('pmo-active');
   document.body.style.overflow = '';
+}
+
+/* ---- Escalado configurable del PDF móvil (persistido) ---- */
+var PMO_SCALE_KEY = 'pmo_print_scale';
+var PMO_SCALE_MIN = 70;
+var PMO_SCALE_MAX = 110;
+function getPmoScale_() {
+  var raw = null;
+  try { raw = localStorage.getItem(PMO_SCALE_KEY); } catch (e) {}
+  var v = parseInt(raw || '100', 10);
+  if (isNaN(v)) v = 100;
+  if (v < PMO_SCALE_MIN) v = PMO_SCALE_MIN;
+  if (v > PMO_SCALE_MAX) v = PMO_SCALE_MAX;
+  return v;
+}
+function applyPmoScale_(v) {
+  document.documentElement.style.setProperty('--pmo-print-scale', (v / 100).toString());
+  var el = document.getElementById('pmo-scale-val');
+  if (el) el.textContent = v + '%';
+}
+function adjustPmoScale_(delta) {
+  var v = getPmoScale_() + delta;
+  if (v < PMO_SCALE_MIN) v = PMO_SCALE_MIN;
+  if (v > PMO_SCALE_MAX) v = PMO_SCALE_MAX;
+  try { localStorage.setItem(PMO_SCALE_KEY, v.toString()); } catch (e) {}
+  applyPmoScale_(v);
 }
 
 function generatePDF() {
