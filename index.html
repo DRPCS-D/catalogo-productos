@@ -2044,14 +2044,21 @@
          ~25mm verticales por hoja: cuadra al 100% en iPhone/iPad. */
       body.pmo-active #pdf-mobile-overlay .pdf-card-img,
       body.pmo-active #pdf-mobile-overlay .pdf-card-img-ph {
-        height: 32mm !important;
+        height: 27mm !important;
       }
       body.pmo-active #pdf-mobile-overlay .pdf-card-body {
-        padding: 1mm 2mm 1.5mm !important;
+        padding: 0.8mm 1.5mm 1mm !important;
       }
       body.pmo-active #pdf-mobile-overlay .pdf-grid {
-        gap: 2mm !important;
+        gap: 1.5mm !important;
       }
+      /* Tipografías un poco más chicas para ganar altura sin perder lectura */
+      body.pmo-active #pdf-mobile-overlay .pdf-card-cod    { font-size: 6.5pt !important; }
+      body.pmo-active #pdf-mobile-overlay .pdf-card-name   { font-size: 8.5pt !important; margin: 0.5mm 0 0.8mm !important; }
+      body.pmo-active #pdf-mobile-overlay .pdf-card-color  { font-size: 7pt !important; padding: 0.3mm 1.5mm !important; }
+      body.pmo-active #pdf-mobile-overlay .pdf-card-price  { font-size: 9pt !important; margin-top: 1mm !important; }
+      body.pmo-active #pdf-mobile-overlay .pdf-card-stock  { font-size: 8pt !important; margin-top: 1.2mm !important; }
+      body.pmo-active #pdf-mobile-overlay .pdf-card-grades { font-size: 6.5pt !important; line-height: 1.4 !important; margin-top: 0.6mm !important; }
       /* Encabezado más compacto solo en print */
       body.pmo-active #pdf-mobile-overlay .pdf-header {
         padding-bottom: 3mm !important;
