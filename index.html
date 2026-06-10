@@ -4951,6 +4951,10 @@ function exportToExcelTotalsByMarca_() {
   var headers = ['marca'].concat(sucursales).concat(['total']);
   var rows = [headers];
 
+  var sucTotals = {};
+  sucursales.forEach(function (suc) { sucTotals[suc] = 0; });
+  var grandTotal = 0;
+
   Object.keys(byMarca).sort().forEach(function (marca) {
     var perSuc = byMarca[marca];
     var total = 0;
@@ -4958,16 +4962,34 @@ function exportToExcelTotalsByMarca_() {
     sucursales.forEach(function (suc) {
       var q = perSuc[suc] || 0;
       total += q;
+      sucTotals[suc] += q;
       row.push(q ? q : '');
     });
     row.push(total);
-    if (total > 0) rows.push(row);   // omitir marcas sin stock en las sucursales del set
+    if (total > 0) {
+      rows.push(row);
+    } else {
+      // revertir contribución a sucTotals si no se incluye la fila
+      sucursales.forEach(function (suc) {
+        sucTotals[suc] -= (perSuc[suc] || 0);
+      });
+    }
   });
 
   if (rows.length <= 1) {
     alert('Los filtros activos no dejan ninguna fila para exportar.');
     return;
   }
+
+  // Fila TOTAL por sucursal
+  var totalRow = ['TOTAL'];
+  sucursales.forEach(function (suc) {
+    var q = sucTotals[suc] || 0;
+    grandTotal += q;
+    totalRow.push(q ? q : '');
+  });
+  totalRow.push(grandTotal);
+  rows.push(totalRow);
 
   // 4) Serializar y disparar la descarga
   var csv = rows.map(function (r) { return r.map(csvCell_).join(';'); }).join('\r\n');
@@ -5033,6 +5055,11 @@ function exportToExcel(opts) {
   var headers = baseHeaders.concat(sucursales);
   var rows    = [headers];
 
+  // Acumulador para fila TOTAL al final
+  var sucTotals = {};
+  sucursales.forEach(function (suc) { sucTotals[suc] = 0; });
+  var sucColStart = baseHeaders.length;   // índice donde arrancan las columnas de sucursal
+
   // 3) Filas: 1 por producto × color (× talle si withGrade), mismos filtros que galería/PDF
   filteredProducts.forEach(function (p) {
     var topVenta = STORE_NAMES[p.qMasVendio] || (p.qMasVendio ? ('Tienda ' + p.qMasVendio) : '');
@@ -5087,6 +5114,24 @@ function exportToExcel(opts) {
     alert('Los filtros activos no dejan ninguna fila para exportar.');
     return;
   }
+
+  // Sumar totales por sucursal a partir de las filas de datos (excluye header)
+  for (var i = 1; i < rows.length; i++) {
+    var r = rows[i];
+    sucursales.forEach(function (suc, idx) {
+      var v = r[sucColStart + idx];
+      if (typeof v === 'number') sucTotals[suc] += v;
+    });
+  }
+
+  // Fila TOTAL: etiqueta en la primera columna, vacías hasta las sucursales, luego sumas
+  var totalRow = new Array(baseHeaders.length).fill('');
+  totalRow[0] = 'TOTAL';
+  sucursales.forEach(function (suc) {
+    var q = sucTotals[suc] || 0;
+    totalRow.push(q ? q : '');
+  });
+  rows.push(totalRow);
 
   // 4) Serializar a CSV. Separador ';' para Excel en es-PY/AR.
   var csv = rows
