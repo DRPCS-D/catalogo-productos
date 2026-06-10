@@ -2713,6 +2713,7 @@ var tableAllProducts = [];   // se rearma en cada renderTable()
 var sentinelObserver = null; // IntersectionObserver para infinite scroll
 var lastUpdateTs     = 0;                       // timestamp del último fetch exitoso
 var STALE_THRESHOLD_MS = 90 * 60 * 1000;        // 90 min → chip pasa a estado "stale"
+var AUTO_REFRESH_THRESHOLD_MS = 5 * 60 * 60 * 1000;  // 5 h → dispara refresh automático
 var refreshChipTicker = null;
 
 // =================================================================
@@ -3087,10 +3088,28 @@ function relativeTime_(ms) {
   return 'hace ' + d + ' día' + (d > 1 ? 's' : '');
 }
 
-// Re-evalúa el texto del chip cada minuto sin tocar la red.
+// Re-evalúa el texto del chip cada minuto sin tocar la red. Si la data
+// lleva más de AUTO_REFRESH_THRESHOLD_MS sin actualizarse, dispara un
+// refresh silencioso para que el catálogo no quede arbitrariamente viejo
+// (por ejemplo, en una tablet que quedó abierta toda la noche o cuando
+// los timers de setInterval no dispararon por suspensión del SO).
 function startRefreshChipTicker() {
   if (refreshChipTicker) clearInterval(refreshChipTicker);
-  refreshChipTicker = setInterval(updateRefreshChip, 60 * 1000);
+  refreshChipTicker = setInterval(function () {
+    updateRefreshChip();
+    maybeAutoRefreshIfStale_();
+  }, 60 * 1000);
+}
+
+function maybeAutoRefreshIfStale_() {
+  if (!lastUpdateTs) return;
+  if (Date.now() - lastUpdateTs < AUTO_REFRESH_THRESHOLD_MS) return;
+  // Si el usuario tiene un modal/lightbox abierto, esperamos al siguiente ciclo
+  if (isUserBusy_()) return;
+  // Reutilizamos manualRefresh: muestra el spinner en el chip y NO se
+  // saltea si pasa algo, así el usuario ve que el catálogo se está
+  // actualizando solo después de muchas horas inactivo.
+  manualRefresh();
 }
 
 // Refresh manual disparado por click del usuario. Igual que silentRefresh_,
