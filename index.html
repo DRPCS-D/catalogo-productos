@@ -1916,8 +1916,16 @@
       padding-right: calc(12px + env(safe-area-inset-right, 0px));
       display: flex;
       align-items: center;
-      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      row-gap: 8px;
+      column-gap: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    }
+    /* En pantallas anchas: Cerrar a la izq, controles al medio, Imprimir a la der */
+    @media (min-width: 720px) {
+      .pmo-toolbar .pmo-close { margin-right: auto; }
+      .pmo-toolbar .pmo-print { margin-left: auto; }
     }
     .pmo-toolbar .pmo-close,
     .pmo-toolbar .pmo-print {
