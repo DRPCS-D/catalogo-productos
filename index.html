@@ -2083,7 +2083,7 @@
          ~25mm verticales por hoja: cuadra al 100% en iPhone/iPad. */
       body.pmo-active #pdf-mobile-overlay .pdf-card-img,
       body.pmo-active #pdf-mobile-overlay .pdf-card-img-ph {
-        height: 27mm !important;
+        height: var(--pmo-img-height, 27mm) !important;
       }
       body.pmo-active #pdf-mobile-overlay .pdf-card-body {
         padding: 0.8mm 1.5mm 1mm !important;
@@ -2260,8 +2260,8 @@
     #pdf-mobile-overlay .pdf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; }
     #pdf-mobile-overlay .pdf-card { border: 1px solid #cbd5e1; border-radius: 2.5mm; overflow: hidden;
       page-break-inside: avoid; break-inside: avoid; display: flex; flex-direction: column; background: white; }
-    #pdf-mobile-overlay .pdf-card-img { width: 100%; height: 45mm; object-fit: contain; background: #f1f5f9; display: block; }
-    #pdf-mobile-overlay .pdf-card-img-ph { width: 100%; height: 45mm; background: #f1f5f9; display: flex;
+    #pdf-mobile-overlay .pdf-card-img { width: 100%; height: var(--pmo-img-height, 45mm); object-fit: contain; background: #f1f5f9; display: block; }
+    #pdf-mobile-overlay .pdf-card-img-ph { width: 100%; height: var(--pmo-img-height, 45mm); background: #f1f5f9; display: flex;
       align-items: center; justify-content: center; color: #94a3b8; font-size: 18pt; }
     #pdf-mobile-overlay .pdf-card-body { padding: 2mm 3mm 3mm; }
     #pdf-mobile-overlay .pdf-card-cod { color: #64748b; font-size: 7pt; letter-spacing: 0.2px; }
@@ -5355,11 +5355,17 @@ function generatePDFMobile() {
   overlay.innerHTML =
     '<div class="pmo-toolbar">' +
       '<button class="pmo-close" onclick="closePdfMobile_()">✕ Cerrar</button>' +
-      '<div class="pmo-scale" title="Ajusta el tamaño con el que se imprime. Se guarda en este dispositivo.">' +
+      '<div class="pmo-scale" title="Ajusta el tamaño general con el que se imprime. Se guarda en este dispositivo.">' +
         '<span class="pmo-scale-label">Escala</span>' +
         '<button class="pmo-scale-btn" onclick="adjustPmoScale_(-1)" aria-label="Reducir escala">−</button>' +
         '<span class="pmo-scale-val" id="pmo-scale-val">100%</span>' +
         '<button class="pmo-scale-btn" onclick="adjustPmoScale_(1)" aria-label="Aumentar escala">+</button>' +
+      '</div>' +
+      '<div class="pmo-scale" title="Ajusta el alto de las fotos en el print. Se guarda en este dispositivo.">' +
+        '<span class="pmo-scale-label">Foto</span>' +
+        '<button class="pmo-scale-btn" onclick="adjustPmoImg_(-1)" aria-label="Foto más chica">−</button>' +
+        '<span class="pmo-scale-val" id="pmo-img-val">27mm</span>' +
+        '<button class="pmo-scale-btn" onclick="adjustPmoImg_(1)" aria-label="Foto más grande">+</button>' +
       '</div>' +
       '<button class="pmo-print" onclick="window.print()">🖨️ Imprimir</button>' +
     '</div>' +
@@ -5369,6 +5375,7 @@ function generatePDFMobile() {
   document.body.classList.add('pmo-active');   // necesario para @media print
   document.body.style.overflow = 'hidden';
   applyPmoScale_(getPmoScale_());
+  applyPmoImg_(getPmoImg_());
 }
 
 function closePdfMobile_() {
@@ -5405,6 +5412,32 @@ function adjustPmoScale_(delta) {
   if (v > PMO_SCALE_MAX) v = PMO_SCALE_MAX;
   try { localStorage.setItem(PMO_SCALE_KEY, v.toString()); } catch (e) {}
   applyPmoScale_(v);
+}
+
+/* ---- Alto de imagen configurable en print (persistido) ---- */
+var PMO_IMG_KEY = 'pmo_img_height';
+var PMO_IMG_MIN = 18;
+var PMO_IMG_MAX = 50;
+function getPmoImg_() {
+  var raw = null;
+  try { raw = localStorage.getItem(PMO_IMG_KEY); } catch (e) {}
+  var v = parseInt(raw || '27', 10);
+  if (isNaN(v)) v = 27;
+  if (v < PMO_IMG_MIN) v = PMO_IMG_MIN;
+  if (v > PMO_IMG_MAX) v = PMO_IMG_MAX;
+  return v;
+}
+function applyPmoImg_(v) {
+  document.documentElement.style.setProperty('--pmo-img-height', v + 'mm');
+  var el = document.getElementById('pmo-img-val');
+  if (el) el.textContent = v + 'mm';
+}
+function adjustPmoImg_(delta) {
+  var v = getPmoImg_() + delta;
+  if (v < PMO_IMG_MIN) v = PMO_IMG_MIN;
+  if (v > PMO_IMG_MAX) v = PMO_IMG_MAX;
+  try { localStorage.setItem(PMO_IMG_KEY, v.toString()); } catch (e) {}
+  applyPmoImg_(v);
 }
 
 function generatePDF() {
