@@ -1594,6 +1594,42 @@
       margin-bottom: 8px;
     }
 
+    /* ============ APP VERSION + FORCE UPDATE ============ */
+    .sidebar-footer .app-version-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--gray-200);
+    }
+    .sidebar-footer .app-version {
+      font-size: 11px;
+      color: var(--gray-500);
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+    .sidebar-footer .btn-force-update {
+      background: transparent;
+      border: 1px solid var(--gray-300);
+      color: var(--gray-600);
+      padding: 5px 9px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .sidebar-footer .btn-force-update:hover {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
     /* ============ EXPORT SECTIONS (PDF / Excel) — <details>/<summary> ============ */
     .sidebar-footer .export-section {
       border-top: 1px solid var(--gray-200);
@@ -2497,6 +2533,12 @@
       </label>
       <button class="btn-excel-side" id="btn-excel" onclick="exportExcelFromSwitch_()" title="Exportar a Excel (CSV) el filtro actual">Exportar Excel</button>
     </details>
+
+    <!-- Versión + Forzar actualización -->
+    <div class="app-version-row">
+      <span class="app-version" id="app-version" title="Versión de la app que estás ejecutando">v—</span>
+      <button class="btn-force-update" onclick="forceUpdateApp_()" title="Borra el cache local y descarga la última versión publicada.">↻ Actualizar app</button>
+    </div>
   </div>
 </aside>
 
@@ -3017,6 +3059,7 @@ function onProductsLoaded(data) {
   updateStats();
   markDataFresh();
   startRefreshChipTicker();
+  renderAppVersion_();
 
   // Auto-refresh silencioso DESACTIVADO. El usuario decide cuándo actualizar
   // con el botón 🔄 del header (que pasa a amber sutil tras 90 min).
@@ -3175,6 +3218,50 @@ function updateRefreshChip() {
   var diff = Date.now() - lastUpdateTs;
   label.textContent = 'Actualizado ' + relativeTime_(diff);
   chip.classList.toggle('stale', diff > STALE_THRESHOLD_MS);
+}
+
+/* ============ VERSIÓN DE LA APP + FORZAR ACTUALIZACIÓN ============
+   Bumpear APP_VERSION en cada deploy notable.
+   El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
+   el shell cacheado en clientes existentes. */
+var APP_VERSION  = '1.1.0';
+var APP_BUILD    = '2026-06-11';
+
+function renderAppVersion_() {
+  var el = document.getElementById('app-version');
+  if (el) el.textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
+}
+
+/* Limpia caches del SW, lo desregistra y recarga con cache-buster. */
+function forceUpdateApp_() {
+  if (!confirm('Esto descargará todo de nuevo y recargará la app.\n¿Continuar?')) return;
+
+  var btn = document.querySelector('.btn-force-update');
+  if (btn) { btn.textContent = '⏳ Actualizando...'; btn.disabled = true; }
+
+  var reload = function () {
+    var bust = (location.search ? '&' : '?') + 'v=' + Date.now();
+    location.replace(location.pathname + location.search + bust);
+  };
+
+  Promise.resolve()
+    .then(function () {
+      if (!('serviceWorker' in navigator)) return;
+      if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage('CLEAR_CACHES');
+      }
+      return navigator.serviceWorker.getRegistrations().then(function (regs) {
+        return Promise.all(regs.map(function (r) { return r.unregister(); }));
+      });
+    })
+    .then(function () {
+      if (!window.caches) return;
+      return caches.keys().then(function (keys) {
+        return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+      });
+    })
+    .then(reload)
+    .catch(reload);   // aunque falle alguna parte, recargamos igual
 }
 
 function relativeTime_(ms) {
