@@ -1556,6 +1556,44 @@
     }
     .sidebar-footer .btn-pdf-mobile-side:hover { background: rgba(245,158,11,.20); }
 
+    /* ============ FILTER MORE OPTIONS — <details>/<summary> colapsable ============ */
+    .sidebar .filter-more {
+      margin-top: 8px;
+      border-top: 1px solid var(--gray-200);
+      padding-top: 10px;
+    }
+    .sidebar .filter-more-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--gray-500);
+      font-weight: 700;
+      padding: 4px 0;
+      cursor: pointer;
+      user-select: none;
+      list-style: none;
+      transition: color .12s;
+    }
+    .sidebar .filter-more-title::-webkit-details-marker { display: none; }
+    .sidebar .filter-more-title:hover { color: var(--gray-700); }
+    .sidebar .filter-more-title::after {
+      content: '▸';
+      margin-left: auto;
+      color: var(--gray-400);
+      font-size: 10px;
+      transition: transform .15s ease;
+    }
+    .sidebar .filter-more[open] > .filter-more-title::after {
+      transform: rotate(90deg);
+      color: var(--primary);
+    }
+    .sidebar .filter-more[open] > .filter-more-title {
+      margin-bottom: 8px;
+    }
+
     /* ============ EXPORT SECTIONS (PDF / Excel) — <details>/<summary> ============ */
     .sidebar-footer .export-section {
       border-top: 1px solid var(--gray-200);
@@ -2384,27 +2422,12 @@
     <label class="sidebar-label" data-section="sucursal"><span class="sl-icon">🏪</span>Sucursal</label>
     <div class="multi-select" id="filter-sucursal" data-placeholder="Todas las sucursales" data-noun="sucursal" data-section="sucursal"></div>
 
-    <label class="sidebar-label"><span class="sl-icon">₲</span>Precio (₲)</label>
-    <div class="price-range" title="Rango de precio en guaraníes">
-      <span class="price-label">₲</span>
-      <input type="number" id="filter-precio-min" min="0" step="1000" placeholder="Mín" inputmode="numeric">
-      <span class="price-sep">—</span>
-      <input type="number" id="filter-precio-max" min="0" step="1000" placeholder="Máx" inputmode="numeric">
-    </div>
-
     <label class="sidebar-label"><span class="sl-icon">📦</span>Stock por color</label>
     <div class="stock-range" title="Stock total por color del producto">
       <span class="price-label">#</span>
       <input type="number" id="filter-stock-min" min="0" step="1" placeholder="Mín" inputmode="numeric">
       <span class="price-sep">—</span>
       <input type="number" id="filter-stock-max" min="0" step="1" placeholder="Máx" inputmode="numeric">
-    </div>
-
-    <label class="sidebar-label"><span class="sl-icon">📅</span>Última compra (rango de fechas)</label>
-    <div class="date-range" title="Rango de fecha de última compra. La fecha es la más reciente entre todas las sucursales del producto.">
-      <input type="date" id="filter-ultcmp-desde" placeholder="Desde">
-      <span class="price-sep">—</span>
-      <input type="date" id="filter-ultcmp-hasta" placeholder="Hasta">
     </div>
 
     <label class="sidebar-label"><span class="sl-icon">📷</span>Imagen</label>
@@ -2414,12 +2437,31 @@
       <button type="button" data-value="without">Sin foto</button>
     </div>
 
-    <label class="sidebar-label" data-section="promo"><span class="sl-icon">🔥</span>Promoción (sobre el precio activo)</label>
-    <div class="segmented" id="filter-promo" role="radiogroup" data-section="promo">
-      <button type="button" data-value="all"     class="active">Todos</button>
-      <button type="button" data-value="with">En promo</button>
-      <button type="button" data-value="without">Sin promo</button>
-    </div>
+    <details class="filter-more">
+      <summary class="filter-more-title">⚙️ Más opciones</summary>
+
+      <label class="sidebar-label"><span class="sl-icon">₲</span>Precio (₲)</label>
+      <div class="price-range" title="Rango de precio en guaraníes">
+        <span class="price-label">₲</span>
+        <input type="number" id="filter-precio-min" min="0" step="1000" placeholder="Mín" inputmode="numeric">
+        <span class="price-sep">—</span>
+        <input type="number" id="filter-precio-max" min="0" step="1000" placeholder="Máx" inputmode="numeric">
+      </div>
+
+      <label class="sidebar-label"><span class="sl-icon">📅</span>Última compra (rango de fechas)</label>
+      <div class="date-range" title="Rango de fecha de última compra. La fecha es la más reciente entre todas las sucursales del producto.">
+        <input type="date" id="filter-ultcmp-desde" placeholder="Desde">
+        <span class="price-sep">—</span>
+        <input type="date" id="filter-ultcmp-hasta" placeholder="Hasta">
+      </div>
+
+      <label class="sidebar-label" data-section="promo"><span class="sl-icon">🔥</span>Promoción (sobre el precio activo)</label>
+      <div class="segmented" id="filter-promo" role="radiogroup" data-section="promo">
+        <button type="button" data-value="all"     class="active">Todos</button>
+        <button type="button" data-value="with">En promo</button>
+        <button type="button" data-value="without">Sin promo</button>
+      </div>
+    </details>
 
   </div>
 
