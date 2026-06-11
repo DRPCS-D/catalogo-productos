@@ -3799,9 +3799,9 @@ function buildMultiSelect(id, opts, selectedArr) {
   });
 
   search.addEventListener('input', function () {
-    var q = search.value.toLowerCase().trim();
+    var q = normTxt_(search.value).trim();
     list.querySelectorAll('.multi-option').forEach(function (o) {
-      var val = o.getAttribute('data-value').toLowerCase();
+      var val = normTxt_(o.getAttribute('data-value'));
       o.style.display = (!q || val.indexOf(q) >= 0) ? '' : 'none';
     });
   });
@@ -3904,14 +3904,15 @@ function _productPassesFilters_(p, skipSearch) {
   if (filterPromo === 'with' && !productHasActivePromo_(p)) return false;
   if (filterPromo === 'without' && productHasActivePromo_(p)) return false;
 
-  // Búsqueda por texto (se puede saltar para los similares)
+  // Búsqueda por texto (se puede saltar para los similares).
+  // Insensible a mayúsculas y a acentos (normTxt_).
   if (!skipSearch) {
-    var q = searchText.toLowerCase().trim();
+    var q = normTxt_(searchText).trim();
     if (q) {
       var inProd = [p.codFabrica, p.nmProduto, p.marca, p.grupo, p.subgrupo, p.colecao]
-        .some(function (v) { return v && String(v).toLowerCase().indexOf(q) >= 0; });
+        .some(function (v) { return v && normTxt_(v).indexOf(q) >= 0; });
       var inColor = p.colorsArr.some(function (c) {
-        return c.color && c.color.toLowerCase().indexOf(q) >= 0;
+        return c.color && normTxt_(c.color).indexOf(q) >= 0;
       });
       if (!inProd && !inColor) return false;
     }
@@ -4967,6 +4968,14 @@ function fmtDate(d) {
   if (!d) return '—';
   var p = String(d).split('-');
   return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : d;
+}
+
+/* Normaliza texto para búsquedas: minúsculas + sin acentos/diacríticos.
+   "Café" → "cafe", "PIÑON" → "pinon", "Açaí" → "acai". */
+function normTxt_(s) {
+  if (s == null) return '';
+  // ̀-ͯ = bloque "Combining Diacritical Marks" (acentos, tildes, etc.)
+  return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
 function escHtml(s) {
