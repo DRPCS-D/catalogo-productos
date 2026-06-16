@@ -10,9 +10,9 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v4: sumamos botón "Forzar actualización" en la app. Bumpeamos versión
-// para invalidar el shell v3 en clientes ya instalados.
-const CACHE_VERSION = 'v4';
+// v5: rediseño visual completo (tokens del mockup Stitch). Bump para
+// invalidar el shell v4 cacheado y que todos descarguen el HTML/CSS nuevo.
+const CACHE_VERSION = 'v5';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
