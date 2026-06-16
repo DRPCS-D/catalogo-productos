@@ -1679,17 +1679,22 @@
       border-top: 1px solid var(--gray-200);
     }
     .sidebar-footer .app-version {
-      font-size: 11px;
+      font-size: 10px;
       color: var(--gray-500);
       font-weight: 600;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1 1 auto;
+      min-width: 0;
     }
     .sidebar-footer .btn-force-update {
       background: transparent;
       border: 1px solid var(--gray-300);
       color: var(--gray-600);
       padding: 5px 9px;
-      border-radius: 6px;
+      border-radius: var(--radius);
       font-size: 11px;
       font-weight: 600;
       cursor: pointer;
@@ -1697,6 +1702,8 @@
       display: inline-flex;
       align-items: center;
       gap: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
     .sidebar-footer .btn-force-update:hover {
       background: var(--primary);
