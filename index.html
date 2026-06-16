@@ -213,32 +213,34 @@
       animation: spin .8s linear infinite;
     }
 
-    .view-toggle {
+    /* Acciones a la derecha del header: refresh + toggle de vista */
+    .header-actions {
       display: flex;
-      background: rgba(255,255,255,.12);
-      border-radius: 8px;
-      padding: 3px;
-      gap: 2px;
+      align-items: center;
+      gap: 6px;
       flex-shrink: 0;
     }
 
-    .view-btn {
-      padding: 6px 12px;
+    /* Botón único que alterna entre Galería y Tabla */
+    .view-toggle-btn {
+      width: 38px;
+      height: 38px;
       border: none;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 500;
-      color: rgba(255,255,255,.65);
-      background: transparent;
-      transition: all .15s;
-      white-space: nowrap;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.12);
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      line-height: 1;
+      transition: background .15s, transform .1s;
+      flex-shrink: 0;
     }
-
-    .view-btn.active {
-      background: white;
-      color: var(--primary);
-      box-shadow: var(--shadow-sm);
-    }
+    .view-toggle-btn:hover  { background: rgba(255,255,255,.22); }
+    .view-toggle-btn:active { transform: scale(.94); }
+    .view-toggle-icon { display: inline-block; }
 
     /* ===== FILTER BAR ===== */
     .filter-bar {
@@ -1858,7 +1860,7 @@
       .logo-icon { width: 32px; height: 32px; font-size: 11px; }
       .header-title { font-size: 14px; }
       .header-sub { font-size: 11px; }
-      .view-btn { padding: 5px 8px; font-size: 11px; }
+      .view-toggle-btn { width: 34px; height: 34px; font-size: 16px; }
 
       /* Filter-bar compacto */
       .filter-inner { padding: 6px 10px; gap: 6px; }
@@ -1935,7 +1937,7 @@
       /* --- HEADER --- */
       .header-inner { padding: 10px 16px; }
       .header-title { font-size: 16px; }
-      .view-btn { padding: 8px 14px; font-size: 13px; min-height: 40px; }
+      .view-toggle-btn { width: 42px; height: 42px; font-size: 20px; }
       .refresh-chip { padding: 7px 13px; font-size: 12px; min-height: 36px; }
 
       /* --- BUSCADOR --- */
@@ -2455,17 +2457,17 @@
         <div class="header-title">Catálogo de Productos</div>
         <div class="header-sub" id="stats-bar">
           <span id="stats-count">Cargando datos...</span>
-          <span class="stats-sep">·</span>
-          <button class="refresh-chip" id="refresh-chip" onclick="manualRefresh()" title="Actualizar ahora">
-            <span class="refresh-icon">🔄</span>
-            <span id="refresh-label">—</span>
-          </button>
         </div>
       </div>
     </div>
-    <div class="view-toggle">
-      <button class="view-btn active" id="btn-gallery" onclick="switchView('gallery')">⊞ Galería</button>
-      <button class="view-btn"        id="btn-table"   onclick="switchView('table')">☰ Tabla</button>
+    <div class="header-actions">
+      <button class="refresh-chip" id="refresh-chip" onclick="manualRefresh()" title="Actualizar ahora">
+        <span class="refresh-icon">🔄</span>
+        <span id="refresh-label">—</span>
+      </button>
+      <button class="view-toggle-btn" id="btn-view-toggle" onclick="toggleView_()" title="Cambiar vista (Galería / Tabla)" aria-label="Cambiar vista">
+        <span class="view-toggle-icon" id="view-toggle-icon">⊞</span>
+      </button>
     </div>
   </div>
 </header>
@@ -3286,10 +3288,11 @@ function updateRefreshChip() {
   var chip  = document.getElementById('refresh-chip');
   if (!label || !chip) return;
 
-  if (!lastUpdateTs) { label.textContent = 'Actualizar'; chip.classList.remove('stale'); return; }
+  if (!lastUpdateTs) { label.textContent = '—'; chip.classList.remove('stale'); return; }
 
   var diff = Date.now() - lastUpdateTs;
-  label.textContent = 'Actualizado ' + relativeTime_(diff);
+  // Sólo el tiempo relativo, sin prefijo "Actualizado"
+  label.textContent = relativeTime_(diff);
   chip.classList.toggle('stale', diff > STALE_THRESHOLD_MS);
 }
 
@@ -3297,7 +3300,7 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.2.0';
+var APP_VERSION  = '1.2.1';
 var APP_BUILD    = '2026-06-11';
 
 function renderAppVersion_() {
@@ -4981,10 +4984,19 @@ function switchView(view) {
 
   document.getElementById('table-view').style.display   = isTable ? 'block' : 'none';
   document.getElementById('gallery-view').style.display = isTable ? 'none'  : 'block';
-  document.getElementById('btn-table').className   = 'view-btn' + ( isTable ? ' active' : '');
-  document.getElementById('btn-gallery').className = 'view-btn' + (!isTable ? ' active' : '');
+
+  // El botón único muestra el ícono de la vista en la que estás ahora.
+  // Tocarlo te lleva a la otra.
+  var icon = document.getElementById('view-toggle-icon');
+  var btn  = document.getElementById('btn-view-toggle');
+  if (icon) icon.textContent = isTable ? '☰' : '⊞';
+  if (btn)  btn.title = 'Cambiar a ' + (isTable ? 'galería' : 'tabla');
 
   renderCurrentView();
+}
+
+function toggleView_() {
+  switchView(currentView === 'table' ? 'gallery' : 'table');
 }
 
 // =================================================================
