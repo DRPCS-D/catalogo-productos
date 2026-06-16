@@ -3495,6 +3495,28 @@ function manualRefresh() {
     });
 }
 
+/* Scroll del contenedor .sidebar-body para que la etiqueta del filtro
+   quede arriba (con un poco de aire), dejando lugar debajo al panel
+   del multi-select recién abierto. Espera un frame para que el panel
+   ya esté visible y los cálculos de layout sean correctos. */
+function scrollFilterToTop_(root) {
+  var sidebarBody = root.closest && root.closest('.sidebar-body');
+  if (!sidebarBody) return;
+  var anchor = root.previousElementSibling;
+  if (!anchor || !anchor.classList || !anchor.classList.contains('sidebar-label')) {
+    anchor = root;
+  }
+  requestAnimationFrame(function () {
+    var rect    = anchor.getBoundingClientRect();
+    var boxRect = sidebarBody.getBoundingClientRect();
+    var delta   = rect.top - boxRect.top;
+    sidebarBody.scrollTo({
+      top:      sidebarBody.scrollTop + delta - 8,   // 8px de aire arriba
+      behavior: 'smooth'
+    });
+  });
+}
+
 // ¿El usuario está usando un overlay que no se debe interrumpir?
 function isUserBusy_() {
   var modal = document.getElementById('modal');
@@ -3973,6 +3995,9 @@ function buildMultiSelect(id, opts, selectedArr) {
       search.value = '';
       list.querySelectorAll('.multi-option').forEach(function (o) { o.style.display = ''; });
       setTimeout(function () { search.focus(); }, 0);
+      // Scroll del contenedor de la sidebar para que la etiqueta del filtro
+      // quede arriba y el panel desplegable tenga espacio debajo.
+      scrollFilterToTop_(root);
     }
   });
 
