@@ -3288,11 +3288,13 @@ function updateRefreshChip() {
   var chip  = document.getElementById('refresh-chip');
   if (!label || !chip) return;
 
-  if (!lastUpdateTs) { label.textContent = '—'; chip.classList.remove('stale'); return; }
+  if (!lastUpdateTs) { label.textContent = ''; chip.classList.remove('stale'); return; }
 
   var diff = Date.now() - lastUpdateTs;
-  // Sólo el tiempo relativo, sin prefijo "Actualizado"
-  label.textContent = relativeTime_(diff);
+  // Sólo el número + unidad (ej. "23 min", "2 h"). Si es "recién" → vacío
+  // para que el chip muestre nada más el ícono 🔄.
+  var t = relativeTime_(diff).replace(/^hace\s+/, '');
+  label.textContent = (t === 'recién') ? '' : t;
   chip.classList.toggle('stale', diff > STALE_THRESHOLD_MS);
 }
 
