@@ -3309,7 +3309,7 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.2.1';
+var APP_VERSION  = '1.2.2';
 var APP_BUILD    = '2026-06-11';
 
 function renderAppVersion_() {
@@ -3502,17 +3502,29 @@ function manualRefresh() {
 function scrollFilterToTop_(root) {
   var sidebarBody = root.closest && root.closest('.sidebar-body');
   if (!sidebarBody) return;
+  // Anclar al .sidebar-label que precede al multi-select; fallback al root.
   var anchor = root.previousElementSibling;
-  if (!anchor || !anchor.classList || !anchor.classList.contains('sidebar-label')) {
-    anchor = root;
+  while (anchor && (!anchor.classList || !anchor.classList.contains('sidebar-label'))) {
+    anchor = anchor.previousElementSibling;
   }
+  if (!anchor) anchor = root;
+
+  // Doble rAF: damos margen a que el panel ya esté display:block y el layout
+  // recalculado, así rect.top es post-apertura. Algunos browsers (Safari iOS)
+  // a veces ignoran el primer rAF inmediato tras un cambio de clase.
   requestAnimationFrame(function () {
-    var rect    = anchor.getBoundingClientRect();
-    var boxRect = sidebarBody.getBoundingClientRect();
-    var delta   = rect.top - boxRect.top;
-    sidebarBody.scrollTo({
-      top:      sidebarBody.scrollTop + delta - 8,   // 8px de aire arriba
-      behavior: 'smooth'
+    requestAnimationFrame(function () {
+      var rect    = anchor.getBoundingClientRect();
+      var boxRect = sidebarBody.getBoundingClientRect();
+      var delta   = rect.top - boxRect.top;
+      var target  = Math.max(0, sidebarBody.scrollTop + delta - 8);
+
+      try {
+        sidebarBody.scrollTo({ top: target, behavior: 'smooth' });
+      } catch (e) {
+        // Fallback para webviews sin opciones de scrollTo
+        sidebarBody.scrollTop = target;
+      }
     });
   });
 }
