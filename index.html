@@ -1594,6 +1594,54 @@
       margin-bottom: 8px;
     }
 
+    /* ============ BANNER NUEVA VERSIÓN DISPONIBLE ============ */
+    .update-banner {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+      z-index: 800;
+      background: var(--primary);
+      color: white;
+      padding: 10px 14px 10px 16px;
+      border-radius: 999px;
+      box-shadow: 0 6px 24px rgba(0,0,0,.25);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      max-width: calc(100vw - 32px);
+      animation: updateBannerIn .35s ease-out;
+    }
+    .update-banner .update-banner-btn {
+      background: rgba(255,255,255,.20);
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .15s;
+    }
+    .update-banner .update-banner-btn:hover { background: rgba(255,255,255,.32); }
+    .update-banner .update-banner-close {
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,.7);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      padding: 2px 4px;
+    }
+    .update-banner .update-banner-close:hover { color: white; }
+    @keyframes updateBannerIn {
+      from { opacity: 0; transform: translate(-50%, 20px); }
+      to   { opacity: 1; transform: translate(-50%, 0);    }
+    }
+
     /* ============ APP VERSION + FORCE UPDATE ============ */
     .sidebar-footer .app-version-row {
       display: flex;
@@ -3060,6 +3108,7 @@ function onProductsLoaded(data) {
   markDataFresh();
   startRefreshChipTicker();
   renderAppVersion_();
+  initAppAutoUpdate_();
 
   // Auto-refresh silencioso DESACTIVADO. El usuario decide cuándo actualizar
   // con el botón 🔄 del header (que pasa a amber sutil tras 90 min).
@@ -3264,6 +3313,81 @@ function forceUpdateApp_() {
     .catch(reload);   // aunque falle alguna parte, recargamos igual
 }
 
+/* ===================== AUTO-UPDATE EN BACKGROUND =====================
+   Política: detectar nuevas versiones del Service Worker en segundo plano
+   y aplicar la actualización SIN interrumpir al usuario:
+     - Chequeo cada 30 min: registration.update() trae sw.js fresco.
+     - Si hay un SW nuevo en estado "installed/waiting" → mostramos un
+       banner discreto "Nueva versión · Recargar".
+     - Recarga silenciosa automática cuando:
+         (a) el usuario sale y vuelve a la app (visibilitychange),
+         (b) o el ticker de 5h dispara y isUserBusy_() == false.
+     - Nunca recargamos con modales/inputs/overlays activos. */
+var _newSwWaiting   = null;
+var SW_CHECK_MS     = 30 * 60 * 1000;
+var _swReloadInProgress = false;
+
+function initAppAutoUpdate_() {
+  if (!('serviceWorker' in navigator)) return;
+
+  navigator.serviceWorker.getRegistration().then(function (reg) {
+    if (!reg) return;
+
+    // Si ya hay un SW esperando (caso: deploy ocurrió antes de que abrieran)
+    if (reg.waiting && navigator.serviceWorker.controller) {
+      _newSwWaiting = reg.waiting;
+      showUpdateBanner_();
+    }
+
+    // Detección en vivo
+    reg.addEventListener('updatefound', function () {
+      var inst = reg.installing;
+      if (!inst) return;
+      inst.addEventListener('statechange', function () {
+        if (inst.state === 'installed' && navigator.serviceWorker.controller) {
+          _newSwWaiting = inst;
+          showUpdateBanner_();
+        }
+      });
+    });
+
+    // Polling periódico
+    setInterval(function () {
+      reg.update().catch(function () {});
+    }, SW_CHECK_MS);
+  }).catch(function () {});
+
+  // Al volver a la app (cambió de tab/app y volvió) → momento seguro para recargar
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && _newSwWaiting && !isUserBusy_()) {
+      activateNewSwAndReload_();
+    }
+  });
+}
+
+function showUpdateBanner_() {
+  var el = document.getElementById('update-banner');
+  if (el) el.style.display = '';
+}
+
+function activateNewSwAndReload_() {
+  if (!_newSwWaiting || _swReloadInProgress) return;
+  _swReloadInProgress = true;
+  var sw = _newSwWaiting;
+  _newSwWaiting = null;
+
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (_swReloadInProgress) { _swReloadInProgress = false; location.reload(); }
+  }, { once: true });
+
+  sw.postMessage('SKIP_WAITING');
+
+  // Fallback: si el controllerchange no llega en 4s, recargar igual
+  setTimeout(function () {
+    if (_swReloadInProgress) { _swReloadInProgress = false; location.reload(); }
+  }, 4000);
+}
+
 function relativeTime_(ms) {
   var s = Math.floor(ms / 1000);
   if (s < 60) return 'recién';
@@ -3293,6 +3417,10 @@ function maybeAutoRefreshIfStale_() {
   if (Date.now() - lastUpdateTs < AUTO_REFRESH_THRESHOLD_MS) return;
   // Si el usuario tiene un modal/lightbox abierto, esperamos al siguiente ciclo
   if (isUserBusy_()) return;
+  // Si hay una nueva versión de la app esperando, aprovechamos este momento
+  // (5h+ inactivo, sin overlays) para recargar silenciosamente. Esto reemplaza
+  // el manualRefresh: la recarga completa ya trae datos frescos.
+  if (_newSwWaiting) { activateNewSwAndReload_(); return; }
   // Reutilizamos manualRefresh: muestra el spinner en el chip y NO se
   // saltea si pasa algo, así el usuario ve que el catálogo se está
   // actualizando solo después de muchas horas inactivo.
@@ -3341,6 +3469,20 @@ function isUserBusy_() {
 
   var confirm = document.getElementById('confirm-overlay');
   if (confirm && confirm.classList.contains('open')) return true;
+
+  // Overlay del PDF móvil (preparando impresión)
+  var pmo = document.getElementById('pdf-mobile-overlay');
+  if (pmo && pmo.classList.contains('open')) return true;
+
+  // Sidebar abierta en móvil (filtrando)
+  var sb = document.querySelector('.sidebar.open');
+  if (sb) return true;
+
+  // Input enfocado: probablemente está escribiendo
+  var ae = document.activeElement;
+  if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT')) {
+    return true;
+  }
 
   return false;
 }
@@ -5793,5 +5935,13 @@ function buildFilterSummary_() {
 // La lógica vive en attachSentinel_, appendNextGalleryBatch, appendNextTableBatch
 // y updateInfiniteFooter_ (ver bloque RENDER — GALERÍA arriba).
 </script>
+
+<!-- Banner discreto que aparece cuando hay una nueva versión instalada y esperando -->
+<div id="update-banner" class="update-banner" style="display:none">
+  <span>🎉 Nueva versión disponible</span>
+  <button class="update-banner-btn" onclick="activateNewSwAndReload_()">Recargar</button>
+  <button class="update-banner-close" onclick="document.getElementById('update-banner').style.display='none'" title="Ocultar">×</button>
+</div>
+
 </body>
 </html>
