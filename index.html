@@ -3217,9 +3217,22 @@ function applyPageConfig() {
           });
         });
       });
-      var matched = Object.keys(available).filter(function (name) {
-        var norm = name.toLowerCase();
-        return requested.some(function (q) { return norm.indexOf(q) >= 0; });
+      // Para cada query: si hay match exacto (case-insensitive) sobre alguna
+      // sucursal real, usar SOLO ese exacto. Si no, caer a substring para
+      // permitir abreviaciones tipo ?suc=centro → PATA CENTRO.
+      // Evita que "ROCK SPORT" matchee "ROCK SPORT KM7".
+      var availableList = Object.keys(available);
+      var matched = [];
+      requested.forEach(function (q) {
+        var exact = availableList.filter(function (name) {
+          return name.toLowerCase() === q;
+        });
+        var hits = exact.length ? exact : availableList.filter(function (name) {
+          return name.toLowerCase().indexOf(q) >= 0;
+        });
+        hits.forEach(function (n) {
+          if (matched.indexOf(n) < 0) matched.push(n);
+        });
       });
       if (cfg.locked && cfg.sucursales && cfg.sucursales.length) {
         var allowedSet = {};
