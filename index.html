@@ -463,10 +463,16 @@
     .cart-line-remove:hover { background: #fee2e2; color: #dc2626; }
 
     .cart-summary {
-      background: white;
+      background: rgba(255,255,255,.97);
+      backdrop-filter: saturate(140%) blur(6px);
+      -webkit-backdrop-filter: saturate(140%) blur(6px);
       border: 1px solid var(--gray-200);
       border-radius: 8px;
-      padding: 18px;
+      padding: 14px 18px;
+      position: sticky;
+      bottom: 12px;
+      box-shadow: 0 -2px 14px rgba(0,0,0,.06), 0 6px 18px rgba(0,0,0,.08);
+      z-index: 5;
     }
     .cart-summary-row {
       display: flex;
@@ -4090,7 +4096,7 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.4.0';
+var APP_VERSION  = '1.4.1';
 var APP_BUILD    = '2026-06-19';
 
 function renderAppVersion_() {
