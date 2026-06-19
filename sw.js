@@ -10,9 +10,9 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v5: rediseño visual completo (tokens del mockup Stitch). Bump para
-// invalidar el shell v4 cacheado y que todos descarguen el HTML/CSS nuevo.
-const CACHE_VERSION = 'v5';
+// v6: fix de match exacto en ?suc= (ROCK SPORT ya no agarra ROCK SPORT KM7).
+// Bump para invalidar el shell v5 cacheado y propagar el código nuevo.
+const CACHE_VERSION = 'v6';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
