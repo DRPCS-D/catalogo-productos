@@ -10,9 +10,9 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v10: carrito fase 3 — vista detallada editable (foto, precio, control
-// cantidad in-place, eliminar línea, vaciar todo, totales). Falta fase 4: PDF.
-const CACHE_VERSION = 'v10';
+// v11: carrito fase 4 — PDF nota de pedido (overlay + window.print) con
+// header, tabla de líneas, totales y espacios para firmas.
+const CACHE_VERSION = 'v11';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

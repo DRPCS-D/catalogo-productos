@@ -520,6 +520,183 @@
       #cart-view { padding: 12px; }
     }
 
+    /* ===== CART PDF OVERLAY (nota de pedido) ===== */
+    #cart-pdf-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--gray-100);
+      z-index: 300;
+      overflow-y: auto;
+    }
+    #cart-pdf-overlay.open { display: block; }
+    .cpo-toolbar {
+      position: sticky;
+      top: 0;
+      background: var(--gray-900);
+      color: white;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.2);
+      z-index: 2;
+    }
+    .cpo-close, .cpo-print {
+      padding: 8px 14px;
+      border: 1px solid rgba(255,255,255,.3);
+      background: transparent;
+      color: white;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .cpo-close:hover { background: rgba(255,255,255,.12); }
+    .cpo-print {
+      background: white;
+      color: var(--gray-900);
+      border-color: white;
+      margin-left: auto;
+    }
+    .cpo-print:hover { background: var(--gray-100); }
+    .cpo-hint {
+      font-size: 12px;
+      color: rgba(255,255,255,.7);
+      flex: 1;
+    }
+
+    .cpo-page {
+      max-width: 210mm;
+      margin: 18px auto;
+      padding: 18mm 15mm;
+      background: white;
+      box-shadow: 0 2px 12px rgba(0,0,0,.1);
+      color: var(--gray-900);
+      font-size: 11pt;
+      line-height: 1.4;
+    }
+    .cpo-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      border-bottom: 2px solid var(--gray-900);
+      padding-bottom: 10px;
+      margin-bottom: 14px;
+    }
+    .cpo-head-title { font-size: 18pt; font-weight: 700; margin-bottom: 2px; }
+    .cpo-head-sub { font-size: 9pt; color: var(--gray-600); }
+    .cpo-head-meta { text-align: right; font-size: 10pt; }
+    .cpo-head-meta-row { margin-bottom: 4px; }
+    .cpo-head-meta-row b { font-weight: 700; }
+
+    .cpo-cliente {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 14px;
+      font-size: 10pt;
+    }
+    .cpo-cliente-field {
+      flex: 1;
+      border-bottom: 1px solid var(--gray-400);
+      padding-bottom: 2px;
+    }
+    .cpo-cliente-label { font-size: 8pt; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.3px; }
+
+    .cpo-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9.5pt;
+      margin-bottom: 12px;
+    }
+    .cpo-table th, .cpo-table td {
+      border: 1px solid var(--gray-300);
+      padding: 5px 6px;
+      vertical-align: middle;
+    }
+    .cpo-table th {
+      background: var(--gray-100);
+      font-weight: 700;
+      text-align: left;
+      font-size: 9pt;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+    }
+    .cpo-table .cpo-col-num { width: 22px; text-align: center; color: var(--gray-500); }
+    .cpo-table .cpo-col-foto { width: 50px; padding: 2px; text-align: center; }
+    .cpo-table .cpo-col-foto img { width: 44px; height: 44px; object-fit: cover; border-radius: 3px; }
+    .cpo-table .cpo-col-foto-ph { color: var(--gray-300); font-size: 18pt; }
+    .cpo-table .cpo-col-cod { width: 60px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 9pt; }
+    .cpo-table .cpo-col-color, .cpo-table .cpo-col-talle { width: 60px; }
+    .cpo-table .cpo-col-cant { width: 50px; text-align: center; font-weight: 700; }
+    .cpo-table .cpo-col-precio, .cpo-table .cpo-col-subtotal { width: 80px; text-align: right; white-space: nowrap; }
+    .cpo-table .cpo-col-subtotal { font-weight: 700; }
+    .cpo-table tbody tr:nth-child(even) { background: rgba(0,0,0,.015); }
+
+    .cpo-totals {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 18px;
+    }
+    .cpo-totals-box {
+      min-width: 240px;
+      border: 1px solid var(--gray-300);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .cpo-totals-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 10px;
+      font-size: 10pt;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .cpo-totals-row:last-child { border-bottom: none; }
+    .cpo-totals-row.cpo-totals-grand {
+      background: var(--gray-900);
+      color: white;
+      font-size: 12pt;
+      font-weight: 700;
+    }
+
+    .cpo-foot {
+      display: flex;
+      gap: 30px;
+      margin-top: 26px;
+      font-size: 9pt;
+    }
+    .cpo-firma {
+      flex: 1;
+      text-align: center;
+      border-top: 1px solid var(--gray-700);
+      padding-top: 4px;
+      color: var(--gray-600);
+    }
+
+    /* PRINT — solo el overlay del PDF nota de pedido visible */
+    @media print {
+      body.cart-pdf-active > *:not(#cart-pdf-overlay) { display: none !important; }
+      body.cart-pdf-active #cart-pdf-overlay {
+        display: block !important;
+        position: static !important;
+        background: white !important;
+        overflow: visible !important;
+      }
+      body.cart-pdf-active .cpo-toolbar { display: none !important; }
+      body.cart-pdf-active .cpo-page {
+        max-width: none;
+        margin: 0;
+        padding: 12mm;
+        box-shadow: none;
+        page-break-after: always;
+      }
+      body.cart-pdf-active .cpo-page:last-child { page-break-after: auto; }
+      body.cart-pdf-active .cpo-table thead { display: table-header-group; }
+      body.cart-pdf-active .cpo-table tr { page-break-inside: avoid; }
+      @page { size: A4; margin: 0; }
+    }
+
     /* ===== FILTER BAR ===== */
     .filter-bar {
       background: white;
@@ -3913,7 +4090,7 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.3.2';
+var APP_VERSION  = '1.4.0';
 var APP_BUILD    = '2026-06-19';
 
 function renderAppVersion_() {
@@ -6092,9 +6269,145 @@ function confirmClearCart_() {
   }
 }
 
+// =================================================================
+// PDF NOTA DE PEDIDO — overlay paralelo al PDF de catálogo (pmo_*)
+// Usa el flujo window.print() del browser; el usuario elige
+// "Guardar como PDF" o imprime en papel.
+// =================================================================
 function exportCartPdf_() {
-  alert('La exportación a PDF "nota de pedido" llega en la fase 4 (próximo paso).');
+  var keys = Object.keys(cart);
+  if (!keys.length) {
+    alert('El carrito está vacío. Agregá productos antes de exportar.');
+    return;
+  }
+
+  var fecha = new Date().toLocaleDateString('es-PY',
+    { day: '2-digit', month: '2-digit', year: 'numeric' });
+  var hora  = new Date().toLocaleTimeString('es-PY',
+    { hour: '2-digit', minute: '2-digit' });
+  var modoLabel = (window.PAGE_CONFIG && window.PAGE_CONFIG.title)
+    ? window.PAGE_CONFIG.title
+    : (priceMode === 'mayorista' ? 'Mayorista' : 'Minorista');
+
+  var totalUnits  = getCartTotalUnits_();
+  var totalAmount = getCartTotalAmount_();
+
+  // Filas de la tabla
+  var rowsHtml = keys.map(function (k, i) {
+    var l = cart[k];
+    var subtotal = (l.precioUnit || 0) * (l.cantidad || 0);
+    var fotoCell = l.fotoUrl
+      ? '<img src="' + escHtml(l.fotoUrl) + '" alt="">'
+      : '<span class="cpo-col-foto-ph">📷</span>';
+    return '<tr>' +
+      '<td class="cpo-col-num">' + (i + 1) + '</td>' +
+      '<td class="cpo-col-foto">' + fotoCell + '</td>' +
+      '<td class="cpo-col-cod">' + escHtml(l.codigo) + '</td>' +
+      '<td>' +
+        '<div><b>' + escHtml(l.descripcion || '') + '</b></div>' +
+        (l.marca ? '<div style="font-size:8.5pt;color:#666">' + escHtml(l.marca) + '</div>' : '') +
+      '</td>' +
+      '<td class="cpo-col-color">' + escHtml(l.color || '—') + '</td>' +
+      '<td class="cpo-col-talle">' + escHtml(l.talle || '—') + '</td>' +
+      '<td class="cpo-col-cant">' + (l.cantidad || 0) + '</td>' +
+      '<td class="cpo-col-precio">' + fmtPrice(l.precioUnit || 0) + '</td>' +
+      '<td class="cpo-col-subtotal">' + fmtPrice(subtotal) + '</td>' +
+    '</tr>';
+  }).join('');
+
+  var pageHtml =
+    '<div class="cpo-page">' +
+      '<div class="cpo-head">' +
+        '<div>' +
+          '<div class="cpo-head-title">Nota de Pedido</div>' +
+          '<div class="cpo-head-sub">Catálogo La Costa SRL · ' + escHtml(modoLabel) + '</div>' +
+        '</div>' +
+        '<div class="cpo-head-meta">' +
+          '<div class="cpo-head-meta-row"><b>Fecha:</b> ' + fecha + '</div>' +
+          '<div class="cpo-head-meta-row"><b>Hora:</b> ' + hora + '</div>' +
+          '<div class="cpo-head-meta-row"><b>N° Pedido:</b> ____________</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="cpo-cliente">' +
+        '<div class="cpo-cliente-field">' +
+          '<div class="cpo-cliente-label">Cliente</div>&nbsp;' +
+        '</div>' +
+        '<div class="cpo-cliente-field" style="flex:0 0 35%">' +
+          '<div class="cpo-cliente-label">Vendedor</div>&nbsp;' +
+        '</div>' +
+      '</div>' +
+
+      '<table class="cpo-table">' +
+        '<thead><tr>' +
+          '<th class="cpo-col-num">#</th>' +
+          '<th class="cpo-col-foto">Foto</th>' +
+          '<th class="cpo-col-cod">Cód</th>' +
+          '<th>Producto</th>' +
+          '<th class="cpo-col-color">Color</th>' +
+          '<th class="cpo-col-talle">Talle</th>' +
+          '<th class="cpo-col-cant">Cant</th>' +
+          '<th class="cpo-col-precio">P. Unit.</th>' +
+          '<th class="cpo-col-subtotal">Subtotal</th>' +
+        '</tr></thead>' +
+        '<tbody>' + rowsHtml + '</tbody>' +
+      '</table>' +
+
+      '<div class="cpo-totals">' +
+        '<div class="cpo-totals-box">' +
+          '<div class="cpo-totals-row">' +
+            '<span>Líneas</span><b>' + keys.length + '</b>' +
+          '</div>' +
+          '<div class="cpo-totals-row">' +
+            '<span>Total unidades</span><b>' + totalUnits + '</b>' +
+          '</div>' +
+          '<div class="cpo-totals-row cpo-totals-grand">' +
+            '<span>TOTAL</span><b>' + fmtPrice(totalAmount) + '</b>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="cpo-foot">' +
+        '<div class="cpo-firma">Firma cliente</div>' +
+        '<div class="cpo-firma">Firma vendedor</div>' +
+      '</div>' +
+    '</div>';
+
+  var overlay = document.getElementById('cart-pdf-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'cart-pdf-overlay';
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML =
+    '<div class="cpo-toolbar">' +
+      '<button class="cpo-close" onclick="closeCartPdf_()">✕ Cerrar</button>' +
+      '<div class="cpo-hint">Tocá Imprimir y elegí "Guardar como PDF" en el diálogo del navegador.</div>' +
+      '<button class="cpo-print" onclick="window.print()">🖨️ Imprimir</button>' +
+    '</div>' +
+    pageHtml;
+
+  overlay.classList.add('open');
+  document.body.classList.add('cart-pdf-active');
+  document.body.style.overflow = 'hidden';
 }
+
+function closeCartPdf_() {
+  var overlay = document.getElementById('cart-pdf-overlay');
+  if (overlay) {
+    overlay.classList.remove('open');
+    overlay.innerHTML = '';
+  }
+  document.body.classList.remove('cart-pdf-active');
+  document.body.style.overflow = '';
+}
+
+// Cerrar el PDF nota de pedido con Escape
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Escape') return;
+  var overlay = document.getElementById('cart-pdf-overlay');
+  if (overlay && overlay.classList.contains('open')) closeCartPdf_();
+});
 
 function updateStats() {
   var el = document.getElementById('stats-count');
