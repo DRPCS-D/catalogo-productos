@@ -1679,8 +1679,8 @@
       border-top: 1px solid var(--gray-200);
     }
     .sidebar-footer .app-version {
-      font-size: 10px;
-      color: var(--gray-500);
+      font-size: 11px;
+      color: var(--gray-700);
       font-weight: 600;
       letter-spacing: 0.2px;
       white-space: nowrap;
@@ -1690,6 +1690,7 @@
       min-width: 0;
     }
     .sidebar-footer .btn-force-update {
+      width: auto;
       background: transparent;
       border: 1px solid var(--gray-300);
       color: var(--gray-600);
@@ -3355,7 +3356,7 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.2.3';
+var APP_VERSION  = '1.2.4';
 var APP_BUILD    = '2026-06-19';
 
 function renderAppVersion_() {
