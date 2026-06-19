@@ -10,9 +10,9 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v7: fix de visibilidad del chip de versión en el sidebar (width: 100%
-// global pisaba al btn-force-update y lo hacía full-width).
-const CACHE_VERSION = 'v7';
+// v8: feature carrito (fase 1) — chip 🛒 en header + vista carrito + estado
+// persistido en localStorage. Fases 2-4: quick-add, edición, PDF nota pedido.
+const CACHE_VERSION = 'v8';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

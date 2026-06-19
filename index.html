@@ -242,6 +242,79 @@
     .view-toggle-btn:active { transform: scale(.94); }
     .view-toggle-icon { display: inline-block; }
 
+    /* ===== CART CHIP (header) ===== */
+    .cart-chip {
+      position: relative;
+      width: 38px;
+      height: 38px;
+      border: none;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.12);
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      line-height: 1;
+      transition: background .15s, transform .1s;
+      flex-shrink: 0;
+    }
+    .cart-chip:hover  { background: rgba(255,255,255,.22); }
+    .cart-chip:active { transform: scale(.94); }
+    .cart-chip.active { background: white; color: var(--primary); }
+    .cart-chip-count {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #ef4444;
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 9px;
+      padding: 0 5px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--primary);
+      line-height: 1;
+    }
+    .cart-chip.has-items .cart-chip-count { display: inline-flex; }
+
+    /* ===== CART VIEW ===== */
+    #cart-view {
+      padding: 20px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .cart-empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--gray-500);
+    }
+    .cart-empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .cart-empty-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--gray-700);
+      margin-bottom: 6px;
+    }
+    .cart-empty-sub { font-size: 13px; }
+    .cart-empty-btn {
+      margin-top: 16px;
+      padding: 8px 16px;
+      border: 1px solid var(--primary);
+      background: var(--primary);
+      color: white;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .cart-empty-btn:hover { filter: brightness(1.1); }
+
     /* ===== FILTER BAR ===== */
     .filter-bar {
       background: white;
@@ -1869,6 +1942,8 @@
       .header-title { font-size: 14px; }
       .header-sub { font-size: 11px; }
       .view-toggle-btn { width: 34px; height: 34px; font-size: 16px; }
+      .cart-chip { width: 34px; height: 34px; font-size: 16px; }
+      .cart-chip-count { font-size: 9px; min-width: 16px; height: 16px; top: -4px; right: -4px; }
 
       /* Filter-bar compacto */
       .filter-inner { padding: 6px 10px; gap: 6px; }
@@ -1946,6 +2021,7 @@
       .header-inner { padding: 10px 16px; }
       .header-title { font-size: 16px; }
       .view-toggle-btn { width: 42px; height: 42px; font-size: 20px; }
+      .cart-chip { width: 42px; height: 42px; font-size: 20px; }
       .refresh-chip { padding: 7px 13px; font-size: 12px; min-height: 36px; }
 
       /* --- BUSCADOR --- */
@@ -2473,6 +2549,10 @@
         <span class="refresh-icon">🔄</span>
         <span id="refresh-label">—</span>
       </button>
+      <button class="cart-chip" id="btn-cart" onclick="openCartView_()" title="Ver carrito" aria-label="Ver carrito">
+        🛒
+        <span class="cart-chip-count" id="cart-chip-count">0</span>
+      </button>
       <button class="view-toggle-btn" id="btn-view-toggle" onclick="toggleView_()" title="Cambiar vista (Galería / Tabla)" aria-label="Cambiar vista">
         <span class="view-toggle-icon" id="view-toggle-icon">⊞</span>
       </button>
@@ -2685,6 +2765,11 @@
     <div id="gallery-sentinel" style="height:1px"></div>
     <div id="gallery-footer-chip" class="infinite-footer" style="display:none"></div>
   </div>
+
+  <!-- ============================================================ -->
+  <!-- VISTA CARRITO — render dinámico en renderCart_()              -->
+  <!-- ============================================================ -->
+  <div id="cart-view" style="display:none"></div>
 
 </div>
 
@@ -2911,6 +2996,13 @@ var filterPrecioMin  = null;
 var filterPrecioMax  = null;
 var priceMode        = 'minorista';   // 'minorista' | 'mayorista' — selector global
 
+// ============ CARRITO ============
+// Objeto con clave `${codigo}::${color}::${talle}` para evitar duplicados.
+// Persistido en localStorage. Línea = { codigo, marca, descripcion, color,
+// talle, cantidad, precioUnit, fotoUrl }.
+var CART_STORAGE_KEY = 'lc_cart_v1';
+var cart = {};
+
 // Mapa código → nombre de sucursal (para resolver qMasVendio en el modal)
 var STORE_NAMES = {
   1:'PATA 1', 2:'PATA KM 7', 3:'DEPOSITO KM5 (EX REB.2)', 4:'LA COSTA S.R.L.',
@@ -3013,6 +3105,11 @@ window.clearLocalCatalogCache = function () {
 window.onload = function () {
   setupEvents();
   registerServiceWorker_();
+
+  // Cargar carrito desde localStorage temprano para que el badge se pinte
+  // antes de que se carguen los productos.
+  loadCart_();
+  updateCartBadge_();
 
   // 1) Cargar la config del modo activo desde Supabase (page_config table).
   //    Esto sobrescribe el PAGE_CONFIG hardcoded con lo que el admin guardó.
@@ -3356,7 +3453,7 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.2.4';
+var APP_VERSION  = '1.3.0';
 var APP_BUILD    = '2026-06-19';
 
 function renderAppVersion_() {
@@ -5073,33 +5170,164 @@ function toggleColor(cKey) {
 function switchView(view) {
   currentView = view;
   renderedCount = 0;  // al cambiar de vista volvemos a renderizar desde el inicio
-  var isTable = view === 'table';
+  var isTable   = view === 'table';
+  var isCart    = view === 'cart';
+  var isGallery = view === 'gallery';
 
-  document.getElementById('table-view').style.display   = isTable ? 'block' : 'none';
-  document.getElementById('gallery-view').style.display = isTable ? 'none'  : 'block';
+  document.getElementById('table-view').style.display   = isTable   ? 'block' : 'none';
+  document.getElementById('gallery-view').style.display = isGallery ? 'block' : 'none';
+  document.getElementById('cart-view').style.display    = isCart    ? 'block' : 'none';
 
   // El botón único muestra el ícono de la vista en la que estás ahora.
-  // Tocarlo te lleva a la otra.
+  // Tocarlo te lleva a la otra. En vista carrito el toggle se oculta.
   var icon = document.getElementById('view-toggle-icon');
   var btn  = document.getElementById('btn-view-toggle');
   if (icon) icon.textContent = isTable ? '☰' : '⊞';
-  if (btn)  btn.title = 'Cambiar a ' + (isTable ? 'galería' : 'tabla');
+  if (btn) {
+    btn.title = 'Cambiar a ' + (isTable ? 'galería' : 'tabla');
+    btn.style.display = isCart ? 'none' : '';
+  }
+
+  // Chip del carrito resaltada cuando estás en vista carrito
+  var cartChip = document.getElementById('btn-cart');
+  if (cartChip) cartChip.classList.toggle('active', isCart);
 
   renderCurrentView();
 }
 
 function toggleView_() {
+  // En cart view, el botón está oculto. Solo alterna gallery <-> table.
   switchView(currentView === 'table' ? 'gallery' : 'table');
+}
+
+function openCartView_() {
+  // Toggle entre carrito y la vista anterior (default galería)
+  if (currentView === 'cart') switchView('gallery');
+  else switchView('cart');
 }
 
 // =================================================================
 // HELPERS DE RENDER
 // =================================================================
 function renderCurrentView() {
-  if (!productsLoaded) return;
-  if (currentView === 'table') renderTable();
-  else renderGallery();
+  if (!productsLoaded && currentView !== 'cart') return;
+  if (currentView === 'table')      renderTable();
+  else if (currentView === 'cart')  renderCart_();
+  else                              renderGallery();
   updateStats();
+}
+
+// =================================================================
+// CARRITO — estado + persistencia + render (fase 1)
+// =================================================================
+function cartKey_(codigo, color, talle) {
+  return codigo + '::' + (color || '') + '::' + (talle || '');
+}
+
+function loadCart_() {
+  try {
+    var raw = localStorage.getItem(CART_STORAGE_KEY);
+    cart = raw ? JSON.parse(raw) : {};
+    if (!cart || typeof cart !== 'object') cart = {};
+  } catch (e) { cart = {}; }
+}
+
+function saveCart_() {
+  try { localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart)); }
+  catch (e) { /* localStorage lleno o disabled — silencio */ }
+}
+
+function addCartLine_(codigo, color, talle, cantidad, meta) {
+  if (!cantidad || cantidad <= 0) return;
+  var k = cartKey_(codigo, color, talle);
+  if (cart[k]) {
+    cart[k].cantidad += cantidad;
+  } else {
+    cart[k] = Object.assign(
+      { codigo: codigo, color: color, talle: talle, cantidad: cantidad },
+      meta || {}
+    );
+  }
+  saveCart_();
+  updateCartBadge_();
+  if (currentView === 'cart') renderCart_();
+}
+
+function updateCartQty_(key, qty) {
+  if (!cart[key]) return;
+  qty = Number(qty) || 0;
+  if (qty <= 0) delete cart[key];
+  else          cart[key].cantidad = qty;
+  saveCart_();
+  updateCartBadge_();
+  if (currentView === 'cart') renderCart_();
+}
+
+function removeCartLine_(key) {
+  delete cart[key];
+  saveCart_();
+  updateCartBadge_();
+  if (currentView === 'cart') renderCart_();
+}
+
+function clearCart_() {
+  cart = {};
+  saveCart_();
+  updateCartBadge_();
+  if (currentView === 'cart') renderCart_();
+}
+
+function getCartTotalUnits_() {
+  var n = 0;
+  for (var k in cart) n += (cart[k].cantidad || 0);
+  return n;
+}
+
+function getCartTotalAmount_() {
+  var t = 0;
+  for (var k in cart) {
+    var l = cart[k];
+    t += (l.precioUnit || 0) * (l.cantidad || 0);
+  }
+  return t;
+}
+
+function updateCartBadge_() {
+  var chip = document.getElementById('btn-cart');
+  var countEl = document.getElementById('cart-chip-count');
+  if (!chip || !countEl) return;
+  var n = getCartTotalUnits_();
+  countEl.textContent = n;
+  chip.classList.toggle('has-items', n > 0);
+}
+
+// Vista carrito — placeholder en fase 1. La lista detallada y el PDF
+// vienen en fases 3 y 4.
+function renderCart_() {
+  var el = document.getElementById('cart-view');
+  if (!el) return;
+  var keys = Object.keys(cart);
+  if (!keys.length) {
+    el.innerHTML =
+      '<div class="cart-empty">' +
+        '<div class="cart-empty-icon">🛒</div>' +
+        '<div class="cart-empty-title">El carrito está vacío</div>' +
+        '<div class="cart-empty-sub">Agregá productos desde la galería para verlos acá.</div>' +
+        '<button class="cart-empty-btn" onclick="switchView(\'gallery\')">Ir a galería</button>' +
+      '</div>';
+    return;
+  }
+  // Placeholder fase 1 — la lista detallada llega en fase 3
+  el.innerHTML =
+    '<div style="background:#fff;border:1px solid var(--gray-200);border-radius:8px;padding:24px;text-align:center;">' +
+      '<div style="font-size:15px;font-weight:600;color:var(--gray-700);margin-bottom:8px;">' +
+        '✅ Carrito con ' + keys.length + ' línea(s) — ' + getCartTotalUnits_() + ' unidades' +
+      '</div>' +
+      '<div style="font-size:12px;color:var(--gray-500);">' +
+        'La lista detallada + edición + PDF llegan en las próximas fases.' +
+      '</div>' +
+      '<button class="cart-empty-btn" style="margin-top:14px;" onclick="if(confirm(\'¿Vaciar el carrito?\'))clearCart_();">Vaciar carrito</button>' +
+    '</div>';
 }
 
 function updateStats() {
