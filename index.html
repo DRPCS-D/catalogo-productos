@@ -906,6 +906,238 @@
       .card-img-zoom { opacity: .75; }
     }
 
+    /* ===== BOTÓN + CARRITO en card de galería ===== */
+    .btn-card-quickadd {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.95);
+      color: var(--primary);
+      border: none;
+      font-size: 22px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,.18);
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      padding: 0;
+      transition: transform .12s, background .15s;
+    }
+    .btn-card-quickadd:hover {
+      background: var(--primary);
+      color: white;
+      transform: scale(1.08);
+    }
+    .btn-card-quickadd:active { transform: scale(.92); }
+
+    /* Cuando el chip de carrito recibe items, hace un bounce */
+    @keyframes cartChipPop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.25); }
+      70%  { transform: scale(.92); }
+      100% { transform: scale(1); }
+    }
+    .cart-chip.pop { animation: cartChipPop .4s ease-out; }
+
+    /* ===== QUICK-ADD POPOVER ===== */
+    .quickadd-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .quickadd-overlay.open { display: flex; }
+    .quickadd-sheet {
+      background: white;
+      width: 100%;
+      max-width: 520px;
+      max-height: 90vh;
+      border-radius: 16px 16px 0 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: qaSlideUp .22s ease-out;
+    }
+    @keyframes qaSlideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+
+    .quickadd-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--gray-200);
+      background: var(--gray-50);
+    }
+    .quickadd-thumb {
+      width: 56px;
+      height: 56px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--gray-100);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .quickadd-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .quickadd-info { flex: 1; min-width: 0; }
+    .quickadd-cod {
+      font-size: 11px;
+      color: var(--gray-500);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .quickadd-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-900);
+      margin: 2px 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .quickadd-color { font-size: 12px; color: var(--gray-700); }
+    .quickadd-close {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: var(--gray-500);
+      font-size: 24px;
+      cursor: pointer;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+    .quickadd-close:hover { background: var(--gray-200); color: var(--gray-900); }
+
+    .quickadd-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 16px;
+      min-height: 100px;
+    }
+    .qa-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .qa-row:last-child { border-bottom: none; }
+    .qa-row-info { flex: 1; min-width: 0; }
+    .qa-row-talle {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-900);
+    }
+    .qa-row-stock {
+      font-size: 12px;
+      color: var(--gray-600);
+      margin-top: 2px;
+    }
+    .qa-qty {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .qa-qty-btn {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--gray-300);
+      background: white;
+      border-radius: 6px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--gray-700);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .qa-qty-btn:hover { background: var(--gray-100); color: var(--primary); border-color: var(--primary); }
+    .qa-qty-btn:active { transform: scale(.94); }
+    .qa-qty-input {
+      width: 50px;
+      height: 32px;
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-900);
+      padding: 0;
+    }
+    .qa-qty-input:focus { outline: none; border-color: var(--primary); }
+    .qa-qty-input::-webkit-outer-spin-button,
+    .qa-qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .qa-qty-input[type="number"] { -moz-appearance: textfield; }
+
+    .quickadd-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--gray-200);
+      background: var(--gray-50);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .quickadd-total {
+      flex: 1 1 100%;
+      font-size: 13px;
+      color: var(--gray-700);
+      margin-bottom: 4px;
+    }
+    .quickadd-total b { color: var(--gray-900); }
+    .quickadd-cancel {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid var(--gray-300);
+      background: white;
+      color: var(--gray-700);
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .quickadd-cancel:hover { background: var(--gray-100); }
+    .quickadd-confirm {
+      flex: 2;
+      padding: 10px;
+      border: none;
+      background: var(--primary);
+      color: white;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .quickadd-confirm:hover:not(:disabled) { filter: brightness(1.1); }
+    .quickadd-confirm:disabled { cursor: not-allowed; }
+
+    @media (min-width: 600px) {
+      .quickadd-overlay { align-items: center; }
+      .quickadd-sheet { border-radius: 12px; max-height: 80vh; }
+      @keyframes qaSlideUp {
+        from { transform: translateY(20px); opacity: 0; }
+        to   { transform: translateY(0); opacity: 1; }
+      }
+    }
+
     /* ===== LIGHTBOX ===== */
     .lightbox {
       display: none;
@@ -2774,6 +3006,29 @@
 </div>
 
 <!-- ============================================================ -->
+<!-- QUICK-ADD POPOVER (carrito) — render dinámico en openQuickAdd_ -->
+<!-- ============================================================ -->
+<div class="quickadd-overlay" id="quickadd-overlay" role="dialog" aria-modal="true">
+  <div class="quickadd-sheet">
+    <div class="quickadd-header">
+      <div class="quickadd-thumb"><img id="qa-thumb" alt=""></div>
+      <div class="quickadd-info">
+        <div class="quickadd-cod"   id="qa-cod"></div>
+        <div class="quickadd-name"  id="qa-name"></div>
+        <div class="quickadd-color" id="qa-color"></div>
+      </div>
+      <button class="quickadd-close" onclick="closeQuickAdd_()" aria-label="Cerrar">×</button>
+    </div>
+    <div class="quickadd-body" id="qa-body"></div>
+    <div class="quickadd-footer">
+      <div class="quickadd-total">Total: <b id="qa-total-units">0</b> uds · <b id="qa-total-amount">—</b></div>
+      <button class="quickadd-cancel"  onclick="closeQuickAdd_()">Cancelar</button>
+      <button class="quickadd-confirm" id="qa-confirm" onclick="confirmQuickAdd_()" disabled>Agregar al carrito</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
 <!-- MODAL DETALLE                                                 -->
 <!-- ============================================================ -->
 <div class="modal-overlay" id="modal">
@@ -3453,7 +3708,7 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.3.0';
+var APP_VERSION  = '1.3.1';
 var APP_BUILD    = '2026-06-19';
 
 function renderAppVersion_() {
@@ -3822,12 +4077,18 @@ function setupEvents() {
     }
   });
 
-  // Galería — modal + lightbox + copiar código
+  // Galería — modal + lightbox + copiar código + quick-add carrito
   document.getElementById('gallery-container').addEventListener('click', function (e) {
     var copyBtn = closest(e.target, '.btn-copy-code');
     if (copyBtn) {
       e.stopPropagation();
       copyCodeToClipboard_(copyBtn);
+      return;
+    }
+    var qaBtn = closest(e.target, '.btn-card-quickadd');
+    if (qaBtn) {
+      e.stopPropagation();
+      openQuickAdd_(qaBtn.getAttribute('data-cod'), qaBtn.getAttribute('data-color'));
       return;
     }
     var btn = closest(e.target, '.btn-card-detail');
@@ -4720,7 +4981,9 @@ function buildGalleryCardHtml_(item) {
       : ' style="cursor:default"';
 
     return '<div class="product-card">' +
-      '<div class="card-img-wrap"' + wrapAttrs + '>' + imgHtml + '</div>' +
+      '<div class="card-img-wrap"' + wrapAttrs + '>' + imgHtml +
+        '<button class="btn-card-quickadd" data-cod="' + escHtml(p.codFabrica) + '" data-color="' + escHtml(c.color) + '" title="Agregar al carrito" aria-label="Agregar al carrito">+</button>' +
+      '</div>' +
       '<div class="card-body">' +
         '<div class="card-code">Cód: ' + escHtml(p.codFabrica) +
           ' <button class="btn-copy-code" data-copy="' + escHtml(p.codFabrica) + '" title="Copiar código" aria-label="Copiar código">📋</button>' +
@@ -5300,6 +5563,171 @@ function updateCartBadge_() {
   countEl.textContent = n;
   chip.classList.toggle('has-items', n > 0);
 }
+
+// =================================================================
+// QUICK-ADD POPOVER — agregar al carrito desde la card de galería
+// =================================================================
+var quickAddCtx = null;   // { codigo, color, p, c, price, fotoUrl }
+
+function openQuickAdd_(codigo, color) {
+  var p = products.find(function (x) { return x.codFabrica === codigo; });
+  if (!p) return;
+  var c = p.colorsArr.find(function (x) { return x.color === color; });
+  if (!c) c = p.colorsArr[0];
+
+  var info  = getActivePrice(p);
+  var price = info.price || 0;
+  var fotoUrl = getImgUrl(c.imgId, 400) || '';
+
+  quickAddCtx = {
+    codigo: p.codFabrica, color: c.color, p: p, c: c,
+    price: price, fotoUrl: fotoUrl
+  };
+
+  // Header
+  document.getElementById('qa-cod').textContent  = 'Cód: ' + p.codFabrica;
+  document.getElementById('qa-name').textContent = p.nmProduto;
+  document.getElementById('qa-color').textContent = 'Color: ' + c.color + ' · ' + fmtPrice(price) + '/u';
+
+  var thumb = document.getElementById('qa-thumb');
+  var thumbUrl = getImgUrl(c.imgId, 200);
+  if (thumbUrl) { thumb.src = thumbUrl; thumb.style.display = ''; }
+  else          { thumb.removeAttribute('src'); thumb.style.display = 'none'; }
+
+  renderQuickAddSizes_();
+
+  document.getElementById('quickadd-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function renderQuickAddSizes_() {
+  var ctx = quickAddCtx;
+  if (!ctx) return;
+  var body = document.getElementById('qa-body');
+  var grades = ctx.c.gradesArr || [];
+
+  function qtyControls(key) {
+    return '<div class="qa-qty">' +
+      '<button class="qa-qty-btn" data-act="dec" data-key="' + escHtml(key) + '" aria-label="Restar">−</button>' +
+      '<input class="qa-qty-input" type="number" min="0" step="1" value="0" data-key="' + escHtml(key) + '" inputmode="numeric">' +
+      '<button class="qa-qty-btn" data-act="inc" data-key="' + escHtml(key) + '" aria-label="Sumar">+</button>' +
+    '</div>';
+  }
+
+  if (!grades.length) {
+    var totalStock = getColorStock(ctx.c);
+    body.innerHTML =
+      '<div class="qa-row">' +
+        '<div class="qa-row-info">' +
+          '<div class="qa-row-talle">Sin talle</div>' +
+          '<div class="qa-row-stock">' + (totalStock > 0 ? 'Stock: ' + totalStock : '<span style="color:#dc2626">Sin stock</span>') + '</div>' +
+        '</div>' +
+        qtyControls('__') +
+      '</div>';
+  } else {
+    body.innerHTML = grades.map(function (g) {
+      var stock = getGradeStock(g);
+      var k = String(g.grade);
+      return '<div class="qa-row">' +
+        '<div class="qa-row-info">' +
+          '<div class="qa-row-talle">Talle ' + escHtml(k) + '</div>' +
+          '<div class="qa-row-stock">' + (stock > 0 ? 'Stock: ' + stock : '<span style="color:#dc2626">Sin stock</span>') + '</div>' +
+        '</div>' +
+        qtyControls(k) +
+      '</div>';
+    }).join('');
+  }
+
+  // Wire +/− y typing en inputs
+  body.querySelectorAll('.qa-qty-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var key = btn.getAttribute('data-key');
+      var input = body.querySelector('.qa-qty-input[data-key="' + cssEscape_(key) + '"]');
+      if (!input) return;
+      var v = Number(input.value) || 0;
+      v = btn.getAttribute('data-act') === 'inc' ? v + 1 : Math.max(0, v - 1);
+      input.value = v;
+      updateQuickAddTotal_();
+    });
+  });
+  body.querySelectorAll('.qa-qty-input').forEach(function (input) {
+    input.addEventListener('input', updateQuickAddTotal_);
+    input.addEventListener('blur', function () {
+      var v = Number(input.value) || 0;
+      if (v < 0) { input.value = 0; updateQuickAddTotal_(); }
+    });
+  });
+
+  updateQuickAddTotal_();
+}
+
+// CSS.escape no existe en IE/Safari viejos — fallback simple para atributos
+function cssEscape_(s) {
+  if (typeof CSS !== 'undefined' && CSS.escape) return CSS.escape(s);
+  return String(s).replace(/(["\\])/g, '\\$1');
+}
+
+function updateQuickAddTotal_() {
+  var ctx = quickAddCtx;
+  if (!ctx) return;
+  var inputs = document.querySelectorAll('#qa-body .qa-qty-input');
+  var total = 0;
+  inputs.forEach(function (i) { total += Number(i.value) || 0; });
+  document.getElementById('qa-total-units').textContent  = total;
+  document.getElementById('qa-total-amount').textContent = fmtPrice(total * ctx.price);
+  var btn = document.getElementById('qa-confirm');
+  btn.disabled = total === 0;
+  btn.style.opacity = total === 0 ? '.5' : '1';
+}
+
+function closeQuickAdd_() {
+  document.getElementById('quickadd-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  quickAddCtx = null;
+}
+
+function confirmQuickAdd_() {
+  var ctx = quickAddCtx;
+  if (!ctx) return;
+  var inputs = document.querySelectorAll('#qa-body .qa-qty-input');
+  var added = 0;
+  inputs.forEach(function (i) {
+    var qty = Number(i.value) || 0;
+    if (qty <= 0) return;
+    var talle = i.getAttribute('data-key');
+    if (talle === '__') talle = '';
+    addCartLine_(ctx.codigo, ctx.color, talle, qty, {
+      marca: ctx.p.marca,
+      descripcion: ctx.p.nmProduto,
+      precioUnit: ctx.price,
+      fotoUrl: ctx.fotoUrl
+    });
+    added += qty;
+  });
+  closeQuickAdd_();
+  if (added > 0) bounceCartChip_();
+}
+
+function bounceCartChip_() {
+  var chip = document.getElementById('btn-cart');
+  if (!chip) return;
+  chip.classList.remove('pop');
+  // Forzar reflow para que la animación re-dispare aunque la clase ya estuviera
+  void chip.offsetWidth;
+  chip.classList.add('pop');
+  setTimeout(function () { chip.classList.remove('pop'); }, 450);
+}
+
+// Cerrar quick-add con Escape o click en backdrop
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && document.getElementById('quickadd-overlay').classList.contains('open')) {
+    closeQuickAdd_();
+  }
+});
+document.addEventListener('click', function (e) {
+  var overlay = document.getElementById('quickadd-overlay');
+  if (overlay && e.target === overlay) closeQuickAdd_();
+});
 
 // Vista carrito — placeholder en fase 1. La lista detallada y el PDF
 // vienen en fases 3 y 4.

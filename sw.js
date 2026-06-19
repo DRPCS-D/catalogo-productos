@@ -10,9 +10,9 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v8: feature carrito (fase 1) — chip 🛒 en header + vista carrito + estado
-// persistido en localStorage. Fases 2-4: quick-add, edición, PDF nota pedido.
-const CACHE_VERSION = 'v8';
+// v9: carrito fase 2 — botón + en cada card de galería abre popover con
+// talles + cantidad y agrega al carrito. Fases 3-4: edición, PDF nota pedido.
+const CACHE_VERSION = 'v9';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
