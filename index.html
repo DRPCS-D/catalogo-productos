@@ -3197,6 +3197,39 @@ function applyPageConfig() {
     filterSucursal = cfg.sucursales.slice();
   }
 
+  // Override por URL: ?suc=centro o ?suc=centro,norte
+  // Match case-insensitive sustring sobre las sucursales reales en products.
+  // En modos locked, se intersecta con cfg.sucursales (no se pueden meter sucursales
+  // fuera del set permitido). El filtro queda pre-seleccionado pero editable.
+  var sucParam = (new URLSearchParams(location.search)).get('suc');
+  if (sucParam) {
+    var requested = sucParam.split(',')
+      .map(function (s) { return s.trim().toLowerCase(); })
+      .filter(Boolean);
+    if (requested.length) {
+      var available = {};
+      products.forEach(function (p) {
+        p.colorsArr.forEach(function (c) {
+          c.gradesArr.forEach(function (g) {
+            g.stock.forEach(function (s) {
+              if (s.sucursal) available[s.sucursal] = true;
+            });
+          });
+        });
+      });
+      var matched = Object.keys(available).filter(function (name) {
+        var norm = name.toLowerCase();
+        return requested.some(function (q) { return norm.indexOf(q) >= 0; });
+      });
+      if (cfg.locked && cfg.sucursales && cfg.sucursales.length) {
+        var allowedSet = {};
+        cfg.sucursales.forEach(function (s) { allowedSet[s] = true; });
+        matched = matched.filter(function (s) { return allowedSet[s]; });
+      }
+      if (matched.length) filterSucursal = matched;
+    }
+  }
+
   // Promo desactivada → ocultar elementos de promo + setear pdfIncludePromo=false
   if (!cfg.promoVisible) {
     pdfIncludePromo = false;

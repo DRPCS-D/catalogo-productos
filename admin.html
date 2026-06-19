@@ -403,11 +403,112 @@
     .toast.error { background: var(--red); }
     .toast.ok    { background: var(--green); }
 
+    /* =========== QUICK LINKS =========== */
+    .quick-links-card {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px 20px;
+      margin-top: 24px;
+    }
+    .quick-links-card h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .quick-links-card .ql-sub {
+      font-size: 12px;
+      color: var(--gray-500);
+      margin-bottom: 14px;
+    }
+    .ql-row {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .ql-field { flex: 1 1 220px; }
+    .ql-field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gray-700);
+      margin-bottom: 4px;
+    }
+    .ql-field select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+    }
+    .ql-suc-list {
+      max-height: 180px;
+      overflow-y: auto;
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      padding: 8px 10px;
+      background: var(--gray-50);
+    }
+    .ql-suc-list label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 0;
+      font-size: 13px;
+      font-weight: normal;
+      color: var(--gray-700);
+      cursor: pointer;
+    }
+    .ql-suc-list input[type="checkbox"] { margin: 0; cursor: pointer; }
+    .ql-preview {
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 12px;
+      color: var(--gray-900);
+      word-break: break-all;
+      margin-bottom: 10px;
+      min-height: 36px;
+    }
+    .ql-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .ql-actions button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: filter .15s, background .15s;
+    }
+    .ql-actions .btn-copy {
+      background: var(--blue);
+      color: white;
+    }
+    .ql-actions .btn-copy:hover { filter: brightness(1.1); }
+    .ql-actions .btn-copy.copied { background: var(--green); }
+    .ql-actions .btn-secondary {
+      background: white;
+      color: var(--gray-700);
+      border: 1px solid var(--gray-300);
+    }
+    .ql-actions .btn-secondary:hover { background: var(--gray-100); }
+    .ql-empty { color: var(--gray-500); font-size: 13px; padding: 6px 0; }
+
     @media (max-width: 600px) {
       header h1 { font-size: 15px; }
       .page-title { font-size: 18px; }
       .config-card-header { flex-direction: column; align-items: flex-start; gap: 6px; }
       .config-card-url { font-size: 10px; }
+      .ql-row { flex-direction: column; }
     }
   </style>
 </head>
@@ -450,6 +551,43 @@
   <div id="loading-state" class="loading">Cargando configuraciones…</div>
 
   <div id="config-grid" class="config-grid" style="display: none;"></div>
+
+  <!-- ============== LINKS RÁPIDOS POR SUCURSAL ============== -->
+  <div id="quick-links-card" class="quick-links-card" style="display: none;">
+    <h2>🔗 Links rápidos por sucursal</h2>
+    <div class="ql-sub">
+      Generá una URL que abra el catálogo con un modo + sucursales pre-seleccionadas.
+      El cliente puede cambiarlas después si quiere.
+    </div>
+
+    <div class="ql-row">
+      <div class="ql-field">
+        <label for="ql-mode">Modo</label>
+        <select id="ql-mode">
+          <option value="g">🌐 General (?mode=g)</option>
+          <option value="ma">📦 Mayorista (?mode=ma)</option>
+          <option value="mi" selected>🛍️ Minorista (?mode=mi)</option>
+        </select>
+      </div>
+      <div class="ql-field" style="flex: 2 1 320px;">
+        <label>Sucursales a pre-seleccionar</label>
+        <div id="ql-suc-list" class="ql-suc-list">
+          <div class="ql-empty">Cargando sucursales…</div>
+        </div>
+      </div>
+    </div>
+
+    <label style="font-size: 12px; font-weight: 600; color: var(--gray-700); display: block; margin-bottom: 4px;">
+      Link generado
+    </label>
+    <div id="ql-preview" class="ql-preview">—</div>
+
+    <div class="ql-actions">
+      <button type="button" class="btn-copy" id="ql-btn-copy">📋 Copiar link</button>
+      <button type="button" class="btn-secondary" id="ql-btn-open">↗ Abrir en pestaña nueva</button>
+      <button type="button" class="btn-secondary" id="ql-btn-reset">Limpiar selección</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -610,6 +748,7 @@ function loadEverything_() {
     document.getElementById('loading-state').style.display = 'none';
     document.getElementById('config-grid').style.display = '';
     renderConfigs_();
+    renderQuickLinks_();
   }).catch(function (e) {
     document.getElementById('loading-state').innerHTML =
       '<div style="color:var(--red)">Error al cargar: ' + escHtml(e.message || e) + '</div>';
@@ -864,6 +1003,98 @@ function collectChecked_(card, field) {
   if (!wrap) return [];
   return Array.prototype.slice.call(wrap.querySelectorAll('input[type="checkbox"]:checked'))
     .map(function (cb) { return cb.value; });
+}
+
+// ===================================================================
+// QUICK LINKS — generador de URLs ?mode=...&suc=...
+// ===================================================================
+function renderQuickLinks_() {
+  var card = document.getElementById('quick-links-card');
+  if (!card) return;
+  card.style.display = '';
+
+  var listEl = document.getElementById('ql-suc-list');
+  if (!allSucursales.length) {
+    listEl.innerHTML = '<div class="ql-empty">No hay sucursales en el catálogo.</div>';
+  } else {
+    listEl.innerHTML = allSucursales.map(function (s) {
+      var id = 'ql-suc-' + s.replace(/[^a-z0-9]/gi, '_');
+      return '<label><input type="checkbox" id="' + id + '" value="' + escHtml(s) + '">' +
+             escHtml(s) + '</label>';
+    }).join('');
+  }
+
+  document.getElementById('ql-mode').addEventListener('change', updateQuickLinkPreview_);
+  listEl.addEventListener('change', updateQuickLinkPreview_);
+
+  document.getElementById('ql-btn-copy').addEventListener('click', function () {
+    var link = buildQuickLink_();
+    if (!link) return;
+    copyToClipboard_(link).then(function () {
+      var btn = document.getElementById('ql-btn-copy');
+      btn.textContent = '✓ Copiado';
+      btn.classList.add('copied');
+      setTimeout(function () {
+        btn.textContent = '📋 Copiar link';
+        btn.classList.remove('copied');
+      }, 1800);
+      showToast('Link copiado al portapapeles', 'ok');
+    }).catch(function () {
+      showToast('No se pudo copiar — copialo manualmente', 'error');
+    });
+  });
+
+  document.getElementById('ql-btn-open').addEventListener('click', function () {
+    var link = buildQuickLink_();
+    if (link) window.open(link, '_blank');
+  });
+
+  document.getElementById('ql-btn-reset').addEventListener('click', function () {
+    listEl.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
+    updateQuickLinkPreview_();
+  });
+
+  updateQuickLinkPreview_();
+}
+
+function buildQuickLink_() {
+  var mode = document.getElementById('ql-mode').value;
+  var sucs = Array.prototype.slice.call(
+    document.querySelectorAll('#ql-suc-list input[type="checkbox"]:checked')
+  ).map(function (cb) { return cb.value; });
+
+  // Base = origen + path al catálogo (admin vive en /admin.html, catálogo en /)
+  var base = location.origin + location.pathname.replace(/admin\.html$/, '');
+  var url = base + '?mode=' + encodeURIComponent(mode);
+  if (sucs.length) {
+    url += '&suc=' + sucs.map(encodeURIComponent).join(',');
+  }
+  return url;
+}
+
+function updateQuickLinkPreview_() {
+  var el = document.getElementById('ql-preview');
+  el.textContent = buildQuickLink_() || '—';
+}
+
+function copyToClipboard_(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  // Fallback para contextos sin Clipboard API
+  return new Promise(function (resolve, reject) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      ok ? resolve() : reject();
+    } catch (e) { reject(e); }
+  });
 }
 </script>
 
