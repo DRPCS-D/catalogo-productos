@@ -526,6 +526,115 @@
       #cart-view { padding: 12px; }
     }
 
+    /* ===== CART PDF FORM (mini-modal previo al PDF) ===== */
+    .cpf-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .cpf-overlay.open { display: flex; }
+    .cpf-sheet {
+      background: white;
+      width: 100%;
+      max-width: 480px;
+      max-height: 90vh;
+      border-radius: 16px 16px 0 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: qaSlideUp .22s ease-out;
+    }
+    .cpf-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--gray-200);
+      background: var(--gray-50);
+    }
+    .cpf-head h3 { margin: 0; font-size: 16px; font-weight: 700; color: var(--gray-900); }
+    .cpf-close {
+      width: 32px; height: 32px;
+      border: none; background: transparent;
+      color: var(--gray-500); font-size: 20px;
+      cursor: pointer; border-radius: 6px;
+    }
+    .cpf-close:hover { background: var(--gray-200); color: var(--gray-900); }
+    .cpf-body {
+      padding: 16px;
+      display: flex; flex-direction: column;
+      gap: 14px; overflow-y: auto;
+    }
+    .cpf-field { display: flex; flex-direction: column; gap: 6px; }
+    .cpf-field label {
+      font-size: 11px; font-weight: 700;
+      color: var(--gray-700);
+      text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .cpf-field input {
+      padding: 10px 12px;
+      border: 1px solid var(--gray-300);
+      border-radius: 8px;
+      font-size: 14px; color: var(--gray-900);
+      font-family: inherit;
+    }
+    .cpf-field input:focus {
+      outline: none; border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(43,65,147,.12);
+    }
+    .cpf-field-hint { font-size: 11px; color: var(--gray-500); }
+    .cpf-desc-row { display: flex; gap: 8px; align-items: stretch; }
+    .cpf-desc-row input { flex: 1; }
+    .cpf-desc-suffix {
+      display: flex; align-items: center;
+      padding: 0 16px;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-300);
+      border-radius: 8px;
+      font-weight: 700; color: var(--gray-700);
+      font-size: 15px;
+    }
+    .cpf-preview {
+      padding: 10px 12px;
+      background: var(--gray-50);
+      border: 1px dashed var(--gray-300);
+      border-radius: 8px;
+      font-size: 13px; color: var(--gray-700);
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .cpf-prev-row { display: flex; justify-content: space-between; }
+    .cpf-prev-total {
+      font-weight: 700; color: var(--gray-900);
+      font-size: 15px;
+      border-top: 1px solid var(--gray-300);
+      padding-top: 6px; margin-top: 2px;
+    }
+    .cpf-foot {
+      padding: 12px 16px;
+      border-top: 1px solid var(--gray-200);
+      display: flex; gap: 8px;
+    }
+    .cpf-btn-cancel {
+      flex: 1; padding: 11px;
+      border: 1px solid var(--gray-300);
+      background: white; color: var(--gray-700);
+      border-radius: 8px; font-weight: 600;
+      cursor: pointer; font-size: 14px;
+    }
+    .cpf-btn-cancel:hover { background: var(--gray-100); }
+    .cpf-btn-go {
+      flex: 2; padding: 11px;
+      border: 1px solid var(--primary);
+      background: var(--primary); color: white;
+      border-radius: 8px; font-weight: 700;
+      cursor: pointer; font-size: 14px;
+    }
+    .cpf-btn-go:hover { filter: brightness(1.08); }
+
     /* ===== CART PDF OVERLAY (nota de pedido) ===== */
     #cart-pdf-overlay {
       display: none;
@@ -4096,7 +4205,7 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.4.2';
+var APP_VERSION  = '1.5.0';
 var APP_BUILD    = '2026-06-19';
 
 function renderAppVersion_() {
@@ -6277,8 +6386,8 @@ function confirmClearCart_() {
 
 // =================================================================
 // PDF NOTA DE PEDIDO — overlay paralelo al PDF de catálogo (pmo_*)
-// Usa el flujo window.print() del browser; el usuario elige
-// "Guardar como PDF" o imprime en papel.
+// Flujo: tap "Exportar" -> mini-form (cliente / vendedor / descuento %)
+// -> renderCartPdf_() arma el overlay -> window.print().
 // =================================================================
 function exportCartPdf_() {
   var keys = Object.keys(cart);
@@ -6286,6 +6395,127 @@ function exportCartPdf_() {
     alert('El carrito está vacío. Agregá productos antes de exportar.');
     return;
   }
+  openCartPdfForm_();
+}
+
+function openCartPdfForm_() {
+  var totalAmount = getCartTotalAmount_();
+  var overlay = document.getElementById('cart-pdf-form-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'cart-pdf-form-overlay';
+    overlay.className = 'cpf-overlay';
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) closeCartPdfForm_();
+    });
+  }
+  overlay.innerHTML =
+    '<div class="cpf-sheet" role="dialog" aria-label="Datos de la nota de pedido">' +
+      '<div class="cpf-head">' +
+        '<h3>Datos de la nota de pedido</h3>' +
+        '<button class="cpf-close" onclick="closeCartPdfForm_()" aria-label="Cerrar">✕</button>' +
+      '</div>' +
+      '<div class="cpf-body">' +
+        '<div class="cpf-field">' +
+          '<label for="cpf-cliente">Cliente</label>' +
+          '<input id="cpf-cliente" type="text" placeholder="Nombre del cliente (opcional)" maxlength="120" autocomplete="off">' +
+        '</div>' +
+        '<div class="cpf-field">' +
+          '<label for="cpf-vendedor">Vendedor</label>' +
+          '<input id="cpf-vendedor" type="text" placeholder="Nombre del vendedor (opcional)" maxlength="80" autocomplete="off">' +
+        '</div>' +
+        '<div class="cpf-field">' +
+          '<label for="cpf-descuento">Descuento</label>' +
+          '<div class="cpf-desc-row">' +
+            '<input id="cpf-descuento" type="number" min="0" max="100" step="0.01" placeholder="0" inputmode="decimal">' +
+            '<div class="cpf-desc-suffix">%</div>' +
+          '</div>' +
+          '<div class="cpf-field-hint">Se aplica sobre el total. Dejá en 0 si no hay descuento.</div>' +
+        '</div>' +
+        '<div class="cpf-preview" id="cpf-preview">' +
+          '<div class="cpf-prev-row"><span>Subtotal</span><b id="cpf-prev-sub">' + fmtPrice(totalAmount) + '</b></div>' +
+          '<div class="cpf-prev-row" id="cpf-prev-desc-row" style="display:none"><span id="cpf-prev-desc-lbl">Descuento</span><b id="cpf-prev-desc">−' + fmtPrice(0) + '</b></div>' +
+          '<div class="cpf-prev-row cpf-prev-total"><span>Total</span><b id="cpf-prev-total">' + fmtPrice(totalAmount) + '</b></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="cpf-foot">' +
+        '<button class="cpf-btn-cancel" onclick="closeCartPdfForm_()">Cancelar</button>' +
+        '<button class="cpf-btn-go" onclick="submitCartPdfForm_()">Generar PDF</button>' +
+      '</div>' +
+    '</div>';
+
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  var descInp = document.getElementById('cpf-descuento');
+  if (descInp) descInp.addEventListener('input', updateCartPdfFormPreview_);
+  var cli = document.getElementById('cpf-cliente');
+  if (cli) setTimeout(function () { cli.focus(); }, 50);
+}
+
+function updateCartPdfFormPreview_() {
+  var sub = getCartTotalAmount_();
+  var pct = parseCartPdfDescPct_();
+  var desc = sub * (pct / 100);
+  var total = sub - desc;
+  var row = document.getElementById('cpf-prev-desc-row');
+  var lbl = document.getElementById('cpf-prev-desc-lbl');
+  var d   = document.getElementById('cpf-prev-desc');
+  var t   = document.getElementById('cpf-prev-total');
+  if (pct > 0) {
+    if (row) row.style.display = 'flex';
+    if (lbl) lbl.textContent = 'Descuento (' + fmtPct_(pct) + '%)';
+    if (d)   d.textContent   = '−' + fmtPrice(desc);
+  } else {
+    if (row) row.style.display = 'none';
+  }
+  if (t) t.textContent = fmtPrice(total);
+}
+
+function parseCartPdfDescPct_() {
+  var inp = document.getElementById('cpf-descuento');
+  if (!inp) return 0;
+  var v = parseFloat((inp.value || '').replace(',', '.'));
+  if (!isFinite(v) || v < 0) return 0;
+  if (v > 100) v = 100;
+  return v;
+}
+
+function fmtPct_(n) {
+  // 10 -> "10", 12.5 -> "12,5", 12.50 -> "12,5"
+  var s = (Math.round(n * 100) / 100).toString();
+  return s.replace('.', ',');
+}
+
+function closeCartPdfForm_() {
+  var overlay = document.getElementById('cart-pdf-form-overlay');
+  if (overlay) {
+    overlay.classList.remove('open');
+    overlay.innerHTML = '';
+  }
+  // Solo liberar overflow si el PDF tampoco está abierto
+  if (!document.body.classList.contains('cart-pdf-active')) {
+    document.body.style.overflow = '';
+  }
+}
+
+function submitCartPdfForm_() {
+  var cliente   = (document.getElementById('cpf-cliente')   || {}).value || '';
+  var vendedor  = (document.getElementById('cpf-vendedor')  || {}).value || '';
+  var descPct   = parseCartPdfDescPct_();
+  closeCartPdfForm_();
+  renderCartPdf_({
+    cliente:    cliente.trim(),
+    vendedor:   vendedor.trim(),
+    descuentoPct: descPct
+  });
+}
+
+function renderCartPdf_(opts) {
+  opts = opts || {};
+  var keys = Object.keys(cart);
+  if (!keys.length) return;
 
   var fecha = new Date().toLocaleDateString('es-PY',
     { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -6295,8 +6525,11 @@ function exportCartPdf_() {
     ? window.PAGE_CONFIG.title
     : (priceMode === 'mayorista' ? 'Mayorista' : 'Minorista');
 
-  var totalUnits  = getCartTotalUnits_();
-  var totalAmount = getCartTotalAmount_();
+  var totalUnits   = getCartTotalUnits_();
+  var subtotalAmt  = getCartTotalAmount_();
+  var descPct      = Math.max(0, Math.min(100, Number(opts.descuentoPct) || 0));
+  var descAmt      = subtotalAmt * (descPct / 100);
+  var totalAmount  = subtotalAmt - descAmt;
 
   // Filas de la tabla
   var rowsHtml = keys.map(function (k, i) {
@@ -6337,10 +6570,12 @@ function exportCartPdf_() {
 
       '<div class="cpo-cliente">' +
         '<div class="cpo-cliente-field">' +
-          '<div class="cpo-cliente-label">Cliente</div>&nbsp;' +
+          '<div class="cpo-cliente-label">Cliente</div>' +
+          (opts.cliente ? escHtml(opts.cliente) : '&nbsp;') +
         '</div>' +
         '<div class="cpo-cliente-field" style="flex:0 0 35%">' +
-          '<div class="cpo-cliente-label">Vendedor</div>&nbsp;' +
+          '<div class="cpo-cliente-label">Vendedor</div>' +
+          (opts.vendedor ? escHtml(opts.vendedor) : '&nbsp;') +
         '</div>' +
       '</div>' +
 
@@ -6367,6 +6602,14 @@ function exportCartPdf_() {
           '<div class="cpo-totals-row">' +
             '<span>Total unidades</span><b>' + totalUnits + '</b>' +
           '</div>' +
+          (descPct > 0
+            ? '<div class="cpo-totals-row">' +
+                '<span>Subtotal</span><b>' + fmtPrice(subtotalAmt) + '</b>' +
+              '</div>' +
+              '<div class="cpo-totals-row">' +
+                '<span>Descuento (' + fmtPct_(descPct) + '%)</span><b>−' + fmtPrice(descAmt) + '</b>' +
+              '</div>'
+            : '') +
           '<div class="cpo-totals-row cpo-totals-grand">' +
             '<span>TOTAL</span><b>' + fmtPrice(totalAmount) + '</b>' +
           '</div>' +
@@ -6408,11 +6651,13 @@ function closeCartPdf_() {
   document.body.style.overflow = '';
 }
 
-// Cerrar el PDF nota de pedido con Escape
+// Cerrar el PDF (o su mini-form previo) con Escape
 document.addEventListener('keydown', function (e) {
   if (e.key !== 'Escape') return;
-  var overlay = document.getElementById('cart-pdf-overlay');
-  if (overlay && overlay.classList.contains('open')) closeCartPdf_();
+  var pdf  = document.getElementById('cart-pdf-overlay');
+  if (pdf && pdf.classList.contains('open'))  { closeCartPdf_(); return; }
+  var form = document.getElementById('cart-pdf-form-overlay');
+  if (form && form.classList.contains('open')) { closeCartPdfForm_(); return; }
 });
 
 function updateStats() {

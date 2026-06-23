@@ -10,9 +10,10 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v13: rename "Catálogo La Costa SRL" -> "Catálogo de Productos" en title,
-// manifests, header de PDF nota de pedido y comentarios.
-const CACHE_VERSION = 'v13';
+// v14: nota de pedido — mini-form previo al PDF con cliente, vendedor y
+// descuento (%). Subtotal/descuento se muestran en la caja de totales
+// solo si el % es > 0.
+const CACHE_VERSION = 'v14';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
