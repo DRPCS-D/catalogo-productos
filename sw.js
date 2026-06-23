@@ -1,5 +1,5 @@
 /**
- * Service Worker — Catálogo La Costa PWA
+ * Service Worker — Catálogo de Productos PWA
  *
  * Estrategias de cache:
  *   - Shell (HTML, manifest, icons): precache + cache-first
@@ -10,9 +10,9 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v12: carrito — caja de totales + "Exportar PDF" ahora sticky al fondo
-// del viewport para que no haya que scrollear hasta abajo.
-const CACHE_VERSION = 'v12';
+// v13: rename "Catálogo La Costa SRL" -> "Catálogo de Productos" en title,
+// manifests, header de PDF nota de pedido y comentarios.
+const CACHE_VERSION = 'v13';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

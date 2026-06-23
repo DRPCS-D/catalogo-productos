@@ -1,7 +1,7 @@
 {
-  "name": "Catálogo La Costa",
+  "name": "Catálogo de Productos",
   "short_name": "Catálogo",
-  "description": "Catálogo de productos La Costa SRL — vista móvil para vendedores",
+  "description": "Catálogo de productos — vista móvil para vendedores",
   "start_url": "./?source=pwa",
   "scope": "./",
   "display": "standalone",

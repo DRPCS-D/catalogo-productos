@@ -3,7 +3,7 @@ tags: [moc, area/index]
 aliases: [MOC, Mapa Central]
 ---
 
-# 🗺️ MOC — Catálogo La Costa
+# 🗺️ MOC — Catálogo de Productos
 
 > PWA de catálogo de productos. **GitHub Pages + Supabase + Google Sheets + Apps Script + Python sync server**.
 

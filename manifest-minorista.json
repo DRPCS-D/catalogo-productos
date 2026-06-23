@@ -1,7 +1,7 @@
 {
-  "name": "Catálogo Minorista — La Costa",
+  "name": "Catálogo Minorista",
   "short_name": "Minorista",
-  "description": "Catálogo minorista de La Costa SRL",
+  "description": "Catálogo minorista",
   "start_url": "./?mode=mi&source=pwa",
   "scope": "./",
   "display": "standalone",

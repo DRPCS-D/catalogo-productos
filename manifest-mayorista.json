@@ -1,7 +1,7 @@
 {
-  "name": "Catálogo Mayorista — La Costa",
+  "name": "Catálogo Mayorista",
   "short_name": "Mayorista",
-  "description": "Catálogo mayorista de La Costa SRL",
+  "description": "Catálogo mayorista",
   "start_url": "./?mode=ma&source=pwa",
   "scope": "./",
   "display": "standalone",
