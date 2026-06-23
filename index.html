@@ -730,8 +730,10 @@
       padding: 5px 6px;
       vertical-align: middle;
     }
+    .cpo-table thead tr { background: var(--gray-100); color: var(--gray-700); }
     .cpo-table th {
       background: var(--gray-100);
+      color: var(--gray-700);
       font-weight: 700;
       text-align: left;
       font-size: 9pt;
@@ -4205,7 +4207,7 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.5.0';
+var APP_VERSION  = '1.5.1';
 var APP_BUILD    = '2026-06-19';
 
 function renderAppVersion_() {
