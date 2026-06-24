@@ -4105,16 +4105,25 @@ function applyPageConfig() {
   }
 
   // Marcas excluidas — filtrar el array products
-  if (cfg.marcasExcluidas && cfg.marcasExcluidas.length) {
-    products = products.filter(function (p) {
-      return cfg.marcasExcluidas.indexOf(p.marca) < 0;
-    });
-  }
+  applyExcludedBrands_();
 
   // Locked → ocultar controles que no deben tocarse
   if (cfg.locked) {
     document.body.classList.add('mode-locked');
   }
+}
+
+// Filtra products[] sacando las marcas configuradas como excluidas en el
+// modo activo. Idempotente — llamar tras cualquier reasignación de
+// products (load inicial, auto-refresh, manual refresh) para que las
+// marcas excluidas no vuelvan a aparecer en chips de filtro ni en las
+// vistas galería/tabla.
+function applyExcludedBrands_() {
+  var cfg = window.PAGE_CONFIG || {};
+  if (!cfg.marcasExcluidas || !cfg.marcasExcluidas.length) return;
+  products = products.filter(function (p) {
+    return cfg.marcasExcluidas.indexOf(p.marca) < 0;
+  });
 }
 
 function onProductsError(err) {
@@ -4158,6 +4167,7 @@ function silentRefresh_() {
 
       products = data;
       precomputeLastPurchaseDates_();
+      applyExcludedBrands_();
       populateFilters();
 
       // applyFilters resetea renderedCount=0. Después del renderCurrentView,
@@ -4207,7 +4217,7 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.5.1';
+var APP_VERSION  = '1.5.2';
 var APP_BUILD    = '2026-06-19';
 
 function renderAppVersion_() {
@@ -4377,6 +4387,7 @@ function manualRefresh() {
       if (data && Array.isArray(data)) {
         products = data;
         precomputeLastPurchaseDates_();
+        applyExcludedBrands_();
         populateFilters();
         applyFilters();
         renderCurrentView();

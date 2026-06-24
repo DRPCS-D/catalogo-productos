@@ -10,11 +10,10 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v15: nota de pedido — fix color de los th de la tabla. Una regla
-// global `thead tr` (de la tabla principal) pintaba el fondo en navy y
-// el texto en blanco; ahora .cpo-table thead tr fuerza fondo claro y
-// texto gris-700 para que se lea.
-const CACHE_VERSION = 'v15';
+// v16: filtros — las marcas excluidas (admin) ahora tampoco aparecen en
+// los chips del filtro marca. Fix: applyExcludedBrands_() se llama tras
+// auto-refresh + manual refresh (antes solo en load inicial).
+const CACHE_VERSION = 'v16';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
