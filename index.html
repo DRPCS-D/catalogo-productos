@@ -4241,7 +4241,7 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.9.0';
+var APP_VERSION  = '1.10.0';
 var APP_BUILD    = '2026-06-19';
 
 function renderAppVersion_() {
@@ -5611,23 +5611,46 @@ function selectCard_(card) {
 //   ↑ ↓           card en la misma columna fila arriba / abajo
 //   Home / End    primera / última card
 //   Espacio       abrir foto (lightbox) de la card seleccionada
-//   V             abrir "Ver detalles" de la card seleccionada
-// No interfiere cuando se está escribiendo en un input ni cuando hay
-// modal/lightbox/sidebar abierto.
+//   V o Enter     abrir "Ver detalles" de la card seleccionada
+//   +             agregar al carrito (quick-add) de la card seleccionada
+//   C             copiar el código de la card seleccionada al clipboard
+//   B             focus al buscador (toggle, sin importar si hay sidebar)
+//   F             abrir/cerrar el sidebar de filtros
+// No interfiere cuando se está escribiendo en un input ni cuando hay un
+// modificador (Ctrl/Cmd/Alt). Los atajos B y F funcionan aun con modal/
+// lightbox/sidebar abierto; el resto solo cuando no hay overlays.
 function onGalleryKeyNav_(e) {
   if (currentView !== 'gallery') return;
   var ae = document.activeElement;
   if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT' || ae.isContentEditable)) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+  var key = e.key;
+
+  // Atajos globales — funcionan aunque haya overlays
+  if (key === 'f' || key === 'F') {
+    e.preventDefault();
+    toggleSidebar();
+    return;
+  }
+  if (key === 'b' || key === 'B') {
+    e.preventDefault();
+    var s = document.getElementById('search-input');
+    if (s) { s.focus(); if (typeof s.select === 'function') s.select(); }
+    return;
+  }
+
   if (document.getElementById('modal').classList.contains('open'))    return;
   if (document.getElementById('lightbox').classList.contains('open')) return;
   if (document.getElementById('sidebar').classList.contains('open'))  return;
 
-  var key = e.key;
   var isArrow = key === 'ArrowLeft' || key === 'ArrowRight' || key === 'ArrowUp' || key === 'ArrowDown';
   var isJump  = key === 'Home' || key === 'End';
   var isSpace = key === ' ' || key === 'Spacebar';
-  var isV     = key === 'v' || key === 'V';
-  if (!isArrow && !isJump && !isSpace && !isV) return;
+  var isV     = key === 'v' || key === 'V' || key === 'Enter';
+  var isPlus  = key === '+' || key === '=';
+  var isC     = key === 'c' || key === 'C';
+  if (!isArrow && !isJump && !isSpace && !isV && !isPlus && !isC) return;
 
   var container = document.getElementById('gallery-container');
   if (!container) return;
@@ -5684,6 +5707,20 @@ function onGalleryKeyNav_(e) {
     if (btn) {
       e.preventDefault();
       openModal(btn.getAttribute('data-cod'), btn.getAttribute('data-color'));
+    }
+  } else if (isPlus) {
+    if (!current) return;
+    var qa = current.querySelector('.btn-card-quickadd');
+    if (qa) {
+      e.preventDefault();
+      openQuickAdd_(qa.getAttribute('data-cod'), qa.getAttribute('data-color'));
+    }
+  } else if (isC) {
+    if (!current) return;
+    var copy = current.querySelector('.btn-copy-code');
+    if (copy) {
+      e.preventDefault();
+      copyCodeToClipboard_(copy);
     }
   }
 }
