@@ -10,14 +10,16 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v24: galeria — mas atajos de teclado:
-//   Enter alias de V (abre Ver detalles)
-//   +     quick-add al carrito de la card seleccionada
-//   C     copia el codigo de la card seleccionada
-//   B     focus al buscador (toggle, aun con sidebar abierto)
-//   F     abre/cierra el sidebar de filtros
-// Bail si hay Ctrl/Cmd/Alt para no chocar con copy/paste/atajos del browser.
-const CACHE_VERSION = 'v24';
+// v25: galeria — mejoras a los atajos:
+//   Space ahora tambien CIERRA el lightbox
+//   V/Enter ahora tambien CIERRAN el modal de Ver detalles
+//   "/" alias de B (focus al buscador)
+//   Esc sin overlays abiertos deselecciona la card
+//   "?" abre/cierra un popup con la tabla de atajos
+//   Nuevo boton "⌨️ Atajos de teclado" en el footer del sidebar.
+// Space hace preventDefault siempre (evita scroll de pagina) — si no
+// hay foto, no hace nada mas.
+const CACHE_VERSION = 'v25';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
