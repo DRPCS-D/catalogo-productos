@@ -1367,6 +1367,11 @@
       box-shadow: var(--shadow);
     }
 
+    .product-card.is-selected {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary), var(--shadow);
+    }
+
     .card-img-wrap { position: relative; cursor: zoom-in; overflow: hidden; background: var(--gray-100); }
 
     .card-img {
@@ -4236,7 +4241,7 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.8.0';
+var APP_VERSION  = '1.8.1';
 var APP_BUILD    = '2026-06-19';
 
 function renderAppVersion_() {
@@ -4609,6 +4614,18 @@ function setupEvents() {
 
   // Galería — modal + lightbox + copiar código + quick-add carrito
   document.getElementById('gallery-container').addEventListener('click', function (e) {
+    // Selección visual de card (borde primario). Click en cualquier parte de la
+    // card la marca como seleccionada; sigue corriendo el resto del handler
+    // para que los botones internos (quickadd, ver detalles, etc.) sigan
+    // funcionando como antes.
+    var clickedCard = closest(e.target, '.product-card');
+    if (clickedCard) {
+      var container = e.currentTarget;
+      var prev = container.querySelector('.product-card.is-selected');
+      if (prev && prev !== clickedCard) prev.classList.remove('is-selected');
+      clickedCard.classList.add('is-selected');
+    }
+
     var copyBtn = closest(e.target, '.btn-copy-code');
     if (copyBtn) {
       e.stopPropagation();

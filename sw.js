@@ -10,11 +10,11 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v21: filtro "Ultima venta" (rango de fechas) dentro de "Mas opciones".
-// Mismo comportamiento que el de "Ultima compra" pero sobre s.dataUltVnd.
-// Producto pasa si la fecha mas reciente de venta entre todas sus
-// sucursales/colores/tallas cae dentro del rango.
-const CACHE_VERSION = 'v21';
+// v22: vista galeria — click en una card la marca como seleccionada
+// (borde primario + halo). Una sola card seleccionada a la vez; click
+// en otra mueve la marca. Los botones internos (quickadd, ver detalles,
+// copiar codigo, lightbox) siguen funcionando normal.
+const CACHE_VERSION = 'v22';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
