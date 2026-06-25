@@ -10,11 +10,11 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v20: multi-select — shift+click selecciona rango entre el ultimo
-// item clickeado (ancla) y el actual, tipo Windows Explorer. Funciona
-// en marca/grupo/subgrupo/coleccion/talle/color/sucursal y respeta el
-// buscador del propio multi-select (rango sobre items visibles).
-const CACHE_VERSION = 'v20';
+// v21: filtro "Ultima venta" (rango de fechas) dentro de "Mas opciones".
+// Mismo comportamiento que el de "Ultima compra" pero sobre s.dataUltVnd.
+// Producto pasa si la fecha mas reciente de venta entre todas sus
+// sucursales/colores/tallas cae dentro del rango.
+const CACHE_VERSION = 'v21';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

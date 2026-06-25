@@ -3384,6 +3384,13 @@
         <input type="date" id="filter-ultcmp-hasta" placeholder="Hasta">
       </div>
 
+      <label class="sidebar-label"><span class="sl-icon">🧾</span>Última venta (rango de fechas)</label>
+      <div class="date-range" title="Rango de fecha de última venta. La fecha es la más reciente entre todas las sucursales del producto.">
+        <input type="date" id="filter-ultvnd-desde" placeholder="Desde">
+        <span class="price-sep">—</span>
+        <input type="date" id="filter-ultvnd-hasta" placeholder="Hasta">
+      </div>
+
       <label class="sidebar-label" data-section="promo"><span class="sl-icon">🔥</span>Promoción (sobre el precio activo)</label>
       <div class="segmented" id="filter-promo" role="radiogroup" data-section="promo">
         <button type="button" data-value="all"     class="active">Todos</button>
@@ -3775,6 +3782,8 @@ var filterStockMin   = null;   // stock por color
 var filterStockMax   = null;
 var filterUltCompraDesde = null;   // string YYYY-MM-DD o null
 var filterUltCompraHasta = null;
+var filterUltVentaDesde  = null;   // string YYYY-MM-DD o null
+var filterUltVentaHasta  = null;
 var filterFoto       = 'all';  // 'all' | 'with' | 'without'
 var filterPromo      = 'all';  // 'all' | 'with' | 'without' (sobre el precio activo)
 var pdfIncludePromo  = false;  // PDF: mostrar precio promo cuando esté activo (default: No)
@@ -4014,21 +4023,27 @@ function onProductsLoaded(data) {
 // ninguna fecha, ambos quedan en null.
 function precomputeLastPurchaseDates_() {
   products.forEach(function (p) {
-    var maxIso = null;
+    var maxCmp = null, maxVnd = null;
     p.colorsArr.forEach(function (c) {
       c.gradesArr.forEach(function (g) {
         g.stock.forEach(function (s) {
           if (s.dataUltCmp) {
             // Las fechas vienen como "YYYY-MM-DD". Como strings ISO se pueden
             // comparar lexicográficamente sin parsing.
-            var iso = String(s.dataUltCmp).slice(0, 10);
-            if (iso > (maxIso || '')) maxIso = iso;
+            var isoC = String(s.dataUltCmp).slice(0, 10);
+            if (isoC > (maxCmp || '')) maxCmp = isoC;
+          }
+          if (s.dataUltVnd) {
+            var isoV = String(s.dataUltVnd).slice(0, 10);
+            if (isoV > (maxVnd || '')) maxVnd = isoV;
           }
         });
       });
     });
-    p._ultCompraMaxIso   = maxIso;
-    p._ultCompraMaxLabel = maxIso ? fmtDate(maxIso) : null;
+    p._ultCompraMaxIso   = maxCmp;
+    p._ultCompraMaxLabel = maxCmp ? fmtDate(maxCmp) : null;
+    p._ultVentaMaxIso    = maxVnd;
+    p._ultVentaMaxLabel  = maxVnd ? fmtDate(maxVnd) : null;
   });
 }
 
@@ -4221,7 +4236,7 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.7.0';
+var APP_VERSION  = '1.8.0';
 var APP_BUILD    = '2026-06-19';
 
 function renderAppVersion_() {
@@ -4555,7 +4570,8 @@ function setupEvents() {
   // Filtro de precio y stock (con debounce para no filtrar en cada tecla)
   var rangeTimer;
   ['filter-precio-min', 'filter-precio-max', 'filter-stock-min', 'filter-stock-max',
-   'filter-ultcmp-desde', 'filter-ultcmp-hasta']
+   'filter-ultcmp-desde', 'filter-ultcmp-hasta',
+   'filter-ultvnd-desde', 'filter-ultvnd-hasta']
     .forEach(function (id) {
       document.getElementById(id).addEventListener('input',  function () {
         clearTimeout(rangeTimer);
@@ -5090,6 +5106,13 @@ function _productPassesFilters_(p, skipSearch) {
     if (filterUltCompraHasta && iso > filterUltCompraHasta) return false;
   }
 
+  if (filterUltVentaDesde || filterUltVentaHasta) {
+    var isoV = p._ultVentaMaxIso;
+    if (!isoV) return false;
+    if (filterUltVentaDesde && isoV < filterUltVentaDesde) return false;
+    if (filterUltVentaHasta && isoV > filterUltVentaHasta) return false;
+  }
+
   // Foto: producto pasa si AL MENOS UN color cumple
   if (filterFoto !== 'all' && !p.colorsArr.some(colorPassesFoto_)) return false;
 
@@ -5221,6 +5244,8 @@ function onFilter() {
   filterStockMax  = num('filter-stock-max');
   filterUltCompraDesde = dateStr('filter-ultcmp-desde');
   filterUltCompraHasta = dateStr('filter-ultcmp-hasta');
+  filterUltVentaDesde  = dateStr('filter-ultvnd-desde');
+  filterUltVentaHasta  = dateStr('filter-ultvnd-hasta');
 
   applyFilters();
   renderCurrentView();
@@ -5240,13 +5265,15 @@ function clearFilters() {
   filterPrecioMin = filterPrecioMax = null;
   filterStockMin  = filterStockMax  = null;
   filterUltCompraDesde = filterUltCompraHasta = null;
+  filterUltVentaDesde  = filterUltVentaHasta  = null;
   filterFoto      = 'all';
   filterPromo     = 'all';
 
   ['search-input',
    'filter-precio-min', 'filter-precio-max',
    'filter-stock-min',  'filter-stock-max',
-   'filter-ultcmp-desde', 'filter-ultcmp-hasta'
+   'filter-ultcmp-desde', 'filter-ultcmp-hasta',
+   'filter-ultvnd-desde', 'filter-ultvnd-hasta'
   ].forEach(function (id) { document.getElementById(id).value = ''; });
 
   // Despues de clear: actualizar la visibilidad del boton ✕/📋 del buscador
@@ -5338,6 +5365,7 @@ function updateFilterBadge() {
   if (filterPrecioMin !== null || filterPrecioMax !== null) count++;
   if (filterStockMin  !== null || filterStockMax  !== null) count++;
   if (filterUltCompraDesde || filterUltCompraHasta) count++;
+  if (filterUltVentaDesde  || filterUltVentaHasta)  count++;
   if (filterFoto !== 'all') count++;
   if (filterPromo !== 'all') count++;
 
@@ -7702,6 +7730,11 @@ function buildFilterSummary_() {
     parts.push('Últ. compra: ' +
                (filterUltCompraDesde ? fmtDate(filterUltCompraDesde) : '—') +
                ' a ' + (filterUltCompraHasta ? fmtDate(filterUltCompraHasta) : 'hoy'));
+  }
+  if (filterUltVentaDesde || filterUltVentaHasta) {
+    parts.push('Últ. venta: ' +
+               (filterUltVentaDesde ? fmtDate(filterUltVentaDesde) : '—') +
+               ' a ' + (filterUltVentaHasta ? fmtDate(filterUltVentaHasta) : 'hoy'));
   }
   if (filterFoto === 'with')    parts.push('Solo con foto');
   if (filterFoto === 'without') parts.push('Solo sin foto');
