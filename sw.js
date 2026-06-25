@@ -10,11 +10,11 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v18: filtro Color dentro de "Más opciones" — multi-select con todos
-// los colores presentes en el catalogo. Producto pasa si alguno de sus
-// colores esta en la seleccion. Suma al badge, se limpia con ✕ Limpiar,
-// y aparece en el resumen del PDF.
-const CACHE_VERSION = 'v18';
+// v19: fix filtro Color — al seleccionar NEGRO mostraba todas las
+// variantes (AVELLANO, etc.) del producto si tenia una variante NEGRO.
+// Mismo bug que tenia la busqueda. Ahora renderGallery restringe las
+// cards a los colores seleccionados.
+const CACHE_VERSION = 'v19';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

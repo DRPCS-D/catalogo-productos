@@ -4221,7 +4221,7 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.6.0';
+var APP_VERSION  = '1.6.1';
 var APP_BUILD    = '2026-06-19';
 
 function renderAppVersion_() {
@@ -5460,10 +5460,14 @@ function renderGallery() {
   // restringir las cards a los colores que matchean — si no, se mostrarían
   // todas las variantes del producto y el usuario ve cards sin el color buscado.
   var qSearch = normTxt_((searchText || '').trim());
+  var colorFilterActive = filterColor.length > 0;
   filteredProducts.forEach(function (p) {
     var prodTextMatched = !qSearch || [p.codFabrica, p.nmProduto, p.marca, p.grupo, p.subgrupo, p.colecao]
       .some(function (v) { return v && normTxt_(v).indexOf(qSearch) >= 0; });
     p.colorsArr.forEach(function (c) {
+      // Filtro Color: si está activo, solo mostrar las variantes seleccionadas
+      if (colorFilterActive && filterColor.indexOf(c.color) < 0) return;
+      // Búsqueda matcheó solo por nombre de color → restringir a esos
       if (qSearch && !prodTextMatched) {
         if (!c.color || normTxt_(c.color).indexOf(qSearch) < 0) return;
       }
