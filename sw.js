@@ -10,10 +10,12 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v16: filtros — las marcas excluidas (admin) ahora tampoco aparecen en
-// los chips del filtro marca. Fix: applyExcludedBrands_() se llama tras
-// auto-refresh + manual refresh (antes solo en load inicial).
-const CACHE_VERSION = 'v16';
+// v17: búsqueda por color — buscar "Negro" mostraba todas las variantes
+// del producto (incluso ROJO, AZUL) si tenía una variante NEGRA. Ahora,
+// cuando la búsqueda matcheó solo por color, la galería restringe las
+// cards a los colores que matchean. Si matcheó por código/nombre/marca,
+// se siguen mostrando todos los colores.
+const CACHE_VERSION = 'v17';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

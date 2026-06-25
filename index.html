@@ -4217,7 +4217,7 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.5.2';
+var APP_VERSION  = '1.5.3';
 var APP_BUILD    = '2026-06-19';
 
 function renderAppVersion_() {
@@ -5439,8 +5439,18 @@ function renderGallery() {
   var stockFilterActive    = (filterStockMin !== null || filterStockMax !== null);
   var sucursalFilterActive = effectiveSucursalFilter_().length > 0;
   var fotoFilterActive     = (filterFoto !== 'all');
+
+  // Si la búsqueda matcheó SOLO por color (no por código/nombre/marca/etc.),
+  // restringir las cards a los colores que matchean — si no, se mostrarían
+  // todas las variantes del producto y el usuario ve cards sin el color buscado.
+  var qSearch = normTxt_((searchText || '').trim());
   filteredProducts.forEach(function (p) {
+    var prodTextMatched = !qSearch || [p.codFabrica, p.nmProduto, p.marca, p.grupo, p.subgrupo, p.colecao]
+      .some(function (v) { return v && normTxt_(v).indexOf(qSearch) >= 0; });
     p.colorsArr.forEach(function (c) {
+      if (qSearch && !prodTextMatched) {
+        if (!c.color || normTxt_(c.color).indexOf(qSearch) < 0) return;
+      }
       if (sucursalFilterActive && getColorStock(c) <= 0) return;
       if (stockFilterActive && !colorPassesStock_(c)) return;
       if (fotoFilterActive && !colorPassesFoto_(c)) return;
