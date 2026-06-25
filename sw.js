@@ -10,16 +10,10 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v25: galeria — mejoras a los atajos:
-//   Space ahora tambien CIERRA el lightbox
-//   V/Enter ahora tambien CIERRAN el modal de Ver detalles
-//   "/" alias de B (focus al buscador)
-//   Esc sin overlays abiertos deselecciona la card
-//   "?" abre/cierra un popup con la tabla de atajos
-//   Nuevo boton "⌨️ Atajos de teclado" en el footer del sidebar.
-// Space hace preventDefault siempre (evita scroll de pagina) — si no
-// hay foto, no hace nada mas.
-const CACHE_VERSION = 'v25';
+// v26: sidebar footer compacto — los botones "⌨️ Atajos" y "↻ Actualizar
+// app" ahora son solo iconos, agrupados a la derecha de la fila de
+// version. Sin texto. Mismo styling que el boton de actualizar.
+const CACHE_VERSION = 'v26';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

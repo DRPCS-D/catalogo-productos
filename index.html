@@ -1778,22 +1778,29 @@
       line-height: 1.4;
     }
 
-    /* Chip "⌨️ Atajos" en el sidebar footer */
+    /* Botón compacto "⌨️" en la fila de versión, espejo del btn-force-update */
     .sidebar-footer .btn-shortcuts-side {
-      width: 100%;
-      padding: 8px 12px;
-      background: white;
+      width: auto;
+      background: transparent;
       border: 1px solid var(--gray-300);
-      color: var(--gray-700);
-      border-radius: 6px;
-      font-size: 12px;
+      color: var(--gray-600);
+      padding: 5px 9px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      line-height: 1;
       font-weight: 600;
       cursor: pointer;
-      text-align: center;
+      transition: all .15s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
     .sidebar-footer .btn-shortcuts-side:hover {
-      background: var(--gray-100);
-      color: var(--gray-900);
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
     }
 
     .card-img-ph {
@@ -2572,6 +2579,12 @@
       margin-top: 10px;
       padding-top: 10px;
       border-top: 1px solid var(--gray-200);
+    }
+    .sidebar-footer .app-version-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
     }
     .sidebar-footer .app-version {
       font-size: 11px;
@@ -3528,13 +3541,13 @@
       <button class="btn-excel-side" id="btn-excel" onclick="exportExcelFromSwitch_()" title="Exportar a Excel (CSV) el filtro actual">Exportar Excel</button>
     </details>
 
-    <!-- Atajos de teclado -->
-    <button type="button" class="btn-shortcuts-side" onclick="openShortcuts_()" title="Mostrar atajos de teclado (?)">⌨️ Atajos de teclado</button>
-
-    <!-- Versión + Forzar actualización -->
+    <!-- Versión + Atajos + Forzar actualización (iconos compactos) -->
     <div class="app-version-row">
       <span class="app-version" id="app-version" title="Versión de la app que estás ejecutando">v—</span>
-      <button class="btn-force-update" onclick="forceUpdateApp_()" title="Borra el cache local y descarga la última versión publicada.">↻ Actualizar app</button>
+      <div class="app-version-actions">
+        <button class="btn-shortcuts-side" type="button" onclick="openShortcuts_()" title="Atajos de teclado (?)" aria-label="Atajos de teclado">⌨️</button>
+        <button class="btn-force-update" onclick="forceUpdateApp_()" title="Actualizar app — borra el cache y descarga la última versión" aria-label="Actualizar app">↻</button>
+      </div>
     </div>
   </div>
 </aside>
@@ -4355,7 +4368,7 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.11.0';
+var APP_VERSION  = '1.11.1';
 var APP_BUILD    = '2026-06-19';
 
 function renderAppVersion_() {
