@@ -10,11 +10,11 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v19: fix filtro Color — al seleccionar NEGRO mostraba todas las
-// variantes (AVELLANO, etc.) del producto si tenia una variante NEGRO.
-// Mismo bug que tenia la busqueda. Ahora renderGallery restringe las
-// cards a los colores seleccionados.
-const CACHE_VERSION = 'v19';
+// v20: multi-select — shift+click selecciona rango entre el ultimo
+// item clickeado (ancla) y el actual, tipo Windows Explorer. Funciona
+// en marca/grupo/subgrupo/coleccion/talle/color/sucursal y respeta el
+// buscador del propio multi-select (rango sobre items visibles).
+const CACHE_VERSION = 'v20';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

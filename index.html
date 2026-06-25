@@ -4221,7 +4221,7 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.6.1';
+var APP_VERSION  = '1.7.0';
 var APP_BUILD    = '2026-06-19';
 
 function renderAppVersion_() {
@@ -4952,6 +4952,54 @@ function buildMultiSelect(id, opts, selectedArr) {
     refreshLabel();
     applyFilters();
     renderCurrentView();
+  });
+
+  // Shift+click → seleccionar rango entre el último click "ancla" y el actual,
+  // tipo selección de archivos en Windows Explorer. Los items entre medio
+  // quedan en el mismo estado (marcado/desmarcado) que el clickeado.
+  // El rango es sobre los items VISIBLES (respeta el buscador del multi-select).
+  var anchorValue = null;
+  list.addEventListener('click', function (e) {
+    var label = e.target.closest('.multi-option');
+    if (!label) return;
+    var cb = label.querySelector('input[type="checkbox"]');
+    if (!cb) return;
+
+    if (e.shiftKey && anchorValue !== null && anchorValue !== cb.value) {
+      // Cancelar el toggle por default — lo hacemos manualmente con el rango
+      e.preventDefault();
+      var targetChecked = !cb.checked;   // estado que el click iba a aplicar al clickeado
+
+      var visible = Array.prototype.filter.call(
+        list.querySelectorAll('.multi-option'),
+        function (l) { return l.style.display !== 'none'; }
+      );
+      var aIdx = -1, cIdx = -1;
+      for (var i = 0; i < visible.length; i++) {
+        if (visible[i].getAttribute('data-value') === anchorValue) aIdx = i;
+        if (visible[i] === label) cIdx = i;
+      }
+      if (aIdx < 0 || cIdx < 0) { anchorValue = cb.value; return; }
+
+      var lo = Math.min(aIdx, cIdx), hi = Math.max(aIdx, cIdx);
+      for (var j = lo; j <= hi; j++) {
+        var cb2 = visible[j].querySelector('input[type="checkbox"]');
+        if (cb2.checked === targetChecked) continue;
+        cb2.checked = targetChecked;
+        var v = cb2.value;
+        var idx = selectedArr.indexOf(v);
+        if (targetChecked && idx < 0) selectedArr.push(v);
+        if (!targetChecked && idx >= 0) selectedArr.splice(idx, 1);
+      }
+      refreshLabel();
+      applyFilters();
+      renderCurrentView();
+      // Mantener el ancla original — facilita expandir el rango con más shift+click
+      return;
+    }
+
+    // Click normal: el ancla es este item
+    anchorValue = cb.value;
   });
 
   root.querySelector('.ms-all').addEventListener('click', function () {
