@@ -10,12 +10,11 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v17: búsqueda por color — buscar "Negro" mostraba todas las variantes
-// del producto (incluso ROJO, AZUL) si tenía una variante NEGRA. Ahora,
-// cuando la búsqueda matcheó solo por color, la galería restringe las
-// cards a los colores que matchean. Si matcheó por código/nombre/marca,
-// se siguen mostrando todos los colores.
-const CACHE_VERSION = 'v17';
+// v18: filtro Color dentro de "Más opciones" — multi-select con todos
+// los colores presentes en el catalogo. Producto pasa si alguno de sus
+// colores esta en la seleccion. Suma al badge, se limpia con ✕ Limpiar,
+// y aparece en el resumen del PDF.
+const CACHE_VERSION = 'v18';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

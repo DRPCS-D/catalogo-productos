@@ -3390,6 +3390,9 @@
         <button type="button" data-value="with">En promo</button>
         <button type="button" data-value="without">Sin promo</button>
       </div>
+
+      <label class="sidebar-label"><span class="sl-icon">🎨</span>Color</label>
+      <div class="multi-select" id="filter-color" data-placeholder="Todos los colores" data-noun="color"></div>
     </details>
 
   </div>
@@ -3745,6 +3748,7 @@ var filterGrupo      = [];
 var filterSubgrupo   = [];
 var filterColecao    = [];
 var filterTalle      = [];   // tallas (grades) seleccionadas
+var filterColor      = [];   // colores seleccionados (multi)
 var filterSucursal   = [];   // sucursales seleccionadas (multi-select)
 var filterPrecioMin  = null;
 var filterPrecioMax  = null;
@@ -4217,7 +4221,7 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.5.3';
+var APP_VERSION  = '1.6.0';
 var APP_BUILD    = '2026-06-19';
 
 function renderAppVersion_() {
@@ -4814,8 +4818,8 @@ function groupData(data) {
 // FILTROS
 // =================================================================
 function populateFilters() {
-  var seen = { marca: {}, grupo: {}, subgrupo: {}, colecao: {}, talle: {}, sucursal: {} };
-  var marcas = [], grupos = [], subgrupos = [], colecoes = [], talles = [], sucursales = [];
+  var seen = { marca: {}, grupo: {}, subgrupo: {}, colecao: {}, talle: {}, sucursal: {}, color: {} };
+  var marcas = [], grupos = [], subgrupos = [], colecoes = [], talles = [], sucursales = [], colores = [];
 
   products.forEach(function (p) {
     if (p.marca    && !seen.marca[p.marca])       { seen.marca[p.marca]       = 1; marcas.push(p.marca);       }
@@ -4823,8 +4827,9 @@ function populateFilters() {
     if (p.subgrupo && !seen.subgrupo[p.subgrupo]) { seen.subgrupo[p.subgrupo] = 1; subgrupos.push(p.subgrupo); }
     if (p.colecao  && !seen.colecao[p.colecao])   { seen.colecao[p.colecao]   = 1; colecoes.push(p.colecao);   }
 
-    // talles y sucursales — viven al nivel más profundo
+    // talles, sucursales y colores — viven al nivel más profundo
     p.colorsArr.forEach(function (c) {
+      if (c.color && !seen.color[c.color]) { seen.color[c.color] = 1; colores.push(c.color); }
       c.gradesArr.forEach(function (g) {
         if (g.grade != null && g.grade !== '' && !seen.talle[g.grade]) {
           seen.talle[g.grade] = 1;
@@ -4864,6 +4869,7 @@ function populateFilters() {
   buildMultiSelect('filter-colecao',  colecoes.sort(),   filterColecao);
   buildMultiSelect('filter-talle',    talles,            filterTalle);
   buildMultiSelect('filter-sucursal', sucursalesOptions, filterSucursal);
+  buildMultiSelect('filter-color',    colores.sort(),    filterColor);
 }
 
 // =================================================================
@@ -4992,6 +4998,15 @@ function _productPassesFilters_(p, skipSearch) {
   if (filterGrupo.length    && filterGrupo.indexOf(p.grupo)       < 0) return false;
   if (filterSubgrupo.length && filterSubgrupo.indexOf(p.subgrupo) < 0) return false;
   if (filterColecao.length  && filterColecao.indexOf(p.colecao)   < 0) return false;
+
+  // Color: producto pasa si alguno de sus colores está en la selección.
+  if (filterColor.length) {
+    var hasColor = false;
+    for (var cci = 0; cci < p.colorsArr.length; cci++) {
+      if (filterColor.indexOf(p.colorsArr[cci].color) >= 0) { hasColor = true; break; }
+    }
+    if (!hasColor) return false;
+  }
 
   // Talle: producto pasa si alguno de sus colores tiene alguna talla en la selección.
   if (filterTalle.length) {
@@ -5195,7 +5210,7 @@ function clearFilters() {
   }
 
   // Limpiar multi-selects de marca/grupo/subgrupo/colección/talle (siempre)
-  ['filter-marca', 'filter-grupo', 'filter-subgrupo', 'filter-colecao', 'filter-talle'].forEach(function (id) {
+  ['filter-marca', 'filter-grupo', 'filter-subgrupo', 'filter-colecao', 'filter-talle', 'filter-color'].forEach(function (id) {
     var root = document.getElementById(id);
     if (root && root._uncheckAll) root._uncheckAll();
   });
@@ -5270,6 +5285,7 @@ function updateFilterBadge() {
   if (filterSubgrupo.length) count++;
   if (filterColecao.length)  count++;
   if (filterTalle.length)    count++;
+  if (filterColor.length)    count++;
   count += sucCount;
   if (filterPrecioMin !== null || filterPrecioMax !== null) count++;
   if (filterStockMin  !== null || filterStockMax  !== null) count++;
@@ -7617,6 +7633,7 @@ function buildFilterSummary_() {
   if (filterSubgrupo.length) parts.push('Subgrupo: ' + filterSubgrupo.join(', '));
   if (filterColecao.length)  parts.push('Colección: '+ filterColecao.join(', '));
   if (filterTalle.length)    parts.push('Talle: '    + filterTalle.join(', '));
+  if (filterColor.length)    parts.push('Color: '    + filterColor.join(', '));
   // Sucursal: mostrar la lista efectiva (incluye el caso "modo locked + vacío"
   // que en realidad significa "todas las del config")
   var sucEff = effectiveSucursalFilter_();
