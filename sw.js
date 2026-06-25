@@ -10,11 +10,11 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v22: vista galeria — click en una card la marca como seleccionada
-// (borde primario + halo). Una sola card seleccionada a la vez; click
-// en otra mueve la marca. Los botones internos (quickadd, ver detalles,
-// copiar codigo, lightbox) siguen funcionando normal.
-const CACHE_VERSION = 'v22';
+// v23: galeria — navegacion por teclado. Flechas mueven la card
+// seleccionada (← → en la fila, ↑ ↓ entre filas manteniendo columna),
+// Home/End van a primera/ultima, Space abre la foto (lightbox), V abre
+// "Ver detalles". No interfiere con inputs ni con modal/lightbox abierto.
+const CACHE_VERSION = 'v23';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

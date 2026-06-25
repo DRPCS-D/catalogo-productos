@@ -4241,7 +4241,7 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.8.1';
+var APP_VERSION  = '1.9.0';
 var APP_BUILD    = '2026-06-19';
 
 function renderAppVersion_() {
@@ -4685,6 +4685,11 @@ function setupEvents() {
       else                                                                     closeModal();
     }
   });
+
+  // Navegación con teclado en la galería: flechas mueven la selección,
+  // Space abre la foto (lightbox), V abre el detalle. Home/End saltan al
+  // primero/último.
+  document.addEventListener('keydown', onGalleryKeyNav_);
 
   // Segmented control de foto
   document.querySelectorAll('#filter-foto button').forEach(function (btn) {
@@ -5589,6 +5594,100 @@ function renderGallery() {
 }
 
 // Construye el HTML de UNA card (producto × color)
+// Marca una card como seleccionada (clase .is-selected), desmarca la anterior
+// y la scrollea al viewport.
+function selectCard_(card) {
+  if (!card) return;
+  var container = document.getElementById('gallery-container');
+  if (!container) return;
+  var prev = container.querySelector('.product-card.is-selected');
+  if (prev && prev !== card) prev.classList.remove('is-selected');
+  card.classList.add('is-selected');
+  card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+// Navegación por teclado en la galería:
+//   ← →           card anterior / siguiente
+//   ↑ ↓           card en la misma columna fila arriba / abajo
+//   Home / End    primera / última card
+//   Espacio       abrir foto (lightbox) de la card seleccionada
+//   V             abrir "Ver detalles" de la card seleccionada
+// No interfiere cuando se está escribiendo en un input ni cuando hay
+// modal/lightbox/sidebar abierto.
+function onGalleryKeyNav_(e) {
+  if (currentView !== 'gallery') return;
+  var ae = document.activeElement;
+  if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT' || ae.isContentEditable)) return;
+  if (document.getElementById('modal').classList.contains('open'))    return;
+  if (document.getElementById('lightbox').classList.contains('open')) return;
+  if (document.getElementById('sidebar').classList.contains('open'))  return;
+
+  var key = e.key;
+  var isArrow = key === 'ArrowLeft' || key === 'ArrowRight' || key === 'ArrowUp' || key === 'ArrowDown';
+  var isJump  = key === 'Home' || key === 'End';
+  var isSpace = key === ' ' || key === 'Spacebar';
+  var isV     = key === 'v' || key === 'V';
+  if (!isArrow && !isJump && !isSpace && !isV) return;
+
+  var container = document.getElementById('gallery-container');
+  if (!container) return;
+  var cards = Array.prototype.slice.call(container.querySelectorAll('.product-card'));
+  if (!cards.length) return;
+
+  var current = container.querySelector('.product-card.is-selected');
+  var idx     = current ? cards.indexOf(current) : -1;
+
+  // Sin selección previa: cualquier flecha o Home/End selecciona la primera
+  if (idx < 0 && (isArrow || isJump)) {
+    e.preventDefault();
+    selectCard_(cards[0]);
+    return;
+  }
+
+  if (key === 'ArrowRight') {
+    e.preventDefault();
+    if (idx < cards.length - 1) selectCard_(cards[idx + 1]);
+  } else if (key === 'ArrowLeft') {
+    e.preventDefault();
+    if (idx > 0) selectCard_(cards[idx - 1]);
+  } else if (key === 'ArrowDown' || key === 'ArrowUp') {
+    e.preventDefault();
+    var dir = key === 'ArrowDown' ? 1 : -1;
+    var curLeft = current.offsetLeft;
+    var curTop  = current.offsetTop;
+    var best = null, bestScore = Infinity;
+    cards.forEach(function (c) {
+      if (c === current) return;
+      if (dir === 1  && c.offsetTop <= curTop) return;
+      if (dir === -1 && c.offsetTop >= curTop) return;
+      // Priorizar la fila inmediata; dentro de ella, la columna más cercana en X
+      var score = Math.abs(c.offsetTop - curTop) * 10 + Math.abs(c.offsetLeft - curLeft);
+      if (score < bestScore) { bestScore = score; best = c; }
+    });
+    if (best) selectCard_(best);
+  } else if (key === 'Home') {
+    e.preventDefault();
+    selectCard_(cards[0]);
+  } else if (key === 'End') {
+    e.preventDefault();
+    selectCard_(cards[cards.length - 1]);
+  } else if (isSpace) {
+    if (!current) return;
+    var wrap = current.querySelector('.card-img-wrap');
+    if (wrap && wrap.getAttribute('data-img')) {
+      e.preventDefault();
+      openLightbox(wrap);
+    }
+  } else if (isV) {
+    if (!current) return;
+    var btn = current.querySelector('.btn-card-detail');
+    if (btn) {
+      e.preventDefault();
+      openModal(btn.getAttribute('data-cod'), btn.getAttribute('data-color'));
+    }
+  }
+}
+
 function buildGalleryCardHtml_(item) {
     var p = item.p, c = item.c;
     var imgUrl     = getImgUrl(c.imgId, 400);     // thumbnail 400px para la card
