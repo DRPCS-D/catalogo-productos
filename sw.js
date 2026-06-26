@@ -10,10 +10,10 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v26: sidebar footer compacto — los botones "⌨️ Atajos" y "↻ Actualizar
-// app" ahora son solo iconos, agrupados a la derecha de la fila de
-// version. Sin texto. Mismo styling que el boton de actualizar.
-const CACHE_VERSION = 'v26';
+// v27: en el lightbox, las flechas ←/→ (y ↑/↓) saltan al producto
+// anterior/siguiente con foto. Mueve tambien la seleccion de card
+// para que al cerrar el lightbox quede sincronizado.
+const CACHE_VERSION = 'v27';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

@@ -3683,6 +3683,7 @@
         <tr><td><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd></td><td>Mover la selección entre cards</td></tr>
         <tr><td><kbd>Home</kbd> / <kbd>End</kbd></td><td>Primera / última card</td></tr>
         <tr><td><kbd>Space</kbd></td><td>Abrir / cerrar foto (lightbox)</td></tr>
+        <tr><td><kbd>←</kbd> <kbd>→</kbd> en lightbox</td><td>Foto del producto anterior / siguiente</td></tr>
         <tr><td><kbd>V</kbd> o <kbd>Enter</kbd></td><td>Abrir / cerrar "Ver detalles"</td></tr>
         <tr><td><kbd>+</kbd></td><td>Agregar al carrito (quick-add)</td></tr>
         <tr><td><kbd>C</kbd></td><td>Copiar código al portapapeles</td></tr>
@@ -4368,8 +4369,8 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.11.1';
-var APP_BUILD    = '2026-06-19';
+var APP_VERSION  = '1.12.0';
+var APP_BUILD    = '2026-06-26';
 
 function renderAppVersion_() {
   var el = document.getElementById('app-version');
@@ -5788,6 +5789,12 @@ function onGalleryKeyNav_(e) {
     return;
   }
 
+  // Flechas dentro del lightbox → navegar al producto anterior/siguiente con foto
+  if (lightboxOpen && (key === 'ArrowLeft' || key === 'ArrowRight' || key === 'ArrowUp' || key === 'ArrowDown')) {
+    e.preventDefault();
+    advanceLightbox_(key);
+    return;
+  }
   // Space cierra el lightbox si estaba abierto
   if ((key === ' ' || key === 'Spacebar') && lightboxOpen) {
     e.preventDefault();
@@ -6303,6 +6310,28 @@ function openLightbox(wrap) {
 
   document.getElementById('lightbox').classList.add('open');
   document.body.style.overflow = 'hidden';
+}
+
+// Avanza el lightbox al siguiente/anterior producto con foto.
+//   ←/↑ retrocede, →/↓ avanza. Si llega al borde, no envuelve.
+//   Mueve también la selección de card para que al cerrar quede sincronizado.
+function advanceLightbox_(key) {
+  var container = document.getElementById('gallery-container');
+  if (!container) return;
+  var cards = Array.prototype.slice.call(container.querySelectorAll('.product-card'));
+  if (!cards.length) return;
+  var current = container.querySelector('.product-card.is-selected');
+  var idx     = current ? cards.indexOf(current) : -1;
+  var dir     = (key === 'ArrowRight' || key === 'ArrowDown') ? 1 : -1;
+  if (idx < 0) idx = dir === 1 ? -1 : cards.length;
+  for (var i = idx + dir; i >= 0 && i < cards.length; i += dir) {
+    var wrap = cards[i].querySelector('.card-img-wrap');
+    if (wrap && wrap.getAttribute('data-img')) {
+      selectCard_(cards[i]);
+      openLightbox(wrap);
+      return;
+    }
+  }
 }
 
 function closeLightbox() {
