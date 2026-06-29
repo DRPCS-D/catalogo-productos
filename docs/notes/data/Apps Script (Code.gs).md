@@ -1,32 +1,28 @@
 ---
-tags: [tipo/data, area/backend]
+tags: [tipo/legacy, area/backend]
 aliases: [Code.gs, Apps Script]
 ---
 
 # Apps Script (Code.gs)
 
-> Script de Google Apps Script (~1271 líneas). **Gitignored** — vive solo en script.google.com. Procesamiento adicional, webhook admin, defaults de config (espejo de `PAGE_CONFIGS`).
+> **Histórico, fuera del pipeline activo.** Fue el runtime original del catálogo y el sync horario a Google Sheets. Reemplazado por GitHub Pages + Supabase + `sync.py`.
 
 ## 📍 Ubicación
-- **No** en el repo (gitignored — `.gitignore` lo excluye).
-- Vive en `script.google.com` ligado a la hoja de Google Sheets ([[Google Sheets]]).
-- Backup local sugerido: `Code.gs` en la raíz del proyecto (ignorado por git pero presente en disco).
+- Código preservado en `docs/legacy/Code.gs` (versionado en el repo).
+- El proyecto en `script.google.com` puede seguir publicado pero **sin triggers activos**.
 
-## 🎯 Qué hace
-- Triggers webhook desde el [[Admin HTML]] o desde la propia hoja (`onEdit`/`onChange`).
-- Lee/escribe `_cache` y `_meta` en la hoja.
-- Espejo de `PAGE_CONFIGS` (defaults de [[Page Modes]]) por si el cliente necesita hidratar config sin tocar Supabase.
-- Auth del admin (opcional, paralela a `admin_secret`).
+## 🎯 Qué hacía (referencia histórica)
+- Servía la web app vía `doGet` (reemplazado por [[GitHub Pages]] + `index.html`).
+- Sincronizaba el catálogo de la API a [[Google Sheets]] `_cache` (reemplazado por [[Sync Server (Python)]] → [[Supabase Schema]]).
+- Autenticaba el panel admin con bcrypt + hoja `_users` (reemplazado por `admin.html` + tabla `admin_secret` en Supabase).
+- Mantenía la hoja `_config` con los modos del catálogo (reemplazado por tabla `page_config` en Supabase).
 
-## 🔗 Recursos
-- Hoja vinculada: ID definido en `sync.py` del [[Sync Server (Python)]].
-- Endpoint webhook (URL `script.google.com/macros/s/.../exec`) — usado desde [[Admin HTML]].
+## 🔌 Migración
+- Runtime cliente → [[Carga de Datos]] (lee Supabase REST directo).
+- Sync batch → [[Sync Server (Python)]] (escribe Supabase + `catalog_cache` JSONB).
+- Auth admin → bcrypt comparado contra `admin_secret` desde [[Admin HTML]].
+- Configs modo → [[Supabase Schema]] tabla `page_config`.
 
-## 🔌 Depende de
-- [[Google Sheets]]
-- [[Supabase Schema]] (puede espejar `catalog_cache`)
-
-## ⚠️ Gotchas
-- **Cambios en `Code.gs` no van por git** — para versionar, copiar el archivo local + commit manual a una carpeta `script-backups/` (ignorada por default).
-- Triggers tienen quotas de Apps Script — si se llaman muchas veces seguidas pueden silenciarse.
-- Si se rompe el script, [[Admin HTML]] puede quedar sin canal para algunas operaciones — fallback es escribir directo a Supabase.
+## ⚠️ Operación pendiente
+- Desactivar el trigger horario en `script.google.com` (manual, una vez).
+- La hoja vinculada en [[Google Sheets]] puede archivarse — ya no se escribe.

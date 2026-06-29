@@ -1,0 +1,9 @@
+# Variables de entorno (cron NO hereda las del proceso padre)
+GOOGLE_APPLICATION_CREDENTIALS=/app/service-account.json
+TZ=America/Asuncion
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Ejecutar sync cada hora en el minuto 5 (ej. 00:05, 01:05, 02:05, ...)
+# La salida va a stdout del contenedor (visible con: docker compose logs)
+5 * * * * cd /app && /usr/local/bin/python sync.py > /proc/1/fd/1 2>/proc/1/fd/2
+

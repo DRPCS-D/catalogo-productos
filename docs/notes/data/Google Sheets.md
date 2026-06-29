@@ -1,28 +1,21 @@
 ---
-tags: [tipo/data, area/backend]
+tags: [tipo/legacy, area/backend]
 aliases: [Sheets]
 ---
 
 # Google Sheets
 
-> Hoja vinculada al proyecto. Sirve como intermediario entre el sync server y Supabase, y como backup human-readable de los datos.
+> **Histórico, fuera del pipeline activo.** Era intermediario entre el sync y Supabase. El sync ahora escribe directo a Supabase.
 
 ## 📍 Ubicación
-- Sheet ID en `sync-server/sync.py` (no replicar acá)
+- Sheet ID estaba en `sync-server/sync.py`. Removido al limpiar el sync.
 
-## 🗂️ Hojas
-- **`_cache`** — JSON troceado en chunks de 45k chars (limite por celda). Una columna `chunk_id`, otra `data`.
-- **`_meta`** — logs del sync (timestamp, status, duración, errores).
-- Otras hojas (productos, marcas, etc.) — datos source-of-truth para el equipo comercial.
+## 🗂️ Hojas (referencia histórica)
+- `_cache` — JSON troceado en chunks de 45k chars (límite de celda).
+- `_meta` — logs del sync.
+- Otras hojas (productos, marcas, _config, _users) — datos manejados por el antiguo [[Apps Script (Code.gs)]].
 
-## 🔌 Depende de
-- [[Sync Server (Python)]] (escribe `_cache` y `_meta`)
-- [[Apps Script (Code.gs)]] (puede leer/escribir)
-
-## 🔁 Consumido por
-- [[Supabase Schema]] (el sync espeja desde acá a `catalog_cache`)
-- [[Apps Script (Code.gs)]]
-
-## ⚠️ Gotchas
-- Si alguien edita manualmente las hojas source y el sync sobreescribe — coordinar antes de tocar.
-- El troceado en `_cache` necesita reensamblarse en el orden correcto (`chunk_id` ASC).
+## ⚠️ Estado actual
+- El sync ya no escribe a `_cache` / `_meta`.
+- La hoja puede archivarse o eliminarse — ningún componente activo la lee.
+- Si alguien necesita el JSON agrupado, el source-of-truth es la tabla `catalog_cache` de [[Supabase Schema]].

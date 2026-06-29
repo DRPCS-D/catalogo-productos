@@ -7,13 +7,12 @@ service-account.json
 *.key
 *.pem
 
-# Apps Script (vive en script.google.com, no en el repo)
-Code.gs
 # admin.html SE incluye en el repo (versión PWA con PIN auth + Supabase).
 # Si quisieras ocultarlo del deploy, agrega "admin.html" acá.
 
-# Sync server (vive en el servidor Docker, no en el repo)
-sync-server/
+# Sync server: el código fuente vive en el repo; los secretos NO.
+# Las reglas de arriba (service-account.json, .env, .env.*) ya cubren
+# los archivos sensibles dentro de sync-server/.
 
 # Sistema operativo
 .DS_Store

@@ -1,0 +1,24 @@
+services:
+  catalog-sync:
+    build: .
+    container_name: catalog-sync
+    restart: unless-stopped
+    volumes:
+      # Credenciales del Service Account — montar como read-only
+      - ./service-account.json:/app/service-account.json:ro
+    env_file:
+      # Variables sensibles (SUPABASE_DB_URL, etc.) — crear .env con chmod 600
+      - .env
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/service-account.json
+      - TZ=America/Asuncion
+    # Limitar memoria por si acaso (la API + agrupación puede tomar ~500 MB)
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

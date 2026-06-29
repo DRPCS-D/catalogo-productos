@@ -10,10 +10,10 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v27: en el lightbox, las flechas ←/→ (y ↑/↓) saltan al producto
-// anterior/siguiente con foto. Mueve tambien la seleccion de card
-// para que al cerrar el lightbox quede sincronizado.
-const CACHE_VERSION = 'v27';
+// v28: limpieza de vestigios de Apps Script + Google Sheets. El sync
+// ahora escribe solo a Supabase. Sin cambios funcionales en el cliente,
+// pero bumpeamos para forzar refresh post-deploy.
+const CACHE_VERSION = 'v28';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

@@ -3740,7 +3740,7 @@ var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 //   ?mode=mi  → minorista
 //   ?mode=g   → general (o sin parámetro)
 // Las URLs largas (?mode=mayorista, ?mode=minorista) siguen funcionando
-// para no romper bookmarks viejos. El modo 'admin' vive en Apps Script.
+// para no romper bookmarks viejos. El panel admin vive en admin.html.
 window.PAGE_MODE = (function () {
   var raw = (new URLSearchParams(location.search)).get('mode') || 'general';
   var aliases = {
@@ -3754,10 +3754,10 @@ window.PAGE_MODE = (function () {
   return aliases[raw.toLowerCase()] || 'general';
 })();
 
-// Configs hardcoded — espejo de DEFAULT_CONFIGS en Code.gs.
-// Si los modos cambian en el panel admin (GAS), actualizá esta tabla y
-// pusheá al repo. Es un trade-off consciente para no necesitar otra tabla
-// en Supabase ni lectura adicional al cargar.
+// Configs hardcoded — fallback si fetchPageConfigFromSupabase_ falla.
+// La fuente de verdad de los modos vive en la tabla page_config de Supabase
+// y se edita desde admin.html. Esta tabla local cubre el caso offline /
+// primer pintado antes de que llegue la respuesta de Supabase.
 var PAGE_CONFIGS = {
   general: {
     mode:                    'general',
@@ -4116,7 +4116,7 @@ function fetchSupabaseCatalog_() {
 }
 
 function onProductsLoaded(data) {
-  // data ya viene agrupada (desde getGroupedProducts en GAS, o groupData() para el preview)
+  // data ya viene agrupada (desde catalog_cache en Supabase, o groupData() para el preview)
   products = data;
 
   // Precomputar la fecha de última compra más reciente por producto
@@ -4369,8 +4369,8 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.12.0';
-var APP_BUILD    = '2026-06-26';
+var APP_VERSION  = '1.13.0';
+var APP_BUILD    = '2026-06-29';
 
 function renderAppVersion_() {
   var el = document.getElementById('app-version');
@@ -4884,7 +4884,7 @@ function setupEvents() {
   // Paginación galería: reemplazada por scroll infinito
 }
 
-// Polyfill seguro de closest para GAS
+// Polyfill seguro de Element.closest para navegadores viejos
 function closest(el, sel) {
   while (el && el !== document) {
     if (el.matches && el.matches(sel)) return el;

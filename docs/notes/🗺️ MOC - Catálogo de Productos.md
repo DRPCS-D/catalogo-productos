@@ -5,22 +5,22 @@ aliases: [MOC, Mapa Central]
 
 # 🗺️ MOC — Catálogo de Productos
 
-> PWA de catálogo de productos. **GitHub Pages + Supabase + Google Sheets + Apps Script + Python sync server**.
+> PWA de catálogo de productos. **GitHub Pages + Supabase + Python sync server**. Las fotos viven en Google Drive (servidas como thumbnails públicos).
 
 ## 📐 Arquitectura de un vistazo
 
 ```
-API La Costa (HTTP) ──► [[Sync Server (Python)]] ──► [[Google Sheets]] ──► [[Supabase Schema]] ──┐
-                                                                                                 │
-[[Google Drive Fotos]] ◄─ thumbnails lh3.googleusercontent ─────────────────────────────────────┐│
-                                                                                                ││
-                                                                          [[Index HTML]] ◄──────┴┴── carga vía [[Carga de Datos]]
-                                                                                │
-                                                       [[Service Worker]] ──────┤── intercepta fetch
-                                                                                │
-                                                            [[GitHub Pages]] ◄──┤── deploy desde [[GitHub Actions (pages.yml)]]
-                                                                                │
-                                                              [[PWA Manifests]] ┘── 3 variantes ([[Page Modes]])
+API La Costa (HTTP) ──► [[Sync Server (Python)]] ──► [[Supabase Schema]] ──┐
+                                                                           │
+[[Google Drive Fotos]] ◄─ thumbnails lh3.googleusercontent ───────────────┐│
+                                                                          ││
+                                                    [[Index HTML]] ◄──────┴┴── carga vía [[Carga de Datos]]
+                                                          │
+                                  [[Service Worker]] ─────┤── intercepta fetch
+                                                          │
+                                      [[GitHub Pages]] ◄──┤── deploy desde [[GitHub Actions (pages.yml)]]
+                                                          │
+                                        [[PWA Manifests]] ┘── 3 variantes ([[Page Modes]])
 ```
 
 ## 🧩 Componentes UI
@@ -35,9 +35,10 @@ API La Costa (HTTP) ──► [[Sync Server (Python)]] ──► [[Google Sheets
 - **Negocio**: [[Promociones y Precios]] · [[Page Modes]] · [[Productos Similares]]
 
 ## 🗂️ Datos
-- [[Supabase Schema]] — tablas `catalog_cache`, `page_config`, `admin_secret`
-- [[Apps Script (Code.gs)]] · [[Google Sheets]] · [[Google Drive Fotos]]
+- [[Supabase Schema]] — tablas `catalog_cache`, `page_config`, `admin_secret`, `products` + normalizadas, `sync_log`
 - [[Sync Server (Python)]] — cron Docker
+- [[Google Drive Fotos]] — imágenes (URL pública)
+- Legacy: [[Apps Script (Code.gs)]] · [[Google Sheets]] (ya no en el pipeline activo)
 
 ## 🏗️ Infra
 - [[GitHub Pages]] · [[GitHub Actions (pages.yml)]] · [[Seguridad y Secrets]]

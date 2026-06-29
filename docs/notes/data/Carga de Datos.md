@@ -40,5 +40,5 @@ aliases: [Data loading]
 
 ## ⚠️ Gotchas
 - El anon key está embedido en `index.html` — público por design, RLS protege escrituras. **No es un secreto** pero tampoco lo replicamos en docs.
-- Si el JSON de `catalog_cache` viene troceado (sync server lo parte en chunks), el cliente concatena antes de parsear.
+- `catalog_cache.data` es JSONB con la jerarquía completa en una sola fila — el cliente recibe el array agrupado tal cual.
 - TTL del IDB cache: ~1 hora.

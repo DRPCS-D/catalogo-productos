@@ -1,0 +1,16 @@
+# Credenciales del Service Account — NUNCA commitear
+service-account.json
+*.json
+!package.json
+!package-lock.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# Editor
+.vscode/
+.idea/
