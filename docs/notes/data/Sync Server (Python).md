@@ -31,6 +31,25 @@ aliases: [sync.py, Sync server]
 - Drive Folder ID (fotos) — en `sync.py`.
 - API URL La Costa — en `sync.py`.
 
+## 🖥️ Host de producción
+- Server: `diago@lacostasrl` (Ubuntu).
+- Ruta remota: `~/sync-server/` (= `/home/diago/sync-server/`).
+- Deploy de cambios (desde Windows local):
+  ```bash
+  scp "E:/claude/Productos/sync-server/sync.py" diago@lacostasrl:~/sync-server/
+  scp "E:/claude/Productos/sync-server/README.md" diago@lacostasrl:~/sync-server/
+  ```
+- Reinicio del cron en el server:
+  ```bash
+  cd ~/sync-server
+  docker compose down && docker compose build && docker compose up -d
+  docker compose logs -f
+  ```
+- Forzar una corrida manual:
+  ```bash
+  docker compose exec catalog-sync python sync.py
+  ```
+
 ## 🔌 Depende de
 - API La Costa (HTTP del ERP)
 - [[Google Drive Fotos]] (listing para mapear `cod` → `file_id`)
