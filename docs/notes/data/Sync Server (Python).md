@@ -32,9 +32,9 @@ aliases: [sync.py, Sync server]
 - API URL La Costa — en `sync.py`.
 
 ## 🖥️ Host de producción
-- Server: `diago@lacostasrl` (Ubuntu).
+- Server: `diago@lacostasrl` (Ubuntu). **Sólo accesible desde la LAN interna** — el hostname no resuelve fuera de la red local. Para deploy hay que estar conectado a la red de la oficina (o vía VPN si hay).
 - Ruta remota: `~/sync-server/` (= `/home/diago/sync-server/`).
-- Deploy de cambios (desde Windows local):
+- Deploy de cambios (desde Windows local, dentro de la LAN):
   ```bash
   scp "E:/claude/Productos/sync-server/sync.py" diago@lacostasrl:~/sync-server/
   scp "E:/claude/Productos/sync-server/README.md" diago@lacostasrl:~/sync-server/
