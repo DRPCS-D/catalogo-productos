@@ -4271,6 +4271,12 @@ function applyPageConfig() {
     }
   }
 
+  // Override por URL: ?foto=with | ?foto=without | ?foto=all
+  var fotoParam = (new URLSearchParams(location.search)).get('foto');
+  if (fotoParam === 'with' || fotoParam === 'without' || fotoParam === 'all') {
+    filterFoto = fotoParam;
+  }
+
   // Promo desactivada → ocultar elementos de promo + setear pdfIncludePromo=false
   if (!cfg.promoVisible) {
     pdfIncludePromo = false;
@@ -4393,7 +4399,7 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.14.0';
+var APP_VERSION  = '1.14.1';
 var APP_BUILD    = '2026-07-01';
 
 function renderAppVersion_() {
