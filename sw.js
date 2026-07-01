@@ -10,8 +10,8 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v30: URL param ?foto= para filtrado por foto al cargar.
-const CACHE_VERSION = 'v30';
+// v31: fotos más grandes en PDF móvil (38mm vs 27mm).
+const CACHE_VERSION = 'v31';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
