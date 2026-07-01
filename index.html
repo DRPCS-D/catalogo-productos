@@ -4247,6 +4247,30 @@ function applyPageConfig() {
     }
   }
 
+  // Override por URL: ?marca=VIA+MARTE o ?marca=VIA+MARTE,ADIDAS
+  // Match exacto case-insensitive sobre p.marca. Permite múltiples marcas separadas por coma.
+  var marcaParam = (new URLSearchParams(location.search)).get('marca');
+  if (marcaParam) {
+    var requestedMarcas = marcaParam.split(',')
+      .map(function (m) { return m.trim(); })
+      .filter(Boolean);
+    if (requestedMarcas.length) {
+      var availableMarcas = {};
+      products.forEach(function (p) { if (p.marca) availableMarcas[p.marca] = true; });
+      var availableMarcaList = Object.keys(availableMarcas);
+      var matchedMarcas = [];
+      requestedMarcas.forEach(function (q) {
+        var ql = q.toLowerCase();
+        var exact = availableMarcaList.filter(function (m) { return m.toLowerCase() === ql; });
+        var hits = exact.length ? exact : availableMarcaList.filter(function (m) {
+          return m.toLowerCase().indexOf(ql) >= 0;
+        });
+        hits.forEach(function (m) { if (matchedMarcas.indexOf(m) < 0) matchedMarcas.push(m); });
+      });
+      if (matchedMarcas.length) filterMarca = matchedMarcas;
+    }
+  }
+
   // Promo desactivada → ocultar elementos de promo + setear pdfIncludePromo=false
   if (!cfg.promoVisible) {
     pdfIncludePromo = false;
@@ -4369,8 +4393,8 @@ function updateRefreshChip() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.13.0';
-var APP_BUILD    = '2026-06-29';
+var APP_VERSION  = '1.14.0';
+var APP_BUILD    = '2026-07-01';
 
 function renderAppVersion_() {
   var el = document.getElementById('app-version');
