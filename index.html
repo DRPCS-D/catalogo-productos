@@ -4641,7 +4641,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.17.1';
+var APP_VERSION  = '1.17.2';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
@@ -6688,12 +6688,38 @@ function scanBarcodeSupported_() {
 
 // Diagnóstico rápido sin devtools — tocando "v1.x.x" en el pie del sidebar.
 function showScanDiagnostic_() {
+  var TEST_EAN = '2606080009162'; // PJ7207 — confirmado que existe en Supabase
+  var rawFound = null;
+  (products || []).some(function (p) {
+    return p.colorsArr.some(function (c) {
+      var hit = c.gradesArr.some(function (g) { return g.ean === TEST_EAN; });
+      if (hit) rawFound = p.codFabrica;
+      return hit;
+    });
+  });
+
   var lines = [
     'BarcodeDetector: '   + (!!window.BarcodeDetector),
     'mediaDevices: '      + (!!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)),
     'pointer coarse: '    + (!!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)),
     'Contexto seguro (HTTPS): ' + window.isSecureContext,
     '¿Botón debería verse?: ' + scanBarcodeSupported_(),
+    '',
+    '--- Datos cargados ---',
+    'productos en memoria: ' + ((products || []).length),
+    'catalogServerUpdatedAt: ' + catalogServerUpdatedAt,
+    'PJ7207 (EAN test) encontrado en datos crudos: ' + (rawFound || 'NO'),
+    '',
+    '--- Filtros activos ---',
+    'marca: '     + JSON.stringify(filterMarca),
+    'sucursal: '  + JSON.stringify(filterSucursal),
+    'stockMin/Max: ' + filterStockMin + ' / ' + filterStockMax,
+    'precioMin/Max: ' + filterPrecioMin + ' / ' + filterPrecioMax,
+    'foto: ' + filterFoto + ' | promo: ' + filterPromo,
+    '',
+    '--- Búsqueda ---',
+    'searchText actual: "' + searchText + '"',
+    'filteredProducts.length: ' + filteredProducts.length,
     '',
     navigator.userAgent
   ];

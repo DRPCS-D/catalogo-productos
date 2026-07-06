@@ -10,9 +10,9 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v37: revertido el auto-open de modal al buscar/escanear EAN — ahora
-// solo filtra la galería (todos los colores del producto), sin popups.
-const CACHE_VERSION = 'v37';
+// v38: diagnóstico ampliado (tocar versión) — reporta datos cargados,
+// filtros activos y si el EAN de prueba se encuentra en memoria.
+const CACHE_VERSION = 'v38';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
