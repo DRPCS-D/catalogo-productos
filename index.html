@@ -4641,7 +4641,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.15.2';
+var APP_VERSION  = '1.16.0';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
@@ -6756,6 +6756,22 @@ function scanLoop_() {
   });
 }
 
+// Busca el producto/color dueño de ese EAN recorriendo TODOS los productos,
+// sin importar filtros activos (sucursal/stock/precio/marca/etc.) — escanear
+// es una búsqueda exacta e intencional, no debería taparla un filtro que el
+// usuario dejó puesto de una navegación anterior.
+function findProductByEan_(ean) {
+  for (var i = 0; i < products.length; i++) {
+    var p = products[i];
+    for (var j = 0; j < p.colorsArr.length; j++) {
+      var c = p.colorsArr[j];
+      var hasEan = c.gradesArr.some(function (g) { return g.ean === ean; });
+      if (hasEan) return { product: p, color: c };
+    }
+  }
+  return null;
+}
+
 function onBarcodeScanned_(code) {
   if (navigator.vibrate) navigator.vibrate(80);
   closeBarcodeScanner_();
@@ -6769,7 +6785,16 @@ function onBarcodeScanned_(code) {
   if (btnPaste) btnPaste.style.display = 'none';
   applyFilters();
   renderCurrentView();
-  searchInput.focus();
+
+  var found = findProductByEan_(code);
+  if (!found) {
+    alert('No se encontró ningún producto con el código ' + code + '.');
+    searchInput.focus();
+    return;
+  }
+  // Abre directo la vista de detalle del producto/color encontrado,
+  // sin depender de que el filtro actual lo deje pasar en la lista.
+  openModal(found.product.codFabrica, found.color.color);
 }
 
 function closeBarcodeScanner_() {

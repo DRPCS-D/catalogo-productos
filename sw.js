@@ -10,9 +10,9 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v34: fix — sacar style="display:none" inline del botón de escaneo (el
-// inline style ganaba sobre la clase .has-scan y lo dejaba oculto siempre).
-const CACHE_VERSION = 'v34';
+// v35: el escaneo ahora busca el EAN directo sobre todos los productos
+// (bypass de filtros activos) y abre la vista de detalle automáticamente.
+const CACHE_VERSION = 'v35';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
