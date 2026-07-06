@@ -10,9 +10,9 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v38: diagnóstico ampliado (tocar versión) — reporta datos cargados,
-// filtros activos y si el EAN de prueba se encuentra en memoria.
-const CACHE_VERSION = 'v38';
+// v39: fix — normTxt_ usa NFKD en vez de NFD, para plegar dígitos/letras
+// "ancho completo" que insertan algunos teclados Android a su forma ASCII.
+const CACHE_VERSION = 'v39';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
