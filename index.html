@@ -3693,7 +3693,7 @@
 
     <!-- Versión + Atajos + Forzar actualización (iconos compactos) -->
     <div class="app-version-row">
-      <span class="app-version" id="app-version" title="Versión de la app que estás ejecutando">v—</span>
+      <span class="app-version" id="app-version" title="Tocá para ver diagnóstico del escáner" onclick="showScanDiagnostic_()">v—</span>
       <div class="app-version-actions">
         <button class="btn-shortcuts-side" type="button" onclick="openShortcuts_()" title="Atajos de teclado (?)" aria-label="Atajos de teclado">⌨️</button>
         <button class="btn-force-update" onclick="forceUpdateApp_()" title="Actualizar app — borra el cache y descarga la última versión" aria-label="Actualizar app">↻</button>
@@ -4641,7 +4641,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.15.0';
+var APP_VERSION  = '1.15.1';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
@@ -6684,6 +6684,20 @@ var scanDetector_ = null;
 function scanBarcodeSupported_() {
   return !!(window.BarcodeDetector && navigator.mediaDevices && navigator.mediaDevices.getUserMedia &&
     window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+}
+
+// Diagnóstico rápido sin devtools — tocando "v1.x.x" en el pie del sidebar.
+function showScanDiagnostic_() {
+  var lines = [
+    'BarcodeDetector: '   + (!!window.BarcodeDetector),
+    'mediaDevices: '      + (!!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)),
+    'pointer coarse: '    + (!!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)),
+    'Contexto seguro (HTTPS): ' + window.isSecureContext,
+    '¿Botón debería verse?: ' + scanBarcodeSupported_(),
+    '',
+    navigator.userAgent
+  ];
+  alert(lines.join('\n'));
 }
 
 function openBarcodeScanner_() {
