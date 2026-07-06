@@ -10,9 +10,9 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v35: el escaneo ahora busca el EAN directo sobre todos los productos
-// (bypass de filtros activos) y abre la vista de detalle automáticamente.
-const CACHE_VERSION = 'v35';
+// v36: escribir o pegar un EAN-13 completo en el buscador también abre
+// la ficha de detalle directo, igual que el escaneo con cámara.
+const CACHE_VERSION = 'v36';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
