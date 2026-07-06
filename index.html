@@ -870,6 +870,12 @@
       transition: border-color .15s, box-shadow .15s;
       background: var(--gray-50);
     }
+    /* Cuando el botón de escaneo está disponible (móvil con soporte), sumar espacio.
+       Selector compuesto (2 clases) a propósito: necesita más especificidad que
+       .search-action-btn { right: 4px } para no perder el empate por orden de fuente. */
+    .search-action-btn.btn-scan-barcode { display: none; right: 34px; }
+    .search-wrap.has-scan .search-input { padding-right: 62px; }
+    .search-wrap.has-scan .search-action-btn.btn-scan-barcode { display: flex; }
     /* Oculta la X nativa del <input type=search> en Chrome/Edge — usamos la nuestra */
     .search-input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
 
@@ -2387,6 +2393,71 @@
     }
     .barcode-error { font-size: 13px; color: var(--gray-700); padding: 20px; text-align: center; }
 
+    /* Escáner de código de barra vía cámara (solo móvil con BarcodeDetector) */
+    .scan-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 750;
+      flex-direction: column;
+    }
+    .scan-overlay.open { display: flex; }
+    .scan-header {
+      background: rgba(0,0,0,.6);
+      color: white;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .scan-title { font-size: 15px; font-weight: 700; }
+    .scan-close {
+      background: rgba(255,255,255,.18);
+      border: none;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 15px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .scan-close:hover { background: rgba(255,255,255,.3); }
+    .scan-video-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 0;
+    }
+    .scan-video-wrap video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .scan-frame {
+      position: absolute;
+      left: 8%;
+      right: 8%;
+      top: 38%;
+      bottom: 38%;
+      border: 3px solid #22c55e;
+      border-radius: 12px;
+      box-shadow: 0 0 0 2000px rgba(0,0,0,.4);
+      pointer-events: none;
+    }
+    .scan-status {
+      background: rgba(0,0,0,.6);
+      color: white;
+      text-align: center;
+      padding: 14px;
+      font-size: 13px;
+    }
+
     /* ===== SIDEBAR DE FILTROS ===== */
     .btn-menu {
       background: var(--gray-50);
@@ -2941,6 +3012,8 @@
       }
       .search-icon { font-size: 16px; left: 11px; }
       .search-action-btn { width: 38px; height: 38px; font-size: 16px; right: 3px; }
+      .search-action-btn.btn-scan-barcode { right: 42px; }
+      .search-wrap.has-scan .search-input { padding-right: 82px; }
       .btn-menu { padding: 10px 14px; font-size: 14px; min-height: 46px; }
 
       /* --- GALERÍA: 2 cols portrait, 3 cols landscape --- */
@@ -3488,6 +3561,8 @@
               style="display:none" title="Borrar búsqueda" aria-label="Borrar">✕</button>
       <button type="button" id="btn-search-paste" class="search-action-btn"
               title="Pegar del portapapeles" aria-label="Pegar">📋</button>
+      <button type="button" id="btn-search-scan" class="search-action-btn btn-scan-barcode"
+              style="display:none" title="Escanear código de barra" aria-label="Escanear código de barra">📷</button>
     </div>
   </div>
 </div>
@@ -3800,6 +3875,21 @@
     </div>
     <div class="barcode-body" id="barcode-body"></div>
   </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ESCÁNER DE CÓDIGO DE BARRA (cámara, solo móvil con soporte)   -->
+<!-- ============================================================ -->
+<div class="scan-overlay" id="scan-overlay" role="dialog" aria-modal="true">
+  <div class="scan-header">
+    <span class="scan-title">Escanear código de barra</span>
+    <button type="button" class="scan-close" onclick="closeBarcodeScanner_()" aria-label="Cerrar">✕</button>
+  </div>
+  <div class="scan-video-wrap">
+    <video id="scan-video" autoplay playsinline muted></video>
+    <div class="scan-frame"></div>
+  </div>
+  <div class="scan-status" id="scan-status">Apuntá la cámara al código de barra</div>
 </div>
 
 <!-- ============================================================ -->
@@ -4877,6 +4967,13 @@ function setupEvents() {
     });
   });
 
+  // Boton 📷 — escanear código de barra con la cámara (solo si hay soporte)
+  var btnScan = document.getElementById('btn-search-scan');
+  if (btnScan && scanBarcodeSupported_()) {
+    document.querySelector('.search-wrap').classList.add('has-scan');
+    btnScan.addEventListener('click', openBarcodeScanner_);
+  }
+
   // Los multi-select se cablean dentro de buildMultiSelect() — no se necesita listener aquí.
 
   // Cerrar multi-selects al hacer click fuera
@@ -4995,6 +5092,7 @@ function setupEvents() {
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
       if (document.getElementById('shortcuts-overlay').classList.contains('open')) closeShortcuts_();
+      else if (document.getElementById('scan-overlay').classList.contains('open')) closeBarcodeScanner_();
       else if (document.getElementById('barcode-overlay').classList.contains('open')) closeBarcodeModal_();
       else if (document.getElementById('lightbox').classList.contains('open'))     closeLightbox();
       else if (document.getElementById('sidebar').classList.contains('open'))      toggleSidebar(false);
@@ -5474,7 +5572,10 @@ function _productPassesFilters_(p, skipSearch) {
       var inColor = p.colorsArr.some(function (c) {
         return c.color && normTxt_(c.color).indexOf(q) >= 0;
       });
-      if (!inProd && !inColor) return false;
+      var inEan = p.colorsArr.some(function (c) {
+        return c.gradesArr.some(function (g) { return g.ean && normTxt_(g.ean).indexOf(q) >= 0; });
+      });
+      if (!inProd && !inColor && !inEan) return false;
     }
   }
   return true;
@@ -6569,6 +6670,105 @@ function closeBarcodeModal_() {
   if (!document.getElementById('modal').classList.contains('open')) {
     document.body.style.overflow = '';
   }
+}
+
+// =================================================================
+// ESCÁNER DE CÓDIGO DE BARRA (cámara) — usa la API nativa BarcodeDetector,
+// sin librerías externas. Sólo se ofrece en móvil (pointer:coarse) y
+// cuando el navegador soporta tanto BarcodeDetector como getUserMedia.
+// =================================================================
+var scanStream_   = null;
+var scanRAF_      = null;
+var scanDetector_ = null;
+
+function scanBarcodeSupported_() {
+  return !!(window.BarcodeDetector && navigator.mediaDevices && navigator.mediaDevices.getUserMedia &&
+    window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+}
+
+function openBarcodeScanner_() {
+  var overlay = document.getElementById('scan-overlay');
+  var video   = document.getElementById('scan-video');
+  var status  = document.getElementById('scan-status');
+  if (!overlay || !video) return;
+
+  status.textContent = 'Apuntá la cámara al código de barra';
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  try {
+    scanDetector_ = new BarcodeDetector({ formats: ['ean_13'] });
+  } catch (e) {
+    status.textContent = 'Tu navegador no soporta el escáner de códigos.';
+    return;
+  }
+
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(function (stream) {
+      scanStream_ = stream;
+      video.srcObject = stream;
+      return video.play();
+    })
+    .then(function () {
+      scanLoop_();
+    })
+    .catch(function (err) {
+      console.warn('[scan] cámara no disponible:', err);
+      status.textContent = (err && err.name === 'NotAllowedError')
+        ? 'Permiso de cámara denegado. Habilitalo en la configuración del navegador.'
+        : 'No se pudo acceder a la cámara.';
+    });
+}
+
+function scanLoop_() {
+  if (!scanStream_) return; // el escáner se cerró mientras esperábamos el frame
+  var video = document.getElementById('scan-video');
+  if (!video || video.readyState < 2) {
+    scanRAF_ = requestAnimationFrame(scanLoop_);
+    return;
+  }
+  scanDetector_.detect(video).then(function (codes) {
+    if (!scanStream_) return; // se cerró durante el detect() async
+    if (codes && codes.length) {
+      var raw = (codes[0].rawValue || '').trim();
+      if (/^\d{13}$/.test(raw)) {
+        onBarcodeScanned_(raw);
+        return;
+      }
+    }
+    scanRAF_ = requestAnimationFrame(scanLoop_);
+  }).catch(function () {
+    if (scanStream_) scanRAF_ = requestAnimationFrame(scanLoop_);
+  });
+}
+
+function onBarcodeScanned_(code) {
+  if (navigator.vibrate) navigator.vibrate(80);
+  closeBarcodeScanner_();
+
+  var searchInput = document.getElementById('search-input');
+  var btnClear    = document.getElementById('btn-search-clear');
+  var btnPaste    = document.getElementById('btn-search-paste');
+  searchInput.value = code;
+  searchText = code;
+  if (btnClear) btnClear.style.display = '';
+  if (btnPaste) btnPaste.style.display = 'none';
+  applyFilters();
+  renderCurrentView();
+  searchInput.focus();
+}
+
+function closeBarcodeScanner_() {
+  var overlay = document.getElementById('scan-overlay');
+  var video   = document.getElementById('scan-video');
+  if (scanRAF_) { cancelAnimationFrame(scanRAF_); scanRAF_ = null; }
+  if (scanStream_) {
+    scanStream_.getTracks().forEach(function (t) { t.stop(); });
+    scanStream_ = null;
+  }
+  if (video) video.srcObject = null;
+  if (overlay) overlay.classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 // =================================================================
