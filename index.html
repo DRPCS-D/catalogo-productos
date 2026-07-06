@@ -203,6 +203,19 @@
       color: #fef3c7;
     }
 
+    .sync-warning-btn {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      min-height: 34px;
+      background: rgba(251,191,36,.18);
+      border: 1px solid rgba(251,191,36,.42);
+      border-radius: 999px;
+      font-size: 14px;
+      cursor: default;
+    }
+
     /* Estado "actualizando" */
     .refresh-chip.refreshing {
       opacity: .65;
@@ -2313,6 +2326,67 @@
       .confirm-footer button { flex: 1; min-width: 0; }
     }
 
+    /* Popup de código de barra (EAN) */
+    .modal-grade-ean-clickable {
+      cursor: pointer;
+      text-decoration: underline dotted;
+      text-underline-offset: 2px;
+    }
+    .modal-grade-ean-clickable:hover { color: var(--primary); }
+
+    .barcode-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .5);
+      z-index: 650;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      animation: fadeIn .15s;
+    }
+    .barcode-overlay.open { display: flex; }
+
+    .barcode-box {
+      background: white;
+      border-radius: var(--radius-lg);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
+      width: 100%;
+      max-width: 360px;
+      overflow: hidden;
+      animation: slideUp .2s;
+    }
+    .barcode-header {
+      background: var(--primary);
+      color: white;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .barcode-title { font-size: 15px; font-weight: 700; letter-spacing: .2px; }
+    .barcode-close {
+      background: rgba(255,255,255,.18);
+      border: none;
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      font-size: 14px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .barcode-close:hover { background: rgba(255,255,255,.3); }
+    .barcode-body {
+      padding: 22px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+    }
+    .barcode-error { font-size: 13px; color: var(--gray-700); padding: 20px; text-align: center; }
+
     /* ===== SIDEBAR DE FILTROS ===== */
     .btn-menu {
       background: var(--gray-50);
@@ -3380,6 +3454,7 @@
       </div>
     </div>
     <div class="header-actions">
+      <button class="sync-warning-btn" id="sync-warning-icon" style="display:none" title="" aria-label="Advertencia de sincronización">⚠️</button>
       <button class="refresh-chip" id="refresh-chip" onclick="manualRefresh()" title="Actualizar ahora">
         <span class="refresh-icon">🔄</span>
         <span id="refresh-label">—</span>
@@ -3715,6 +3790,19 @@
 </div>
 
 <!-- ============================================================ -->
+<!-- POPUP CÓDIGO DE BARRA (EAN)                                   -->
+<!-- ============================================================ -->
+<div class="barcode-overlay" id="barcode-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) closeBarcodeModal_()">
+  <div class="barcode-box">
+    <div class="barcode-header">
+      <span class="barcode-title">Código de barra</span>
+      <button type="button" class="barcode-close" onclick="closeBarcodeModal_()" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="barcode-body" id="barcode-body"></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
 <!-- CATÁLOGO PARA IMPRIMIR (oculto en pantalla, visible en print) -->
 <!-- ============================================================ -->
 <div id="print-catalog" class="print-only" aria-hidden="true"></div>
@@ -3931,6 +4019,9 @@ var lastUpdateTs     = 0;                       // timestamp del último fetch e
 var STALE_THRESHOLD_MS = 90 * 60 * 1000;        // 90 min → chip pasa a estado "stale"
 var AUTO_REFRESH_THRESHOLD_MS = 5 * 60 * 60 * 1000;  // 5 h → dispara refresh automático
 var refreshChipTicker = null;
+var catalogServerUpdatedAt = null; // ISO string, verdad del servidor (catalog_cache.updated_at)
+var lastSyncLogRow = null;         // última fila de sync_log (status/error/ts)
+var SYNC_WARNING_THRESHOLD_MS = 3 * 60 * 60 * 1000; // 3 h sin sync → ícono ⚠️
 
 // =================================================================
 // CACHE LOCAL EN INDEXEDDB
@@ -3983,9 +4074,9 @@ function idbSet_(key, value) {
 }
 
 // Guarda el catálogo recién traído en IDB para próximas cargas
-function saveCatalogToLocal_(data) {
+function saveCatalogToLocal_(data, updatedAt) {
   if (!data || !Array.isArray(data) || !data.length) return;
-  idbSet_(IDB_KEY, { data: data, ts: Date.now() }).then(function () {
+  idbSet_(IDB_KEY, { data: data, ts: Date.now(), updatedAt: updatedAt || null }).then(function () {
     console.log('[cache local] catálogo guardado en IDB:', data.length, 'productos');
   }).catch(function (e) {
     console.warn('[cache local] no se pudo guardar:', e && e.message || e);
@@ -4015,6 +4106,8 @@ window.onload = function () {
   //    Esto sobrescribe el PAGE_CONFIG hardcoded con lo que el admin guardó.
   //    Si falla la red, el hardcoded queda como fallback — la app sigue funcionando.
   // 2) Luego cargar el catálogo (desde IDB cache o Supabase).
+  // 3) En paralelo (no bloquea), chequear salud del sync (sync_log).
+  fetchSyncHealthFromSupabase_();
   fetchPageConfigFromSupabase_().finally(function () {
     idbGet_(IDB_KEY).then(function (cached) {
       var ageMs = cached && cached.ts ? (Date.now() - cached.ts) : Infinity;
@@ -4023,6 +4116,8 @@ window.onload = function () {
         console.log('[cache local] hit, edad:', Math.floor(ageMs/60000), 'min');
         onProductsLoaded(cached.data);
         lastUpdateTs = cached.ts;       // chip muestra la edad real
+        catalogServerUpdatedAt = cached.updatedAt || null;
+        updateSyncWarningIcon_();
         return;
       }
       console.log('[cache local] miss o expirado, fetch del server');
@@ -4077,25 +4172,56 @@ function fetchPageConfigFromSupabase_() {
   });
 }
 
+/**
+ * Lee el estado de la última corrida del sync (tabla sync_log) para detectar
+ * si el cron que alimenta catalog_cache dejó de funcionar. Señal independiente
+ * del refresh-chip: éste último sólo mide "hace cuánto mi navegador pidió datos",
+ * no si el servidor sigue actualizando catalog_cache.
+ */
+function fetchSyncHealthFromSupabase_() {
+  var endpoint = SUPABASE_URL.replace(/\/$/, '') +
+                 '/rest/v1/sync_log?select=status,error,ts&order=ts.desc&limit=1';
+  return fetch(endpoint, {
+    method: 'GET',
+    headers: {
+      'apikey':        SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      'Accept':        'application/json'
+    }
+  }).then(function (resp) {
+    if (!resp.ok) throw new Error('sync_log HTTP ' + resp.status);
+    return resp.json();
+  }).then(function (rows) {
+    lastSyncLogRow = (rows && rows[0]) || null;
+    updateSyncWarningIcon_();
+  }).catch(function (e) {
+    console.warn('[sync_log] fetch falló', e);
+  });
+}
+
 function fetchCatalogFromServer_() {
   fetchSupabaseCatalog_()
-    .then(function (data) {
-      onProductsLoaded(data);
-      saveCatalogToLocal_(data);
+    .then(function (result) {
+      catalogServerUpdatedAt = result.updatedAt;
+      onProductsLoaded(result.data);
+      saveCatalogToLocal_(result.data, result.updatedAt);
+      updateSyncWarningIcon_();
     })
     .catch(onProductsError);
 }
 
 /**
  * Lee el catálogo agrupado desde Supabase REST API (tabla catalog_cache).
- * Devuelve una Promise con el array de productos agrupado.
+ * Devuelve una Promise con { data, updatedAt }: data es el array de productos
+ * agrupado, updatedAt es la verdad del servidor sobre cuándo corrió el sync
+ * exitosamente por última vez (columna catalog_cache.updated_at).
  *
  * El JSON ya viene con imgId de Drive resuelto server-side (lo escribe sync.py),
  * así que el browser no necesita llamar a Drive API.
  */
 function fetchSupabaseCatalog_() {
   var endpoint = SUPABASE_URL.replace(/\/$/, '') +
-                 '/rest/v1/catalog_cache?select=data&id=eq.1';
+                 '/rest/v1/catalog_cache?select=data,updated_at&id=eq.1';
   return fetch(endpoint, {
     method: 'GET',
     headers: {
@@ -4111,7 +4237,7 @@ function fetchSupabaseCatalog_() {
     if (!arr || !arr.length || !arr[0].data) {
       throw new Error('catalog_cache vacío en Supabase');
     }
-    return arr[0].data;
+    return { data: arr[0].data, updatedAt: arr[0].updated_at };
   });
 }
 
@@ -4344,9 +4470,11 @@ function silentRefresh_() {
   var scrollY       = window.scrollY || window.pageYOffset || 0;
 
   fetchSupabaseCatalog_()
-    .then(function (data) {
+    .then(function (result) {
+      var data = result.data;
       if (!data || !Array.isArray(data)) return;
 
+      catalogServerUpdatedAt = result.updatedAt;
       products = data;
       precomputeLastPurchaseDates_();
       applyExcludedBrands_();
@@ -4361,7 +4489,8 @@ function silentRefresh_() {
 
       updateStats();
       markDataFresh();
-      saveCatalogToLocal_(data);
+      saveCatalogToLocal_(data, result.updatedAt);
+      updateSyncWarningIcon_();
 
       window.scrollTo(0, scrollY);
     })
@@ -4393,6 +4522,29 @@ function updateRefreshChip() {
   var t = relativeTime_(diff).replace(/^hace\s+/, '');
   label.textContent = (t === 'recién') ? '' : t;
   chip.classList.toggle('stale', diff > STALE_THRESHOLD_MS);
+}
+
+/**
+ * Muestra un ⚠️ en el header cuando catalog_cache lleva más de
+ * SYNC_WARNING_THRESHOLD_MS sin actualizarse en el servidor — señal
+ * independiente de refresh-chip/lastUpdateTs (que sólo mide la recencia
+ * del fetch del navegador, no si el sync del servidor sigue vivo).
+ */
+function updateSyncWarningIcon_() {
+  var icon = document.getElementById('sync-warning-icon');
+  if (!icon) return;
+  var ageMs = catalogServerUpdatedAt ? (Date.now() - new Date(catalogServerUpdatedAt).getTime()) : Infinity;
+  if (ageMs <= SYNC_WARNING_THRESHOLD_MS) { icon.style.display = 'none'; return; }
+
+  var msg;
+  if (lastSyncLogRow && lastSyncLogRow.status === 'ERROR') {
+    msg = 'Sincronización con errores desde ' + relativeTime_(Date.now() - new Date(lastSyncLogRow.ts).getTime()) +
+          '. Detalle: ' + (lastSyncLogRow.error || 'error desconocido').slice(0, 120);
+  } else {
+    msg = 'El catálogo no se actualiza hace más de 3 horas y no hay registro de sincronización reciente. Puede haber un problema en el servidor.';
+  }
+  icon.title = '⚠️ ' + msg;
+  icon.style.display = 'inline-flex';
 }
 
 /* ============ VERSIÓN DE LA APP + FORZAR ACTUALIZACIÓN ============
@@ -4535,6 +4687,7 @@ function startRefreshChipTicker() {
   refreshChipTicker = setInterval(function () {
     updateRefreshChip();
     maybeAutoRefreshIfStale_();
+    fetchSyncHealthFromSupabase_();
   }, 60 * 1000);
 }
 
@@ -4565,8 +4718,10 @@ function manualRefresh() {
   var scrollY       = window.scrollY || window.pageYOffset || 0;
 
   fetchSupabaseCatalog_()
-    .then(function (data) {
+    .then(function (result) {
+      var data = result.data;
       if (data && Array.isArray(data)) {
+        catalogServerUpdatedAt = result.updatedAt;
         products = data;
         precomputeLastPurchaseDates_();
         applyExcludedBrands_();
@@ -4577,7 +4732,8 @@ function manualRefresh() {
         updateStats();
         window.scrollTo(0, scrollY);
         markDataFresh();
-        saveCatalogToLocal_(data);   // refresca el cache local con datos frescos
+        saveCatalogToLocal_(data, result.updatedAt);   // refresca el cache local con datos frescos
+        updateSyncWarningIcon_();
       }
       if (chip) chip.classList.remove('refreshing');
     })
@@ -4839,6 +4995,7 @@ function setupEvents() {
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
       if (document.getElementById('shortcuts-overlay').classList.contains('open')) closeShortcuts_();
+      else if (document.getElementById('barcode-overlay').classList.contains('open')) closeBarcodeModal_();
       else if (document.getElementById('lightbox').classList.contains('open'))     closeLightbox();
       else if (document.getElementById('sidebar').classList.contains('open'))      toggleSidebar(false);
       else if (document.getElementById('modal').classList.contains('open'))        closeModal();
@@ -6175,7 +6332,11 @@ function openModal(codFabrica, colorName) {
         return '<details class="modal-grade-block"' + openAttr + '>' +
           '<summary class="modal-grade-head">' +
             '<span class="modal-grade-title">Talla ' + escHtml(g.grade) + ' — ' + g.totalStock + ' uds</span>' +
-            '<span class="modal-grade-ean">EAN: ' + escHtml(g.ean) + '</span>' +
+            '<span class="modal-grade-ean modal-grade-ean-clickable" role="button" tabindex="0" title="Ver código de barra"' +
+              ' onclick="event.preventDefault();event.stopPropagation();openBarcodeModal_(\'' + escHtml(g.ean) + '\')"' +
+              ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();event.stopPropagation();openBarcodeModal_(\'' + escHtml(g.ean) + '\')}">' +
+              'EAN: ' + escHtml(g.ean) +
+            '</span>' +
           '</summary>' +
           '<table class="stock-table">' +
             '<thead><tr><th>Sucursal</th><th>Cantidad</th><th>Últ. Compra</th><th>Últ. Venta</th></tr></thead>' +
@@ -6320,6 +6481,94 @@ function renderSimilarsBlock_(product) {
 function closeModal() {
   document.getElementById('modal').classList.remove('open');
   document.body.style.overflow = '';
+}
+
+// =================================================================
+// CÓDIGO DE BARRA (EAN-13) — generado en JS puro, sin librería externa
+// (la app funciona offline vía Service Worker, así que evitamos CDNs)
+// =================================================================
+var EAN13_L = ['0001101','0011001','0010011','0111101','0100011','0110001','0101111','0111011','0110111','0001011'];
+var EAN13_G = ['0100111','0110011','0011011','0100001','0011101','0111001','0000101','0010001','0001001','0010111'];
+var EAN13_R = ['1110010','1100110','1101100','1000010','1011100','1001110','1010000','1000100','1001000','1110100'];
+var EAN13_PARITY = ['LLLLLL','LLGLGG','LLGGLG','LLGGGL','LGLLGG','LGGLLG','LGGGLL','LGLGLG','LGLGGL','LGGLGL'];
+
+/**
+ * Codifica un string de 13 dígitos como EAN-13 y devuelve el SVG del código
+ * de barra (con los dígitos legibles debajo, como cualquier etiqueta EAN).
+ * Devuelve null si el código no tiene exactamente 13 dígitos numéricos.
+ */
+function buildEan13Svg_(code) {
+  code = String(code || '').trim();
+  if (!/^\d{13}$/.test(code)) return null;
+
+  var parity = EAN13_PARITY[Number(code[0])];
+  var bits = '101'; // guarda inicial
+  for (var i = 0; i < 6; i++) {
+    var d = Number(code[1 + i]);
+    bits += (parity[i] === 'L') ? EAN13_L[d] : EAN13_G[d];
+  }
+  bits += '01010'; // guarda central
+  for (var j = 0; j < 6; j++) {
+    bits += EAN13_R[Number(code[7 + j])];
+  }
+  bits += '101'; // guarda final
+
+  var UNIT     = 2;
+  var QUIET    = 10 * UNIT;
+  var BAR_H    = 80;
+  var GUARD_H  = 92;
+  var totalW   = bits.length * UNIT + QUIET * 2;
+  var totalH   = 110;
+  var guardRanges = [[0, 3], [45, 50], [92, 95]]; // índices de bit de cada guarda
+
+  function isGuard(idx) {
+    for (var k = 0; k < guardRanges.length; k++) {
+      if (idx >= guardRanges[k][0] && idx < guardRanges[k][1]) return true;
+    }
+    return false;
+  }
+
+  var rects = '';
+  for (var b = 0; b < bits.length; b++) {
+    if (bits[b] === '1') {
+      var h = isGuard(b) ? GUARD_H : BAR_H;
+      rects += '<rect x="' + (QUIET + b * UNIT) + '" y="0" width="' + UNIT + '" height="' + h + '" fill="#000"/>';
+    }
+  }
+
+  var leftGroupX  = QUIET + 3 * UNIT + (42 * UNIT) / 2;
+  var rightGroupX = QUIET + 50 * UNIT + (42 * UNIT) / 2;
+  var firstDigitX = QUIET - 4 * UNIT;
+  var textY       = totalH - 4;
+
+  var textEls =
+    '<text x="' + firstDigitX  + '" y="' + textY + '" font-family="monospace" font-size="14">' + code[0] + '</text>' +
+    '<text x="' + leftGroupX   + '" y="' + textY + '" font-family="monospace" font-size="14" text-anchor="middle" letter-spacing="1">' + code.slice(1, 7)  + '</text>' +
+    '<text x="' + rightGroupX  + '" y="' + textY + '" font-family="monospace" font-size="14" text-anchor="middle" letter-spacing="1">' + code.slice(7, 13) + '</text>';
+
+  return '<svg viewBox="0 0 ' + totalW + ' ' + totalH + '" width="100%" style="max-width:300px;height:auto;background:#fff">' +
+    rects + textEls +
+    '</svg>';
+}
+
+function openBarcodeModal_(ean) {
+  var overlay = document.getElementById('barcode-overlay');
+  var body    = document.getElementById('barcode-body');
+  if (!overlay || !body) return;
+
+  var svg = buildEan13Svg_(ean);
+  body.innerHTML = svg || '<div class="barcode-error">Código EAN no válido: ' + escHtml(String(ean || '')) + '</div>';
+
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeBarcodeModal_() {
+  document.getElementById('barcode-overlay').classList.remove('open');
+  // No restaurar el scroll si el modal de "Ver detalles" sigue abierto detrás
+  if (!document.getElementById('modal').classList.contains('open')) {
+    document.body.style.overflow = '';
+  }
 }
 
 // =================================================================
