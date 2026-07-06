@@ -4641,7 +4641,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.17.0';
+var APP_VERSION  = '1.17.1';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
@@ -4921,7 +4921,6 @@ function setupEvents() {
       searchText = val;
       applyFilters();
       renderCurrentView();
-      tryAutoOpenByEan_(val);   // si es un EAN-13 completo, abre la ficha directo
     }, 220);
   });
 
@@ -4956,7 +4955,6 @@ function setupEvents() {
       updateSearchActionButtons_();
       applyFilters();
       renderCurrentView();
-      tryAutoOpenByEan_(trimmed);   // si es un EAN-13 completo, abre la ficha directo
       // Feedback visual breve
       btnClear.classList.add('copied');
       setTimeout(function () { btnClear.classList.remove('copied'); }, 600);
@@ -6758,35 +6756,6 @@ function scanLoop_() {
   });
 }
 
-// Busca el producto/color dueño de ese EAN recorriendo TODOS los productos,
-// sin importar filtros activos (sucursal/stock/precio/marca/etc.) — escanear
-// es una búsqueda exacta e intencional, no debería taparla un filtro que el
-// usuario dejó puesto de una navegación anterior.
-function findProductByEan_(ean) {
-  for (var i = 0; i < products.length; i++) {
-    var p = products[i];
-    for (var j = 0; j < p.colorsArr.length; j++) {
-      var c = p.colorsArr[j];
-      var hasEan = c.gradesArr.some(function (g) { return g.ean === ean; });
-      if (hasEan) return { product: p, color: c };
-    }
-  }
-  return null;
-}
-
-// Si el texto es un EAN-13 completo (13 dígitos exactos) y existe en el
-// catálogo, abre directo su ficha de detalle — sin importar filtros activos.
-// Se usa tanto al escribir/pegar en el buscador como al escanear con cámara.
-// Devuelve true si encontró y abrió algo.
-function tryAutoOpenByEan_(value) {
-  var v = String(value || '').trim();
-  if (!/^\d{13}$/.test(v)) return false;
-  var found = findProductByEan_(v);
-  if (!found) return false;
-  openModal(found.product.codFabrica, found.color.color);
-  return true;
-}
-
 function onBarcodeScanned_(code) {
   if (navigator.vibrate) navigator.vibrate(80);
   closeBarcodeScanner_();
@@ -6800,11 +6769,7 @@ function onBarcodeScanned_(code) {
   if (btnPaste) btnPaste.style.display = 'none';
   applyFilters();
   renderCurrentView();
-
-  if (!tryAutoOpenByEan_(code)) {
-    alert('No se encontró ningún producto con el código ' + code + '.');
-    searchInput.focus();
-  }
+  searchInput.focus();
 }
 
 function closeBarcodeScanner_() {
