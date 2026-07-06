@@ -10,9 +10,10 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v40: diagnóstico ahora incluye volcado de códigos de caracter (U+XXXX)
-// del buscador — la hipótesis de dígitos ancho-completo no resolvió el bug.
-const CACHE_VERSION = 'v40';
+// v41: fix real — renderGallery() tenía su propia copia de la lógica de
+// matching de búsqueda (para decidir qué colores mostrar) que no sabía
+// de EAN, y descartaba todos los colores cuando el match era solo por EAN.
+const CACHE_VERSION = 'v41';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

@@ -4641,7 +4641,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.17.4';
+var APP_VERSION  = '1.18.0';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
@@ -5984,7 +5984,10 @@ function renderGallery() {
   var colorFilterActive = filterColor.length > 0;
   filteredProducts.forEach(function (p) {
     var prodTextMatched = !qSearch || [p.codFabrica, p.nmProduto, p.marca, p.grupo, p.subgrupo, p.colecao]
-      .some(function (v) { return v && normTxt_(v).indexOf(qSearch) >= 0; });
+      .some(function (v) { return v && normTxt_(v).indexOf(qSearch) >= 0; })
+      || p.colorsArr.some(function (c) {
+        return c.gradesArr.some(function (g) { return g.ean && normTxt_(g.ean).indexOf(qSearch) >= 0; });
+      });
     p.colorsArr.forEach(function (c) {
       // Filtro Color: si está activo, solo mostrar las variantes seleccionadas
       if (colorFilterActive && filterColor.indexOf(c.color) < 0) return;
