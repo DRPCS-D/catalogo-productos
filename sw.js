@@ -10,8 +10,8 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v46: chips de colores clicables — abren el modal del color correspondiente.
-const CACHE_VERSION = 'v46';
+// v47: chip activo resaltado + imagen más grande (90px mobile, 120px tablet).
+const CACHE_VERSION = 'v47';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

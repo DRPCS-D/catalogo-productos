@@ -2173,7 +2173,7 @@
     }
 
     .modal-color-img {
-      width: 72px; height: 72px;
+      width: 90px; height: 90px;
       object-fit: cover;
       border-radius: 6px;
       border: 1px solid var(--blue-100);
@@ -2184,7 +2184,7 @@
     .modal-color-img:hover { transform: scale(1.05); }
 
     .modal-color-ph {
-      width: 72px; height: 72px;
+      width: 90px; height: 90px;
       background: var(--gray-100);
       border-radius: 6px;
       display: flex;
@@ -2213,6 +2213,7 @@
       cursor: pointer;
     }
     .mcs-chip:hover { background: var(--blue-100); border-color: var(--primary); color: var(--primary); }
+    .mcs-chip-active { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
 
     .modal-color-name  { font-size: 14px; font-weight: 700; color: var(--primary); }
     .modal-color-total { font-size: 12px; color: var(--gray-500); margin-top: 2px; }
@@ -3156,10 +3157,10 @@
 
       /* Foto del color en modal más grande */
       .modal-color-img {
-        width: 100px; height: 100px;
+        width: 120px; height: 120px;
         cursor: zoom-in;
       }
-      .modal-color-ph { width: 100px; height: 100px; }
+      .modal-color-ph { width: 120px; height: 120px; }
 
       /* Texto del modal */
       .modal-color-name  { font-size: 15px; }
@@ -4757,7 +4758,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.19.4';
+var APP_VERSION  = '1.19.5';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
@@ -6601,7 +6602,7 @@ function openModal(codFabrica, colorName) {
   // Strip de colores disponibles (todos los colores del producto, no solo el mostrado)
   if (product.colorsArr.length > 1) {
     var colorsStripHtml = '<div class="modal-colors-strip"><span class="mcs-label">Colores disponibles (' + product.colorsArr.length + '):</span>' +
-      product.colorsArr.map(function (c) { return '<span class="mcs-chip" role="button" tabindex="0" onclick="openModal(\'' + escHtml(product.codFabrica) + '\',\'' + escHtml(c.color) + '\')" onkeydown="if(event.key===\'Enter\')openModal(\'' + escHtml(product.codFabrica) + '\',\'' + escHtml(c.color) + '\')">' + escHtml(c.color) + '</span>'; }).join('') +
+      product.colorsArr.map(function (c) { var isActive = colorName && c.color === colorName; return '<span class="mcs-chip' + (isActive ? ' mcs-chip-active' : '') + '" role="button" tabindex="0" onclick="openModal(\'' + escHtml(product.codFabrica) + '\',\'' + escHtml(c.color) + '\')" onkeydown="if(event.key===\'Enter\')openModal(\'' + escHtml(product.codFabrica) + '\',\'' + escHtml(c.color) + '\')">' + escHtml(c.color) + '</span>'; }).join('') +
       '</div>';
     modalBody.insertAdjacentHTML('beforeend', colorsStripHtml);
   }
