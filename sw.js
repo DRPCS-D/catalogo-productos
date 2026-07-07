@@ -10,8 +10,8 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v45: fix strip de colores — usa todos los colores del producto, no solo el visible.
-const CACHE_VERSION = 'v45';
+// v46: chips de colores clicables — abren el modal del color correspondiente.
+const CACHE_VERSION = 'v46';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

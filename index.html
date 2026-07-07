@@ -2210,7 +2210,9 @@
       padding: 2px 9px;
       font-size: 11px;
       color: var(--gray-700);
+      cursor: pointer;
     }
+    .mcs-chip:hover { background: var(--blue-100); border-color: var(--primary); color: var(--primary); }
 
     .modal-color-name  { font-size: 14px; font-weight: 700; color: var(--primary); }
     .modal-color-total { font-size: 12px; color: var(--gray-500); margin-top: 2px; }
@@ -4755,7 +4757,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.19.3';
+var APP_VERSION  = '1.19.4';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
@@ -6599,7 +6601,7 @@ function openModal(codFabrica, colorName) {
   // Strip de colores disponibles (todos los colores del producto, no solo el mostrado)
   if (product.colorsArr.length > 1) {
     var colorsStripHtml = '<div class="modal-colors-strip"><span class="mcs-label">Colores disponibles (' + product.colorsArr.length + '):</span>' +
-      product.colorsArr.map(function (c) { return '<span class="mcs-chip">' + escHtml(c.color) + '</span>'; }).join('') +
+      product.colorsArr.map(function (c) { return '<span class="mcs-chip" role="button" tabindex="0" onclick="openModal(\'' + escHtml(product.codFabrica) + '\',\'' + escHtml(c.color) + '\')" onkeydown="if(event.key===\'Enter\')openModal(\'' + escHtml(product.codFabrica) + '\',\'' + escHtml(c.color) + '\')">' + escHtml(c.color) + '</span>'; }).join('') +
       '</div>';
     modalBody.insertAdjacentHTML('beforeend', colorsStripHtml);
   }
