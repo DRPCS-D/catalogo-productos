@@ -10,8 +10,8 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v42: vista de favoritos — corazón por tarjeta, vista dedicada, PDF de favoritos.
-const CACHE_VERSION = 'v42';
+// v43: búsqueda por EAN muestra solo el color correspondiente al código escaneado.
+const CACHE_VERSION = 'v43';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
