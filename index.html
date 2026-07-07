@@ -4755,7 +4755,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.19.2';
+var APP_VERSION  = '1.19.3';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
@@ -6596,10 +6596,10 @@ function openModal(codFabrica, colorName) {
     '</div>';
   }).join('');
 
-  // Strip de colores disponibles (solo si hay más de uno)
-  if (cols.length > 1) {
-    var colorsStripHtml = '<div class="modal-colors-strip"><span class="mcs-label">Colores disponibles (' + cols.length + '):</span>' +
-      cols.map(function (c) { return '<span class="mcs-chip">' + escHtml(c.color) + '</span>'; }).join('') +
+  // Strip de colores disponibles (todos los colores del producto, no solo el mostrado)
+  if (product.colorsArr.length > 1) {
+    var colorsStripHtml = '<div class="modal-colors-strip"><span class="mcs-label">Colores disponibles (' + product.colorsArr.length + '):</span>' +
+      product.colorsArr.map(function (c) { return '<span class="mcs-chip">' + escHtml(c.color) + '</span>'; }).join('') +
       '</div>';
     modalBody.insertAdjacentHTML('beforeend', colorsStripHtml);
   }
