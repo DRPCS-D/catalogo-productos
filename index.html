@@ -3743,6 +3743,11 @@
         <span class="export-switch-track"><span class="export-switch-thumb"></span></span>
         <span class="export-switch-label">Mostrar precio promo</span>
       </label>
+      <label class="export-switch" for="pdf-hide-price-switch">
+        <input type="checkbox" id="pdf-hide-price-switch">
+        <span class="export-switch-track"><span class="export-switch-thumb"></span></span>
+        <span class="export-switch-label">Ocultar precio</span>
+      </label>
       <div class="export-buttons-row">
         <button class="btn-pdf-side"        id="btn-pdf"        onclick="generatePDF()"       title="Generar catálogo PDF del filtro actual">Normal</button>
         <button class="btn-pdf-mobile-side" id="btn-pdf-mobile" onclick="generatePDFMobile()" title="Generador de PDF optimizado para móviles">📱 Móvil (beta)</button>
@@ -4186,6 +4191,7 @@ var filterUltVentaHasta  = null;
 var filterFoto       = 'all';  // 'all' | 'with' | 'without'
 var filterPromo      = 'all';  // 'all' | 'with' | 'without' (sobre el precio activo)
 var pdfIncludePromo  = false;  // PDF: mostrar precio promo cuando esté activo (default: No)
+var pdfHidePrice     = false;  // PDF: ocultar precio completamente (default: No)
 var productsLoaded   = false;
 // Scroll infinito: cuántos items ya están en el DOM y lotes a renderizar
 var renderedCount    = 0;
@@ -5237,6 +5243,15 @@ function setupEvents() {
     promoSwitch.checked = pdfIncludePromo;  // sync inicial con el global
     promoSwitch.addEventListener('change', function () {
       pdfIncludePromo = this.checked;
+    });
+  }
+
+  // Switch para ocultar precio en PDF
+  var hidePriceSwitch = document.getElementById('pdf-hide-price-switch');
+  if (hidePriceSwitch) {
+    hidePriceSwitch.checked = pdfHidePrice;
+    hidePriceSwitch.addEventListener('change', function () {
+      pdfHidePrice = this.checked;
     });
   }
 
@@ -8802,10 +8817,11 @@ function renderPdfCard_(p, c) {
     })
     .join('');
 
-  // Precio: si pdfIncludePromo=true → muestra promo activa (tachado + promo).
-  //         si pdfIncludePromo=false → siempre el precio regular sin promo.
+  // Precio: pdfHidePrice=true → sin precio. pdfIncludePromo=true → con promo.
   var priceHtml;
-  if (pdfIncludePromo) {
+  if (pdfHidePrice) {
+    priceHtml = '';
+  } else if (pdfIncludePromo) {
     priceHtml = renderPriceHtml(p);
   } else {
     var basePrice = (priceMode === 'mayorista')
