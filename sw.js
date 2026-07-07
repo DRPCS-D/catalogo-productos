@@ -10,8 +10,8 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v43: búsqueda por EAN muestra solo el color correspondiente al código escaneado.
-const CACHE_VERSION = 'v43';
+// v44: modal rediseñado — imagen más grande, precio al medio, strip de colores.
+const CACHE_VERSION = 'v44';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

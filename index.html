@@ -1983,7 +1983,7 @@
       background: var(--gray-50);
       padding: 10px 14px;
       border-radius: 8px;
-      margin-bottom: 12px;
+      margin: 4px 0 12px;
       font-size: 13px;
       line-height: 1.7;
     }
@@ -2173,7 +2173,7 @@
     }
 
     .modal-color-img {
-      width: 52px; height: 52px;
+      width: 72px; height: 72px;
       object-fit: cover;
       border-radius: 6px;
       border: 1px solid var(--blue-100);
@@ -2184,7 +2184,7 @@
     .modal-color-img:hover { transform: scale(1.05); }
 
     .modal-color-ph {
-      width: 52px; height: 52px;
+      width: 72px; height: 72px;
       background: var(--gray-100);
       border-radius: 6px;
       display: flex;
@@ -2192,6 +2192,24 @@
       justify-content: center;
       font-size: 22px;
       flex-shrink: 0;
+    }
+
+    .modal-colors-strip {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 5px;
+      margin: 8px 0 4px;
+      font-size: 12px;
+    }
+    .mcs-label { font-weight: 600; color: var(--gray-600); margin-right: 2px; }
+    .mcs-chip {
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 2px 9px;
+      font-size: 11px;
+      color: var(--gray-700);
     }
 
     .modal-color-name  { font-size: 14px; font-weight: 700; color: var(--primary); }
@@ -3134,12 +3152,12 @@
       .modal-subtitle { font-size: 13px; }
       .modal-body { padding: 14px 18px; max-height: 76vh; }
 
-      /* Foto del color en modal más grande (era 52×52) */
+      /* Foto del color en modal más grande */
       .modal-color-img {
-        width: 80px; height: 80px;
+        width: 100px; height: 100px;
         cursor: zoom-in;
       }
-      .modal-color-ph { width: 80px; height: 80px; }
+      .modal-color-ph { width: 100px; height: 100px; }
 
       /* Texto del modal */
       .modal-color-name  { font-size: 15px; }
@@ -4737,7 +4755,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.19.1';
+var APP_VERSION  = '1.19.2';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
@@ -6496,7 +6514,7 @@ function openModal(codFabrica, colorName) {
   var priceBlockHtml = buildModalPriceBlock_(product);
 
   var modalBody = document.getElementById('modal-body');
-  modalBody.innerHTML = priceBlockHtml + cols.map(function (c) {
+  modalBody.innerHTML = cols.map(function (c) {
     var imgUrl     = getImgUrl(c.imgId, 400);   // modal: tamaño medio
     var imgFullUrl = getImgUrl(c.imgId, 1600);  // versión grande para el lightbox
     var imgHtml = imgUrl
@@ -6577,6 +6595,17 @@ function openModal(codFabrica, colorName) {
       }).join('') +
     '</div>';
   }).join('');
+
+  // Strip de colores disponibles (solo si hay más de uno)
+  if (cols.length > 1) {
+    var colorsStripHtml = '<div class="modal-colors-strip"><span class="mcs-label">Colores disponibles (' + cols.length + '):</span>' +
+      cols.map(function (c) { return '<span class="mcs-chip">' + escHtml(c.color) + '</span>'; }).join('') +
+      '</div>';
+    modalBody.insertAdjacentHTML('beforeend', colorsStripHtml);
+  }
+
+  // Bloque de precios + top venta + última compra
+  modalBody.insertAdjacentHTML('beforeend', priceBlockHtml);
 
   // Sección "Productos similares" al final del modal-body. Si no hay matches,
   // renderSimilarsBlock_ devuelve '' y no se ve nada.
