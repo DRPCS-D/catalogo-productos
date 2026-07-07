@@ -7044,7 +7044,7 @@ function switchView(view) {
   if (icon) icon.textContent = isTable ? '☰' : '⊞';
   if (btn) {
     btn.title = 'Cambiar a ' + (isTable ? 'galería' : 'tabla');
-    btn.style.display = (isCart || isFavorites) ? 'none' : '';
+    btn.style.display = '';
   }
 
   // Chips resaltados según vista activa
