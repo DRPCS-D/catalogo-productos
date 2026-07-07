@@ -8150,14 +8150,19 @@ function onExcelSwitchChange_(which) {
  * activos (sucursal, stock, foto) igual que el export normal.
  */
 function exportToExcelTotalsByMarca_() {
-  if (!filteredProducts || !filteredProducts.length) {
-    alert('No hay productos para exportar. Ajustá los filtros.');
+  var isFavView   = currentView === 'favorites';
+  var sourceProds = isFavView ? getFavoriteProducts_() : filteredProducts;
+
+  if (!sourceProds || !sourceProds.length) {
+    alert(isFavView
+      ? 'No hay favoritos guardados para exportar.'
+      : 'No hay productos para exportar. Ajustá los filtros.');
     return;
   }
 
-  var sucursalActive = effectiveSucursalFilter_().length > 0;
-  var stockActive    = (filterStockMin !== null || filterStockMax !== null);
-  var fotoActive     = (filterFoto !== 'all');
+  var sucursalActive = !isFavView && effectiveSucursalFilter_().length > 0;
+  var stockActive    = !isFavView && (filterStockMin !== null || filterStockMax !== null);
+  var fotoActive     = !isFavView && (filterFoto !== 'all');
 
   // 1) Lista de sucursales (columnas)
   var sucursales;
@@ -8165,7 +8170,7 @@ function exportToExcelTotalsByMarca_() {
     sucursales = effectiveSucursalFilter_().slice().sort();
   } else {
     var sucSet = {};
-    filteredProducts.forEach(function (p) {
+    sourceProds.forEach(function (p) {
       p.colorsArr.forEach(function (c) {
         c.gradesArr.forEach(function (g) {
           g.stock.forEach(function (s) {
@@ -8183,7 +8188,7 @@ function exportToExcelTotalsByMarca_() {
 
   // 2) Agregar: marca → { sucursal → totalUds }
   var byMarca = {};   // { marca: { sucursal: cantidad } }
-  filteredProducts.forEach(function (p) {
+  sourceProds.forEach(function (p) {
     var marca = p.marca || '(sin marca)';
     p.colorsArr.forEach(function (c) {
       if (sucursalActive && getColorStock(c) <= 0) return;
@@ -8270,14 +8275,19 @@ function exportToExcel(opts) {
   opts = opts || {};
   var withGrade = !!opts.withGrade;
 
-  if (!filteredProducts || !filteredProducts.length) {
-    alert('No hay productos para exportar. Ajustá los filtros.');
+  var isFavView   = currentView === 'favorites';
+  var sourceProds = isFavView ? getFavoriteProducts_() : filteredProducts;
+
+  if (!sourceProds || !sourceProds.length) {
+    alert(isFavView
+      ? 'No hay favoritos guardados para exportar.'
+      : 'No hay productos para exportar. Ajustá los filtros.');
     return;
   }
 
-  var sucursalActive = effectiveSucursalFilter_().length > 0;
-  var stockActive    = (filterStockMin !== null || filterStockMax !== null);
-  var fotoActive     = (filterFoto !== 'all');
+  var sucursalActive = !isFavView && effectiveSucursalFilter_().length > 0;
+  var stockActive    = !isFavView && (filterStockMin !== null || filterStockMax !== null);
+  var fotoActive     = !isFavView && (filterFoto !== 'all');
 
   // 1) Determinar la lista de sucursales que aparecerán como columnas
   var sucursales;
@@ -8285,7 +8295,7 @@ function exportToExcel(opts) {
     sucursales = effectiveSucursalFilter_().slice().sort();
   } else {
     var sucSet = {};
-    filteredProducts.forEach(function (p) {
+    sourceProds.forEach(function (p) {
       p.colorsArr.forEach(function (c) {
         c.gradesArr.forEach(function (g) {
           g.stock.forEach(function (s) {
@@ -8315,7 +8325,7 @@ function exportToExcel(opts) {
   var sucColStart = baseHeaders.length;   // índice donde arrancan las columnas de sucursal
 
   // 3) Filas: 1 por producto × color (× talle si withGrade), mismos filtros que galería/PDF
-  filteredProducts.forEach(function (p) {
+  sourceProds.forEach(function (p) {
     var topVenta = STORE_NAMES[p.qMasVendio] || (p.qMasVendio ? ('Tienda ' + p.qMasVendio) : '');
 
     p.colorsArr.forEach(function (c) {
