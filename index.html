@@ -8489,21 +8489,26 @@ function csvCell_(v) {
 // Esto evita por completo los problemas de timing/permisos.
 
 function generatePDFMobile() {
-  if (!filteredProducts || !filteredProducts.length) {
-    alert('No hay productos para incluir en el PDF. Ajustá los filtros.');
+  var isFavView   = currentView === 'favorites';
+  var sourceProds = isFavView ? getFavoriteProducts_() : filteredProducts;
+
+  if (!sourceProds || !sourceProds.length) {
+    alert(isFavView
+      ? 'No hay favoritos guardados para incluir en el PDF.'
+      : 'No hay productos para incluir en el PDF. Ajustá los filtros.');
     return;
   }
 
-  var sucursalActive = effectiveSucursalFilter_().length > 0;
-  var stockActive    = (filterStockMin !== null || filterStockMax !== null);
-  var fotoActive     = (filterFoto !== 'all');
-  var filtroResumen  = buildFilterSummary_();
+  var sucursalActive = !isFavView && effectiveSucursalFilter_().length > 0;
+  var stockActive    = !isFavView && (filterStockMin !== null || filterStockMax !== null);
+  var fotoActive     = !isFavView && (filterFoto !== 'all');
+  var filtroResumen  = isFavView ? 'Favoritos' : buildFilterSummary_();
   var fecha          = new Date().toLocaleDateString('es-PY',
                           { day: '2-digit', month: '2-digit', year: 'numeric' });
 
   // Recolectar las cards filtradas (una entrada por producto×color)
   var cardsHtmlArr = [];
-  filteredProducts.forEach(function (p) {
+  sourceProds.forEach(function (p) {
     p.colorsArr.forEach(function (c) {
       if (sucursalActive && getColorStock(c) <= 0) return;
       if (stockActive    && !colorPassesStock_(c)) return;
