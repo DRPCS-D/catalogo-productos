@@ -7201,10 +7201,8 @@ function renderFavorites() {
     if (imgWrap && imgWrap.getAttribute('data-img')) openLightbox(imgWrap);
   };
 
-  // Lazy-load de imágenes
-  container.querySelectorAll('.lazy-img').forEach(function (img) {
-    if (img.dataset.src) { img.src = img.dataset.src; }
-  });
+  // Registrar imágenes con el IntersectionObserver global de lazy load
+  observeLazyImages();
 }
 
 // =================================================================
