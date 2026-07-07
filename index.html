@@ -296,6 +296,73 @@
     }
     .cart-chip.has-items .cart-chip-count { display: inline-flex; }
 
+    /* ===== FAV CHIP (header) ===== */
+    .fav-chip {
+      position: relative;
+      width: 38px;
+      height: 38px;
+      border: none;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.12);
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      line-height: 1;
+      transition: background .15s, transform .1s;
+      flex-shrink: 0;
+    }
+    .fav-chip:hover  { background: rgba(255,255,255,.22); }
+    .fav-chip:active { transform: scale(.94); }
+    .fav-chip.active { background: white; color: var(--primary); }
+    .fav-chip-count {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #ef4444;
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 9px;
+      padding: 0 5px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--primary);
+      line-height: 1;
+    }
+    .fav-chip.has-items .fav-chip-count { display: inline-flex; }
+
+    /* ===== BOTÓN ♥ FAVORITO en card de galería ===== */
+    .btn-card-fav {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0,0,0,.35);
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      line-height: 1;
+      padding: 0;
+      transition: transform .12s, background .15s;
+      backdrop-filter: blur(4px);
+      z-index: 2;
+    }
+    .btn-card-fav:hover  { background: rgba(0,0,0,.55); transform: scale(1.1); }
+    .btn-card-fav:active { transform: scale(.92); }
+    .btn-card-fav.is-fav { background: rgba(239,68,68,.7); }
+
     /* ===== CART VIEW ===== */
     #cart-view {
       padding: 20px;
@@ -2924,6 +2991,8 @@
       .view-toggle-btn { width: 34px; height: 34px; font-size: 16px; }
       .cart-chip { width: 34px; height: 34px; font-size: 16px; }
       .cart-chip-count { font-size: 9px; min-width: 16px; height: 16px; top: -4px; right: -4px; }
+      .fav-chip { width: 34px; height: 34px; font-size: 16px; }
+      .fav-chip-count { font-size: 9px; min-width: 16px; height: 16px; top: -4px; right: -4px; }
 
       /* Filter-bar compacto */
       .filter-inner { padding: 6px 10px; gap: 6px; }
@@ -3002,6 +3071,7 @@
       .header-title { font-size: 16px; }
       .view-toggle-btn { width: 42px; height: 42px; font-size: 20px; }
       .cart-chip { width: 42px; height: 42px; font-size: 20px; }
+      .fav-chip { width: 42px; height: 42px; font-size: 20px; }
       .refresh-chip { padding: 7px 13px; font-size: 12px; min-height: 36px; }
 
       /* --- BUSCADOR --- */
@@ -3532,6 +3602,10 @@
         <span class="refresh-icon">🔄</span>
         <span id="refresh-label">—</span>
       </button>
+      <button class="fav-chip" id="btn-fav" onclick="openFavView_()" title="Ver favoritos" aria-label="Ver favoritos">
+        ❤️
+        <span class="fav-chip-count" id="fav-chip-count">0</span>
+      </button>
       <button class="cart-chip" id="btn-cart" onclick="openCartView_()" title="Ver carrito" aria-label="Ver carrito">
         🛒
         <span class="cart-chip-count" id="cart-chip-count">0</span>
@@ -3762,6 +3836,16 @@
     <!-- Sentinel infinite scroll galería + chip de estado -->
     <div id="gallery-sentinel" style="height:1px"></div>
     <div id="gallery-footer-chip" class="infinite-footer" style="display:none"></div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- VISTA FAVORITOS — render dinámico en renderFavorites()        -->
+  <!-- ============================================================ -->
+  <div id="favorites-view" style="display:none">
+    <div class="result-bar">
+      <span id="fav-count-txt"></span>
+    </div>
+    <div class="gallery-grid" id="favorites-container"></div>
   </div>
 
   <!-- ============================================================ -->
@@ -4072,6 +4156,10 @@ var filterPrecioMin  = null;
 var filterPrecioMax  = null;
 var priceMode        = 'minorista';   // 'minorista' | 'mayorista' — selector global
 
+// ============ FAVORITOS ============
+var FAVORITES_STORAGE_KEY = 'lc_fav_v1';
+var favorites = {};   // { "cod::color": {codFabrica, color}, ... }
+
 // ============ CARRITO ============
 // Objeto con clave `${codigo}::${color}::${talle}` para evitar duplicados.
 // Persistido en localStorage. Línea = { codigo, marca, descripcion, color,
@@ -4187,10 +4275,12 @@ window.onload = function () {
   setupEvents();
   registerServiceWorker_();
 
-  // Cargar carrito desde localStorage temprano para que el badge se pinte
-  // antes de que se carguen los productos.
+  // Cargar carrito y favoritos desde localStorage temprano para que los badges
+  // se pinten antes de que se carguen los productos.
   loadCart_();
   updateCartBadge_();
+  loadFavorites_();
+  updateFavBadge_();
 
   // 1) Cargar la config del modo activo desde Supabase (page_config table).
   //    Esto sobrescribe el PAGE_CONFIG hardcoded con lo que el admin guardó.
@@ -4641,7 +4731,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.18.0';
+var APP_VERSION  = '1.19.0';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
@@ -5041,6 +5131,12 @@ function setupEvents() {
     if (copyBtn) {
       e.stopPropagation();
       copyCodeToClipboard_(copyBtn);
+      return;
+    }
+    var favBtn = closest(e.target, '.btn-card-fav');
+    if (favBtn) {
+      e.stopPropagation();
+      toggleFav_(favBtn.getAttribute('data-cod'), favBtn.getAttribute('data-color'));
       return;
     }
     var qaBtn = closest(e.target, '.btn-card-quickadd');
@@ -6214,8 +6310,10 @@ function buildGalleryCardHtml_(item) {
         ' data-cap-price="' + escHtml(fmtPrice(getActivePrice(p).price)) + '"'
       : ' style="cursor:default"';
 
+    var isFavCard = isFav_(p.codFabrica, c.color);
     return '<div class="product-card">' +
       '<div class="card-img-wrap"' + wrapAttrs + '>' + imgHtml +
+        '<button class="btn-card-fav' + (isFavCard ? ' is-fav' : '') + '" data-cod="' + escHtml(p.codFabrica) + '" data-color="' + escHtml(c.color) + '" title="' + (isFavCard ? 'Quitar de favoritos' : 'Guardar en favoritos') + '" aria-label="Favorito">' + (isFavCard ? '❤️' : '🤍') + '</button>' +
         '<button class="btn-card-quickadd" data-cod="' + escHtml(p.codFabrica) + '" data-color="' + escHtml(c.color) + '" title="Agregar al carrito" aria-label="Agregar al carrito">+</button>' +
       '</div>' +
       '<div class="card-body">' +
@@ -6929,27 +7027,31 @@ function toggleColor(cKey) {
 function switchView(view) {
   currentView = view;
   renderedCount = 0;  // al cambiar de vista volvemos a renderizar desde el inicio
-  var isTable   = view === 'table';
-  var isCart    = view === 'cart';
-  var isGallery = view === 'gallery';
+  var isTable     = view === 'table';
+  var isCart      = view === 'cart';
+  var isGallery   = view === 'gallery';
+  var isFavorites = view === 'favorites';
 
-  document.getElementById('table-view').style.display   = isTable   ? 'block' : 'none';
-  document.getElementById('gallery-view').style.display = isGallery ? 'block' : 'none';
-  document.getElementById('cart-view').style.display    = isCart    ? 'block' : 'none';
+  document.getElementById('table-view').style.display     = isTable     ? 'block' : 'none';
+  document.getElementById('gallery-view').style.display   = isGallery   ? 'block' : 'none';
+  document.getElementById('cart-view').style.display      = isCart      ? 'block' : 'none';
+  document.getElementById('favorites-view').style.display = isFavorites ? 'block' : 'none';
 
   // El botón único muestra el ícono de la vista en la que estás ahora.
-  // Tocarlo te lleva a la otra. En vista carrito el toggle se oculta.
+  // Tocarlo te lleva a la otra. En vista carrito/favoritos el toggle se oculta.
   var icon = document.getElementById('view-toggle-icon');
   var btn  = document.getElementById('btn-view-toggle');
   if (icon) icon.textContent = isTable ? '☰' : '⊞';
   if (btn) {
     btn.title = 'Cambiar a ' + (isTable ? 'galería' : 'tabla');
-    btn.style.display = isCart ? 'none' : '';
+    btn.style.display = (isCart || isFavorites) ? 'none' : '';
   }
 
-  // Chip del carrito resaltada cuando estás en vista carrito
+  // Chips resaltados según vista activa
   var cartChip = document.getElementById('btn-cart');
   if (cartChip) cartChip.classList.toggle('active', isCart);
+  var favChip = document.getElementById('btn-fav');
+  if (favChip) favChip.classList.toggle('active', isFavorites);
 
   renderCurrentView();
 }
@@ -6965,15 +7067,144 @@ function openCartView_() {
   else switchView('cart');
 }
 
+function openFavView_() {
+  if (currentView === 'favorites') switchView('gallery');
+  else switchView('favorites');
+}
+
 // =================================================================
 // HELPERS DE RENDER
 // =================================================================
 function renderCurrentView() {
-  if (!productsLoaded && currentView !== 'cart') return;
-  if (currentView === 'table')      renderTable();
-  else if (currentView === 'cart')  renderCart_();
-  else                              renderGallery();
+  if (!productsLoaded && currentView !== 'cart' && currentView !== 'favorites') return;
+  if (currentView === 'table')          renderTable();
+  else if (currentView === 'cart')      renderCart_();
+  else if (currentView === 'favorites') renderFavorites();
+  else                                  renderGallery();
   updateStats();
+}
+
+// =================================================================
+// FAVORITOS — estado + persistencia + render
+// =================================================================
+function favKey_(cod, color) {
+  return cod + '::' + (color || '');
+}
+
+function loadFavorites_() {
+  try {
+    var raw = localStorage.getItem(FAVORITES_STORAGE_KEY);
+    favorites = raw ? JSON.parse(raw) : {};
+    if (!favorites || typeof favorites !== 'object') favorites = {};
+  } catch (e) { favorites = {}; }
+}
+
+function saveFavorites_() {
+  try { localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favorites)); }
+  catch (e) {}
+}
+
+function isFav_(cod, color) {
+  return !!favorites[favKey_(cod, color)];
+}
+
+function toggleFav_(cod, color) {
+  var k = favKey_(cod, color);
+  if (favorites[k]) {
+    delete favorites[k];
+  } else {
+    favorites[k] = { codFabrica: cod, color: color };
+  }
+  saveFavorites_();
+  updateFavBadge_();
+  // Actualizar todos los botones de esa tarjeta en el DOM sin re-renderizar
+  var now = isFav_(cod, color);
+  document.querySelectorAll('.btn-card-fav[data-cod="' + cod + '"][data-color="' + color + '"]')
+    .forEach(function (btn) {
+      btn.textContent = now ? '❤️' : '🤍';
+      btn.title = now ? 'Quitar de favoritos' : 'Guardar en favoritos';
+      btn.classList.toggle('is-fav', now);
+    });
+  // Si estamos en la vista favoritos, re-renderizar para quitar la card desguardada
+  if (currentView === 'favorites') renderFavorites();
+}
+
+function updateFavBadge_() {
+  var n = Object.keys(favorites).length;
+  var badge = document.getElementById('fav-chip-count');
+  if (badge) badge.textContent = n;
+  var chip = document.getElementById('btn-fav');
+  if (chip) chip.classList.toggle('has-items', n > 0);
+}
+
+function getFavoriteProducts_() {
+  // Devuelve un array de productos con colorsArr reducido solo a los colores
+  // guardados como favoritos. Útil para generatePDF() en vista favoritos.
+  var productMap = {};
+  products.forEach(function (p) { productMap[p.codFabrica] = p; });
+  var result = [];
+  var seen = {};
+  Object.keys(favorites).forEach(function (k) {
+    var f = favorites[k];
+    var p = productMap[f.codFabrica];
+    if (!p) return;
+    if (!seen[f.codFabrica]) {
+      seen[f.codFabrica] = true;
+      // Clonar con solo los colores favoritos para que generatePDF_ los itere
+      var favColors = p.colorsArr.filter(function (c) {
+        return !!favorites[favKey_(p.codFabrica, c.color)];
+      });
+      result.push(Object.assign({}, p, { colorsArr: favColors }));
+    }
+  });
+  return result;
+}
+
+function renderFavorites() {
+  var container = document.getElementById('favorites-container');
+  if (!container) return;
+
+  var productMap = {};
+  products.forEach(function (p) { productMap[p.codFabrica] = p; });
+
+  var cards = [];
+  Object.keys(favorites).forEach(function (k) {
+    var f = favorites[k];
+    var p = productMap[f.codFabrica];
+    if (!p) return;
+    var c = p.colorsArr.find(function (col) { return col.color === f.color; });
+    if (c) cards.push({ p: p, c: c });
+  });
+
+  var countTxt = document.getElementById('fav-count-txt');
+  if (countTxt) countTxt.textContent = cards.length + ' favorito' + (cards.length !== 1 ? 's' : '');
+
+  if (!cards.length) {
+    container.innerHTML = '<div style="text-align:center;padding:3rem 1rem;opacity:.6;font-size:15px">No hay favoritos guardados.<br>Tocá el 🤍 en cualquier producto para guardarlo aquí.</div>';
+    return;
+  }
+
+  container.innerHTML = cards.map(buildGalleryCardHtml_).join('');
+
+  // Delegación de eventos para las tarjetas de la vista favoritos
+  // (reutiliza el mismo patrón que gallery-container)
+  container.onclick = function (e) {
+    var favBtn = closest(e.target, '.btn-card-fav');
+    if (favBtn) { e.stopPropagation(); toggleFav_(favBtn.getAttribute('data-cod'), favBtn.getAttribute('data-color')); return; }
+    var qaBtn = closest(e.target, '.btn-card-quickadd');
+    if (qaBtn) { e.stopPropagation(); openQuickAdd_(qaBtn.getAttribute('data-cod'), qaBtn.getAttribute('data-color')); return; }
+    var copyBtn = closest(e.target, '.btn-copy-code');
+    if (copyBtn) { e.stopPropagation(); copyCodeToClipboard_(copyBtn); return; }
+    var btn = closest(e.target, '.btn-card-detail');
+    if (btn) { openModal(btn.getAttribute('data-cod'), btn.getAttribute('data-color')); return; }
+    var imgWrap = closest(e.target, '.card-img-wrap');
+    if (imgWrap && imgWrap.getAttribute('data-img')) openLightbox(imgWrap);
+  };
+
+  // Lazy-load de imágenes
+  container.querySelectorAll('.lazy-img').forEach(function (img) {
+    if (img.dataset.src) { img.src = img.dataset.src; }
+  });
 }
 
 // =================================================================
@@ -8422,26 +8653,31 @@ function adjustPmoImg_(delta) {
 }
 
 function generatePDF() {
-  if (!filteredProducts || !filteredProducts.length) {
-    alert('No hay productos para incluir en el PDF. Ajustá los filtros.');
+  var isFavView   = currentView === 'favorites';
+  var sourceProds = isFavView ? getFavoriteProducts_() : filteredProducts;
+
+  if (!sourceProds || !sourceProds.length) {
+    alert(isFavView
+      ? 'No hay favoritos guardados para incluir en el PDF.'
+      : 'No hay productos para incluir en el PDF. Ajustá los filtros.');
     return;
   }
 
   var container         = document.getElementById('print-catalog');
-  var sucursalActive    = effectiveSucursalFilter_().length > 0;
-  var stockActive       = (filterStockMin !== null || filterStockMax !== null);
-  var filtroResumen     = buildFilterSummary_();
+  var sucursalActive    = !isFavView && effectiveSucursalFilter_().length > 0;
+  var stockActive       = !isFavView && (filterStockMin !== null || filterStockMax !== null);
+  var filtroResumen     = isFavView ? 'Favoritos' : buildFilterSummary_();
   var fecha             = new Date().toLocaleDateString('es-PY',
                             { day: '2-digit', month: '2-digit', year: 'numeric' });
 
   // Primera pasada: contar cuántas cards van a salir (sin armar el HTML).
   // Si son muchas, avisar ANTES para que el usuario pueda cancelar sin esperar.
   var cardCount = 0;
-  filteredProducts.forEach(function (p) {
+  sourceProds.forEach(function (p) {
     p.colorsArr.forEach(function (c) {
       if (sucursalActive && getColorStock(c) <= 0) return;
       if (stockActive    && !colorPassesStock_(c)) return;
-      if (filterFoto !== 'all' && !colorPassesFoto_(c)) return;
+      if (!isFavView && filterFoto !== 'all' && !colorPassesFoto_(c)) return;
       cardCount++;
     });
   });
@@ -8477,11 +8713,11 @@ function generatePDF() {
   // Se define al vuelo dentro de generatePDF para reutilizar las variables.
   function buildAndPrintPdf_() {
     var cardsHtml = '';
-    filteredProducts.forEach(function (p) {
+    sourceProds.forEach(function (p) {
       p.colorsArr.forEach(function (c) {
         if (sucursalActive && getColorStock(c) <= 0) return;
         if (stockActive    && !colorPassesStock_(c)) return;
-        if (filterFoto !== 'all' && !colorPassesFoto_(c)) return;
+        if (!isFavView && filterFoto !== 'all' && !colorPassesFoto_(c)) return;
         cardsHtml += renderPdfCard_(p, c);
       });
     });

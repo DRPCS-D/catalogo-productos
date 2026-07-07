@@ -10,10 +10,8 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v41: fix real — renderGallery() tenía su propia copia de la lógica de
-// matching de búsqueda (para decidir qué colores mostrar) que no sabía
-// de EAN, y descartaba todos los colores cuando el match era solo por EAN.
-const CACHE_VERSION = 'v41';
+// v42: vista de favoritos — corazón por tarjeta, vista dedicada, PDF de favoritos.
+const CACHE_VERSION = 'v42';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
