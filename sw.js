@@ -10,8 +10,8 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v64: favoritos vacío centrado + botón borrar todo con confirmación.
-const CACHE_VERSION = 'v64';
+// v65: ⚠️ solo aparece cuando último sync es ERROR.
+const CACHE_VERSION = 'v65';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

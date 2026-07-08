@@ -4809,16 +4809,12 @@ function updateRefreshChip() {
 function updateSyncWarningIcon_() {
   var icon = document.getElementById('sync-warning-icon');
   if (!icon) return;
-  var ageMs = catalogServerUpdatedAt ? (Date.now() - new Date(catalogServerUpdatedAt).getTime()) : Infinity;
-  if (ageMs <= SYNC_WARNING_THRESHOLD_MS) { icon.style.display = 'none'; return; }
-
-  var msg;
-  if (lastSyncLogRow && lastSyncLogRow.status === 'ERROR') {
-    msg = 'Sincronización con errores desde ' + relativeTime_(Date.now() - new Date(lastSyncLogRow.ts).getTime()) +
-          '. Detalle: ' + (lastSyncLogRow.error || 'error desconocido').slice(0, 120);
-  } else {
-    msg = 'El catálogo no se actualiza hace más de 3 horas y no hay registro de sincronización reciente. Puede haber un problema en el servidor.';
+  if (!lastSyncLogRow || lastSyncLogRow.status !== 'ERROR') {
+    icon.style.display = 'none';
+    return;
   }
+  var msg = 'Sincronización con errores desde ' + relativeTime_(Date.now() - new Date(lastSyncLogRow.ts).getTime()) +
+            '. Detalle: ' + (lastSyncLogRow.error || 'error desconocido').slice(0, 120);
   icon.title = '⚠️ ' + msg;
   icon.style.display = 'inline-flex';
 }
@@ -4827,7 +4823,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.11';
+var APP_VERSION  = '1.21.12';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
