@@ -3702,9 +3702,9 @@
     </div>
 
     <details class="filter-more">
-      <summary class="filter-more-title">⚙️ Más opciones</summary>
+      <summary class="filter-more-title">Más opciones</summary>
 
-      <label class="sidebar-label"><span class="sl-icon">₲</span>Precio (₲)</label>
+      <label class="sidebar-label">Precio (₲)</label>
       <div class="price-range" title="Rango de precio en guaraníes">
         <span class="price-label">₲</span>
         <input type="number" id="filter-precio-min" min="0" step="1000" placeholder="Mín" inputmode="numeric">
@@ -3712,28 +3712,28 @@
         <input type="number" id="filter-precio-max" min="0" step="1000" placeholder="Máx" inputmode="numeric">
       </div>
 
-      <label class="sidebar-label"><span class="sl-icon">📅</span>Última compra (rango de fechas)</label>
+      <label class="sidebar-label">Última compra (rango de fechas)</label>
       <div class="date-range" title="Rango de fecha de última compra. La fecha es la más reciente entre todas las sucursales del producto.">
         <input type="date" id="filter-ultcmp-desde" placeholder="Desde">
         <span class="price-sep">—</span>
         <input type="date" id="filter-ultcmp-hasta" placeholder="Hasta">
       </div>
 
-      <label class="sidebar-label"><span class="sl-icon">🧾</span>Última venta (rango de fechas)</label>
+      <label class="sidebar-label">Última venta (rango de fechas)</label>
       <div class="date-range" title="Rango de fecha de última venta. La fecha es la más reciente entre todas las sucursales del producto.">
         <input type="date" id="filter-ultvnd-desde" placeholder="Desde">
         <span class="price-sep">—</span>
         <input type="date" id="filter-ultvnd-hasta" placeholder="Hasta">
       </div>
 
-      <label class="sidebar-label" data-section="promo"><span class="sl-icon">🔥</span>Promoción (sobre el precio activo)</label>
+      <label class="sidebar-label" data-section="promo">Promoción (sobre el precio activo)</label>
       <div class="segmented" id="filter-promo" role="radiogroup" data-section="promo">
         <button type="button" data-value="all"     class="active">Todos</button>
         <button type="button" data-value="with">En promo</button>
         <button type="button" data-value="without">Sin promo</button>
       </div>
 
-      <label class="sidebar-label"><span class="sl-icon">🎨</span>Color</label>
+      <label class="sidebar-label">Color</label>
       <div class="multi-select" id="filter-color" data-placeholder="Todos los colores" data-noun="color"></div>
     </details>
 
@@ -3744,7 +3744,7 @@
 
     <!-- Sección PDF (desplegable, colapsada por default) -->
     <details class="export-section" data-section="pdf-promo-wrap">
-      <summary class="export-section-title">📄 Exportar a PDF</summary>
+      <summary class="export-section-title">PDF</summary>
       <label class="export-switch" for="pdf-include-promo-switch" data-section="pdf-promo">
         <input type="checkbox" id="pdf-include-promo-switch">
         <span class="export-switch-track"><span class="export-switch-thumb"></span></span>
@@ -3763,7 +3763,7 @@
 
     <!-- Sección Excel (desplegable, colapsada por default) -->
     <details class="export-section">
-      <summary class="export-section-title">📊 Exportar a Excel</summary>
+      <summary class="export-section-title">Excel</summary>
       <label class="export-switch" for="excel-with-grade">
         <input type="checkbox" id="excel-with-grade" onchange="onExcelSwitchChange_('grade')">
         <span class="export-switch-track"><span class="export-switch-thumb"></span></span>
@@ -4744,7 +4744,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.19.7';
+var APP_VERSION  = '1.19.8';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
