@@ -10,8 +10,8 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v56: min-width 601px en body — tamaño mínimo anclado al breakpoint 601-899px.
-const CACHE_VERSION = 'v56';
+// v55: eliminar bloque AJUSTES DE MÓVIL (≤ 600px) — modo compacto deshabilitado.
+const CACHE_VERSION = 'v55';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
