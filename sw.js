@@ -10,8 +10,8 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v55: eliminar bloque AJUSTES DE MÓVIL (≤ 600px) — modo compacto deshabilitado.
-const CACHE_VERSION = 'v55';
+// v57: breakpoint tablet desde 0px — tamaños 601-1024px como mínimo.
+const CACHE_VERSION = 'v57';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

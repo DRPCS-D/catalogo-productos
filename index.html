@@ -3066,7 +3066,7 @@
     }
 
     /* Tablet portrait (601–768): 2-3 columnas, balanceado */
-    @media (min-width: 601px) and (max-width: 768px) {
+    @media (max-width: 768px) {
       .gallery-grid { grid-template-columns: repeat(2, 1fr); }
     }
 
@@ -3074,7 +3074,7 @@
     /* TABLET (601–1024px) — optimizado para uso táctil       */
     /* Vendedores en tienda: dedos grandes, pantalla mediana  */
     /* ===================================================== */
-    @media (min-width: 601px) and (max-width: 1024px) {
+    @media (max-width: 1024px) {
 
       /* --- HEADER --- */
       .header-inner { padding: 10px 16px; }
@@ -4766,7 +4766,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.2';
+var APP_VERSION  = '1.21.4';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
