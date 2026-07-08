@@ -253,6 +253,7 @@
     }
     .view-toggle-btn:hover  { background: rgba(255,255,255,.22); }
     .view-toggle-btn:active { transform: scale(.94); }
+    .view-toggle-btn.active { background: white; color: var(--primary); }
     .view-toggle-icon { display: inline-block; }
 
     /* ===== CART CHIP (header) ===== */
@@ -3687,6 +3688,7 @@
         <span class="refresh-icon">🔄</span>
         <span id="refresh-label">—</span>
       </button>
+      <button class="view-toggle-btn active" id="btn-gallery" onclick="switchView('gallery')" title="Vista galería" aria-label="Galería">⊞</button>
       <button class="fav-chip" id="btn-fav" onclick="openFavView_()" title="Ver favoritos" aria-label="Ver favoritos">
         ❤️
         <span class="fav-chip-count" id="fav-chip-count">0</span>
@@ -3695,9 +3697,7 @@
         🛒
         <span class="cart-chip-count" id="cart-chip-count">0</span>
       </button>
-      <button class="view-toggle-btn" id="btn-view-toggle" onclick="toggleView_()" title="Cambiar vista (Galería / Tabla)" aria-label="Cambiar vista">
-        <span class="view-toggle-icon" id="view-toggle-icon">⊞</span>
-      </button>
+      <button class="view-toggle-btn" id="btn-table" onclick="switchView('table')" title="Vista tabla" aria-label="Tabla">☰</button>
     </div>
   </div>
 </header>
@@ -4842,7 +4842,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.0';
+var APP_VERSION  = '1.21.1';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
@@ -7201,15 +7201,11 @@ function switchView(view) {
   document.getElementById('cart-view').style.display      = isCart      ? 'block' : 'none';
   document.getElementById('favorites-view').style.display = isFavorites ? 'block' : 'none';
 
-  // El botón único muestra el ícono de la vista en la que estás ahora.
-  // Tocarlo te lleva a la otra. En vista carrito/favoritos el toggle se oculta.
-  var icon = document.getElementById('view-toggle-icon');
-  var btn  = document.getElementById('btn-view-toggle');
-  if (icon) icon.textContent = isTable ? '☰' : '⊞';
-  if (btn) {
-    btn.title = 'Cambiar a ' + (isTable ? 'galería' : 'tabla');
-    btn.style.display = '';
-  }
+  // Botones de galería/tabla en desktop — activo según vista
+  var galleryBtn = document.getElementById('btn-gallery');
+  var tableBtn   = document.getElementById('btn-table');
+  if (galleryBtn) galleryBtn.classList.toggle('active', isGallery);
+  if (tableBtn)   tableBtn.classList.toggle('active', isTable);
 
   // Chips resaltados según vista activa (header — desktop)
   var cartChip = document.getElementById('btn-cart');

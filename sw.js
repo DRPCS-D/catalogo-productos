@@ -10,8 +10,8 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v53: bottom nav mobile con Galería/Favoritos/Carrito/Tabla.
-const CACHE_VERSION = 'v53';
+// v54: desktop con 4 botones separados Galería/Favoritos/Carrito/Tabla.
+const CACHE_VERSION = 'v54';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
