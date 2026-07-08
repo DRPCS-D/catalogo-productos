@@ -3712,21 +3712,21 @@
         <input type="number" id="filter-precio-max" min="0" step="1000" placeholder="Máx" inputmode="numeric">
       </div>
 
-      <label class="sidebar-label">Última compra (rango de fechas)</label>
+      <label class="sidebar-label">Última compra</label>
       <div class="date-range" title="Rango de fecha de última compra. La fecha es la más reciente entre todas las sucursales del producto.">
         <input type="date" id="filter-ultcmp-desde" placeholder="Desde">
         <span class="price-sep">—</span>
         <input type="date" id="filter-ultcmp-hasta" placeholder="Hasta">
       </div>
 
-      <label class="sidebar-label">Última venta (rango de fechas)</label>
+      <label class="sidebar-label">Última venta</label>
       <div class="date-range" title="Rango de fecha de última venta. La fecha es la más reciente entre todas las sucursales del producto.">
         <input type="date" id="filter-ultvnd-desde" placeholder="Desde">
         <span class="price-sep">—</span>
         <input type="date" id="filter-ultvnd-hasta" placeholder="Hasta">
       </div>
 
-      <label class="sidebar-label" data-section="promo">Promoción (sobre el precio activo)</label>
+      <label class="sidebar-label" data-section="promo">Promoción</label>
       <div class="segmented" id="filter-promo" role="radiogroup" data-section="promo">
         <button type="button" data-value="all"     class="active">Todos</button>
         <button type="button" data-value="with">En promo</button>
@@ -4744,7 +4744,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.19.8';
+var APP_VERSION  = '1.19.9';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
