@@ -10,8 +10,8 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v52: mover filtro Color al primero dentro de Más opciones.
-const CACHE_VERSION = 'v52';
+// v53: bottom nav mobile con Galería/Favoritos/Carrito/Tabla.
+const CACHE_VERSION = 'v53';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
