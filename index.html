@@ -2634,7 +2634,8 @@
       padding: 14px 16px 18px;
     }
     /* Asegurar que ningún hijo directo se desborde horizontalmente */
-    .sidebar-body > * { max-width: 100%; box-sizing: border-box; }
+    .sidebar-body > * { max-width: 100%; box-sizing: border-box; margin-bottom: 8px; }
+    .sidebar-body > *:last-child { margin-bottom: 0; }
     /* En narrow sidebars, dos date pickers lado a lado pueden no caber.
        Cuando el sidebar es menos de ~360px, apilamos verticalmente. */
     @media (max-width: 380px) {
@@ -3688,7 +3689,7 @@
     <div class="multi-select" id="filter-sucursal" data-placeholder="Todas las sucursales" data-noun="sucursal" data-section="sucursal"></div>
 
     <div class="stock-range" title="Stock total por color del producto">
-      <span class="price-label">#</span>
+      <span class="price-label">Stock</span>
       <input type="number" id="filter-stock-min" min="0" step="1" placeholder="Mín" inputmode="numeric">
       <span class="price-sep">—</span>
       <input type="number" id="filter-stock-max" min="0" step="1" placeholder="Máx" inputmode="numeric">
@@ -4743,7 +4744,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.19.6';
+var APP_VERSION  = '1.19.7';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {

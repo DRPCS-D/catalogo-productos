@@ -10,8 +10,8 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v48: filtros sin etiquetas, paneles multi-select flotantes (position:fixed).
-const CACHE_VERSION = 'v48';
+// v49: separación entre filtros + label "Stock" en rango de stock.
+const CACHE_VERSION = 'v49';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
