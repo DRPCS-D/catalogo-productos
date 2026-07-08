@@ -2978,18 +2978,12 @@
       font-weight: 600;
     }
 
-    /* Adaptaciones de los multi-select cuando viven en el sidebar:
-       el panel pasa a ser inline (accordion) en vez de flotante absoluto */
+    /* Adaptaciones de los multi-select en el sidebar:
+       el panel flota via position:fixed (seteado por JS al abrir) para escapar
+       el overflow clipping del sidebar-body */
     .sidebar .multi-select { max-width: none; width: 100%; }
     .sidebar .multi-select-btn { width: 100%; text-align: left; }
-    .sidebar .multi-select-panel {
-      position: static;
-      margin-top: 4px;
-      min-width: 0;
-      max-width: none;
-      width: 100%;
-      box-shadow: none;
-    }
+    .sidebar .multi-select-panel { min-width: 0; max-width: none; }
     .sidebar .price-range,
     .sidebar .stock-range { width: 100%; box-sizing: border-box; }
     .sidebar .price-range input,
@@ -3676,31 +3670,23 @@
   </div>
 
   <div class="sidebar-body">
-    <label class="sidebar-label" data-section="pricemode"><span class="sl-icon">💲</span>Precio a mostrar</label>
     <div class="segmented" id="filter-pricemode" role="radiogroup" data-section="pricemode">
       <button type="button" data-value="minorista" class="active">Minorista</button>
       <button type="button" data-value="mayorista">Mayorista</button>
     </div>
 
-    <label class="sidebar-label"><span class="sl-icon">🏷️</span>Marca</label>
     <div class="multi-select" id="filter-marca" data-placeholder="Todas las marcas" data-noun="marca"></div>
 
-    <label class="sidebar-label"><span class="sl-icon">👥</span>Grupo</label>
     <div class="multi-select" id="filter-grupo" data-placeholder="Todos los grupos" data-noun="grupo"></div>
 
-    <label class="sidebar-label"><span class="sl-icon">🗂️</span>Subgrupo</label>
     <div class="multi-select" id="filter-subgrupo" data-placeholder="Todos los subgrupos" data-noun="subgrupo"></div>
 
-    <label class="sidebar-label"><span class="sl-icon">🍂</span>Colección</label>
     <div class="multi-select" id="filter-colecao" data-placeholder="Todas las colecciones" data-noun="colección"></div>
 
-    <label class="sidebar-label"><span class="sl-icon">📏</span>Talle</label>
     <div class="multi-select" id="filter-talle" data-placeholder="Todos los talles" data-noun="talle"></div>
 
-    <label class="sidebar-label" data-section="sucursal"><span class="sl-icon">🏪</span>Sucursal</label>
     <div class="multi-select" id="filter-sucursal" data-placeholder="Todas las sucursales" data-noun="sucursal" data-section="sucursal"></div>
 
-    <label class="sidebar-label"><span class="sl-icon">📦</span>Stock por color</label>
     <div class="stock-range" title="Stock total por color del producto">
       <span class="price-label">#</span>
       <input type="number" id="filter-stock-min" min="0" step="1" placeholder="Mín" inputmode="numeric">
@@ -3708,7 +3694,6 @@
       <input type="number" id="filter-stock-max" min="0" step="1" placeholder="Máx" inputmode="numeric">
     </div>
 
-    <label class="sidebar-label"><span class="sl-icon">📷</span>Imagen</label>
     <div class="segmented" id="filter-foto" role="radiogroup">
       <button type="button" data-value="all"     class="active">Todos</button>
       <button type="button" data-value="with">Con foto</button>
@@ -4758,7 +4743,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.19.5';
+var APP_VERSION  = '1.19.6';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
@@ -5096,9 +5081,25 @@ function setupEvents() {
   // Cerrar multi-selects al hacer click fuera
   document.addEventListener('click', function (e) {
     document.querySelectorAll('.multi-select.open').forEach(function (root) {
-      if (!root.contains(e.target)) root.classList.remove('open');
+      if (!root.contains(e.target)) {
+        root.classList.remove('open');
+        var p = root.querySelector('.multi-select-panel');
+        if (p) p.style.cssText = '';
+      }
     });
   });
+
+  // Cerrar paneles flotantes si el usuario hace scroll dentro del sidebar
+  var sidebarBody = document.querySelector('.sidebar-body');
+  if (sidebarBody) {
+    sidebarBody.addEventListener('scroll', function () {
+      document.querySelectorAll('.multi-select.open').forEach(function (root) {
+        root.classList.remove('open');
+        var p = root.querySelector('.multi-select-panel');
+        if (p) p.style.cssText = '';
+      });
+    }, { passive: true });
+  }
 
   // Filtro de precio y stock (con debounce para no filtrar en cada tecla)
   var rangeTimer;
@@ -5512,15 +5513,27 @@ function buildMultiSelect(id, opts, selectedArr) {
   btn.addEventListener('click', function (e) {
     e.stopPropagation();
     var wasOpen = root.classList.contains('open');
-    document.querySelectorAll('.multi-select.open').forEach(function (el) { el.classList.remove('open'); });
+    document.querySelectorAll('.multi-select.open').forEach(function (el) {
+      el.classList.remove('open');
+      var p = el.querySelector('.multi-select-panel');
+      if (p) { p.style.cssText = ''; }
+    });
     if (!wasOpen) {
+      var inSidebar = root.closest && root.closest('.sidebar');
+      if (inSidebar) {
+        var rect = btn.getBoundingClientRect();
+        panel.style.position = 'fixed';
+        panel.style.left     = rect.left + 'px';
+        panel.style.top      = (rect.bottom + 4) + 'px';
+        panel.style.width    = rect.width + 'px';
+        panel.style.maxWidth = '300px';
+        panel.style.zIndex   = '200';
+      }
       root.classList.add('open');
       search.value = '';
       list.querySelectorAll('.multi-option').forEach(function (o) { o.style.display = ''; });
       setTimeout(function () { search.focus(); }, 0);
-      // Scroll del contenedor de la sidebar para que la etiqueta del filtro
-      // quede arriba y el panel desplegable tenga espacio debajo.
-      scrollFilterToTop_(root);
+      if (!inSidebar) scrollFilterToTop_(root);
     }
   });
 
