@@ -3065,6 +3065,37 @@
       .main-content { padding-bottom: 80px; }
     }
 
+    /* ===================================================== */
+    /* MÓVIL (≤ 600px) — filtros, cards y modal compactos    */
+    /* ===================================================== */
+    @media (max-width: 600px) {
+      /* Botón Filtros: solo ícono, sin texto */
+      .btn-menu span:not(.menu-icon):not(.filter-badge) { display: none; }
+
+      /* GALERÍA: gap chico, cards compactas */
+      .gallery-grid { gap: 8px; }
+      .card-body { padding: 8px 10px 10px; gap: 2px; }
+      .card-code { font-size: 11px; }
+      .card-name { font-size: 12px; line-height: 1.25; }
+      .card-marca    { font-size: 11px; }
+      .card-subgrupo { font-size: 11px; }
+      .card-color    { font-size: 11px; }
+      .card-price { font-size: 13px; font-weight: 700; }
+      .card-stock-txt { font-size: 11px; }
+      .btn-card-detail { padding: 10px; font-size: 12px; min-height: 44px; }
+
+      /* MODAL ocupa casi toda la pantalla */
+      .modal-box { width: 96%; max-height: 92vh; }
+      .modal-header { padding: 10px 12px; }
+      .modal-title { font-size: 14px; }
+      .modal-subtitle { font-size: 11px; }
+      .modal-body { padding: 10px 12px; }
+
+      /* Productos similares: 2 columnas */
+      .modal-similars-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .modal-similar-card .msc-name { font-size: 10.5px; }
+    }
+
     /* Tablet portrait (601–768): 2-3 columnas, balanceado */
     @media (max-width: 768px) {
       .gallery-grid { grid-template-columns: repeat(2, 1fr); }
@@ -4766,7 +4797,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.4';
+var APP_VERSION  = '1.21.5';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
