@@ -10,8 +10,8 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v51: simplificar labels Última compra, Última venta, Promoción.
-const CACHE_VERSION = 'v51';
+// v52: mover filtro Color al primero dentro de Más opciones.
+const CACHE_VERSION = 'v52';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

@@ -3704,6 +3704,9 @@
     <details class="filter-more">
       <summary class="filter-more-title">Más opciones</summary>
 
+      <label class="sidebar-label">Color</label>
+      <div class="multi-select" id="filter-color" data-placeholder="Todos los colores" data-noun="color"></div>
+
       <label class="sidebar-label">Precio (₲)</label>
       <div class="price-range" title="Rango de precio en guaraníes">
         <span class="price-label">₲</span>
@@ -3733,8 +3736,6 @@
         <button type="button" data-value="without">Sin promo</button>
       </div>
 
-      <label class="sidebar-label">Color</label>
-      <div class="multi-select" id="filter-color" data-placeholder="Todos los colores" data-noun="color"></div>
     </details>
 
   </div>
@@ -4744,7 +4745,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.19.9';
+var APP_VERSION  = '1.20.0';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
