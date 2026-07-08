@@ -3072,37 +3072,45 @@
       /* Botón Filtros: solo ícono, sin texto */
       .btn-menu span:not(.menu-icon):not(.filter-badge) { display: none; }
 
-      /* GALERÍA: imagen cuadrada + cards compactas */
-      .gallery-grid { gap: 8px; }
-      .card-img { aspect-ratio: 1 / 1; }
-      .card-img-ph { aspect-ratio: 1 / 1; }
-      .card-img-ph .ph-icon { font-size: 28px; }
-      .card-body { padding: 6px 8px 8px; gap: 1px; }
-      .card-code { font-size: 10px; }
-      .card-name { font-size: 11px; line-height: 1.2; }
-      .card-marca    { font-size: 10px; }
-      .card-subgrupo { font-size: 10px; }
-      .card-color    { font-size: 10px; }
+      /* GALERÍA: imagen más corta + cards muy compactas */
+      .gallery-grid { gap: 6px; }
+      .card-img { aspect-ratio: 4 / 3; }
+      .card-img-ph { aspect-ratio: 4 / 3; }
+      .card-img-ph .ph-icon { font-size: 24px; }
+      .card-body { padding: 5px 7px 7px; gap: 1px; }
+      .card-code { font-size: 9px; }
+      .card-name { font-size: 10px; line-height: 1.2; }
+      .card-marca    { font-size: 9px; }
+      .card-subgrupo { font-size: 9px; }
+      .card-color    { font-size: 9px; }
       .card-price { font-size: 12px; font-weight: 700; }
-      .card-stock-txt { font-size: 10px; }
-      .btn-card-detail { padding: 8px; font-size: 11px; min-height: 40px; }
+      .card-stock-txt { font-size: 9px; }
+      .btn-card-detail { padding: 7px; font-size: 11px; min-height: 38px; }
 
       /* MODAL ocupa casi toda la pantalla */
-      .modal-box { width: 96%; max-height: 92vh; }
-      .modal-header { padding: 8px 10px; }
+      .modal-box { width: 98%; max-height: 94vh; }
+      .modal-header { padding: 7px 10px; }
       .modal-title { font-size: 13px; }
       .modal-subtitle { font-size: 10px; }
-      .modal-body { padding: 8px 10px; }
-      .modal-color-ph { width: 70px; height: 70px; font-size: 18px; }
-      .modal-grade-head { padding: 7px 10px; }
-      .modal-grade-title { font-size: 12px; }
-      .modal-grade-ean   { font-size: 10px; }
-      .modal-grade-block .stock-table { margin: 0 10px 8px; width: calc(100% - 20px); }
-      .modal-similars { margin-top: 10px; padding-top: 8px; }
+      .modal-body { padding: 7px 9px; }
+      .modal-color-ph { width: 60px; height: 60px; font-size: 16px; }
+      .modal-grade-head { padding: 6px 8px; }
+      .modal-grade-title { font-size: 11px; }
+      .modal-grade-ean   { font-size: 9px; }
+      .modal-grade-block .stock-table { margin: 0 8px 6px; width: calc(100% - 16px); font-size: 11px; }
+      .modal-similars { margin-top: 8px; padding-top: 6px; }
+      .modal-similars-title { font-size: 12px; }
 
-      /* Productos similares: 2 columnas */
-      .modal-similars-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
-      .modal-similar-card .msc-name { font-size: 10px; }
+      /* Productos similares: 2 columnas compactas */
+      .modal-similars-grid { grid-template-columns: repeat(2, 1fr); gap: 5px; }
+      .modal-similar-card .msc-img,
+      .modal-similar-card .msc-img-ph { aspect-ratio: 4/3; font-size: 20px; }
+      .modal-similar-card .msc-body { padding: 4px 6px 6px; }
+      .modal-similar-card .msc-cod   { font-size: 9px; }
+      .modal-similar-card .msc-name  { font-size: 9px; }
+      .modal-similar-card .msc-marca { font-size: 9px; }
+      .modal-similar-card .msc-price { font-size: 11px; margin-top: 2px; }
+      .modal-similar-card .msc-stock { font-size: 9px; }
     }
 
     /* Tablet portrait (601–768): 2-3 columnas, balanceado */
@@ -4806,7 +4814,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.6';
+var APP_VERSION  = '1.21.7';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
