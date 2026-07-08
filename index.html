@@ -3937,7 +3937,9 @@
   <div id="favorites-view" style="display:none">
     <div class="result-bar">
       <span id="fav-count-txt"></span>
+      <button id="btn-clear-favs" onclick="clearAllFavs_()" style="display:none;margin-left:auto;padding:5px 12px;font-size:12px;border:1px solid #ef4444;color:#ef4444;background:transparent;border-radius:6px;cursor:pointer">Borrar todo</button>
     </div>
+    <div id="favorites-empty" style="display:none"></div>
     <div class="gallery-grid" id="favorites-container"></div>
   </div>
 
@@ -4825,7 +4827,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.10';
+var APP_VERSION  = '1.21.11';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
@@ -7281,6 +7283,19 @@ function toggleFav_(cod, color) {
   if (currentView === 'favorites') renderFavorites();
 }
 
+function clearAllFavs_() {
+  if (!confirm('¿Seguro que querés borrar todos los favoritos?')) return;
+  favorites = {};
+  saveFavorites_();
+  updateFavBadge_();
+  document.querySelectorAll('.btn-card-fav').forEach(function (btn) {
+    btn.textContent = '🤍';
+    btn.title = 'Guardar en favoritos';
+    btn.classList.remove('is-fav');
+  });
+  renderFavorites();
+}
+
 function updateFavBadge_() {
   var n = Object.keys(favorites).length;
   var badge = document.getElementById('fav-chip-count');
@@ -7335,10 +7350,26 @@ function renderFavorites() {
   var countTxt = document.getElementById('fav-count-txt');
   if (countTxt) countTxt.textContent = cards.length + ' favorito' + (cards.length !== 1 ? 's' : '');
 
+  var clearBtn = document.getElementById('btn-clear-favs');
+  if (clearBtn) clearBtn.style.display = cards.length ? 'inline-block' : 'none';
+
+  var emptyEl = document.getElementById('favorites-empty');
   if (!cards.length) {
-    container.innerHTML = '<div style="text-align:center;padding:3rem 1rem;opacity:.6;font-size:15px">No hay favoritos guardados.<br>Tocá el 🤍 en cualquier producto para guardarlo aquí.</div>';
+    container.innerHTML = '';
+    container.style.display = 'none';
+    if (emptyEl) {
+      emptyEl.style.display = 'block';
+      emptyEl.innerHTML = '<div class="cart-empty">' +
+        '<div class="cart-empty-icon">❤️</div>' +
+        '<div class="cart-empty-title">No hay favoritos guardados</div>' +
+        '<div class="cart-empty-sub">Tocá el 🤍 en cualquier producto para guardarlo aquí.</div>' +
+        '<button class="cart-empty-btn" onclick="switchView(\'gallery\')">Ir a galería</button>' +
+        '</div>';
+    }
     return;
   }
+  if (emptyEl) emptyEl.style.display = 'none';
+  container.style.display = '';
 
   container.innerHTML = cards.map(buildGalleryCardHtml_).join('');
 
