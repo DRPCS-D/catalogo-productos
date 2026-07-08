@@ -10,8 +10,8 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v58: móvil ≤600px con filtro icono-only, cards y modal compactos.
-const CACHE_VERSION = 'v58';
+// v59: cards ≤600px con imagen cuadrada y modal más compacto.
+const CACHE_VERSION = 'v59';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
