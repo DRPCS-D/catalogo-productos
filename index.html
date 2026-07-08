@@ -3102,7 +3102,7 @@
       .modal-similars-title { font-size: 12px; }
 
       /* Productos similares: 2 columnas compactas */
-      .modal-similars-grid { grid-template-columns: repeat(2, 1fr); gap: 5px; }
+      .modal-similars-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 5px; }
       .modal-similar-card .msc-img,
       .modal-similar-card .msc-img-ph { aspect-ratio: 4/3; font-size: 20px; }
       .modal-similar-card .msc-body { padding: 4px 6px 6px; }
@@ -4814,7 +4814,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.7';
+var APP_VERSION  = '1.21.8';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
