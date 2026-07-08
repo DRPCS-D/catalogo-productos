@@ -10,8 +10,8 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v62: bottom nav active state con línea indicadora y label bold.
-const CACHE_VERSION = 'v62';
+// v63: bottom nav active con píldora de fondo sobre el ícono.
+const CACHE_VERSION = 'v63';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
