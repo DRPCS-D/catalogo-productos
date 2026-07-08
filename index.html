@@ -364,7 +364,23 @@
       padding: 8px 4px 6px;
       transition: color .15s;
     }
-    .bnav-btn.active { color: var(--primary); }
+    .bnav-btn.active {
+      color: var(--primary);
+    }
+    .bnav-btn.active .bnav-label {
+      font-weight: 700;
+    }
+    .bnav-btn.active .bnav-icon-wrap::after {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 3px;
+      background: var(--primary);
+      border-radius: 2px;
+    }
     .bnav-btn:active { opacity: .7; }
     .bnav-icon-wrap {
       position: relative;
@@ -4814,7 +4830,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.8';
+var APP_VERSION  = '1.21.9';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
