@@ -611,6 +611,21 @@
       line-height: 1;
     }
     .cart-line-remove:hover { background: #fee2e2; color: #dc2626; }
+    .cart-line-barcode {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      color: var(--gray-400);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      cursor: pointer;
+      border-radius: 6px;
+      padding: 0;
+      line-height: 1;
+    }
+    .cart-line-barcode:hover { background: var(--gray-100); color: var(--primary); }
 
     .cart-summary {
       background: rgba(255,255,255,.97);
@@ -4837,7 +4852,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.14';
+var APP_VERSION  = '1.21.15';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
@@ -7735,6 +7750,7 @@ function buildCartLineHtml_(key) {
         '<button class="cart-qty-btn" data-act="inc" data-key="' + safeKey + '" aria-label="Sumar">+</button>' +
       '</div>' +
       '<div class="cart-line-subtotal">' + fmtPrice(subtotal) + '</div>' +
+      '<button class="cart-line-barcode" data-cod="' + escHtml(line.codigo) + '" data-color="' + escHtml(line.color || '') + '" data-talle="' + escHtml(line.talle || '') + '" title="Ver código de barra" aria-label="Código de barra">▌▌▌</button>' +
       '<button class="cart-line-remove" data-key="' + safeKey + '" title="Eliminar" aria-label="Eliminar">×</button>' +
     '</div>' +
   '</div>';
@@ -7784,6 +7800,21 @@ function wireCartListEvents_() {
   view.querySelectorAll('.cart-line-remove').forEach(function (btn) {
     btn.addEventListener('click', function () {
       removeCartLine_(btn.getAttribute('data-key'));
+    });
+  });
+
+  view.querySelectorAll('.cart-line-barcode').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var cod   = btn.getAttribute('data-cod');
+      var color = btn.getAttribute('data-color');
+      var talle = btn.getAttribute('data-talle');
+      var p = products.find(function (x) { return x.codFabrica === cod; });
+      if (!p) return;
+      var c = p.colorsArr.find(function (x) { return x.color === color; });
+      if (!c) return;
+      var g = (c.gradesArr || []).find(function (x) { return x.talle === talle; });
+      var ean = g ? g.ean : (c.gradesArr && c.gradesArr[0] ? c.gradesArr[0].ean : null);
+      if (ean) openBarcodeModal_(ean);
     });
   });
 }
