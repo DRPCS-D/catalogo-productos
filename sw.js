@@ -10,8 +10,8 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v66: PDF card image background blanco para eliminar bordes azules.
-const CACHE_VERSION = 'v66';
+// v67: sticky table header + price mode guardado en localStorage.
+const CACHE_VERSION = 'v67';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

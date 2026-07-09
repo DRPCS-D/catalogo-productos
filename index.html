@@ -1337,7 +1337,7 @@
       background: white;
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow);
-      overflow: hidden;
+      overflow: clip;
     }
 
     .table-scroll { overflow-x: auto; }
@@ -1351,6 +1351,9 @@
     thead tr {
       background: var(--primary);
       color: white;
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
 
     th {
@@ -4596,6 +4599,17 @@ function applyPageConfig() {
     document.querySelectorAll('#filter-pricemode button').forEach(function (b) {
       b.classList.toggle('active', b.getAttribute('data-value') === cfg.priceMode);
     });
+  } else {
+    // Modo general: restaurar selección guardada del usuario
+    try {
+      var savedMode = localStorage.getItem('lc_price_mode');
+      if (savedMode === 'mayorista' || savedMode === 'minorista') {
+        priceMode = savedMode;
+        document.querySelectorAll('#filter-pricemode button').forEach(function (b) {
+          b.classList.toggle('active', b.getAttribute('data-value') === savedMode);
+        });
+      }
+    } catch (_) {}
   }
 
   // Sucursales pre-filtradas
@@ -4823,7 +4837,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.13';
+var APP_VERSION  = '1.21.14';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
@@ -5364,6 +5378,7 @@ function setupEvents() {
       document.querySelectorAll('#filter-pricemode button').forEach(function (b) {
         b.classList.toggle('active', b === btn);
       });
+      try { localStorage.setItem('lc_price_mode', priceMode); } catch (_) {}
       applyFilters();
       renderCurrentView();
     });
