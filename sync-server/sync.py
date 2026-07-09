@@ -176,7 +176,7 @@ def fetch_image_map(drive):
 
         resp = with_retry(_do, f"Drive list (página {pages+1})")
         for f in resp.get("files", []):
-            image_map[f["name"]] = f["id"]
+            image_map[f["name"].lower()] = f["id"]
         page_token = resp.get("nextPageToken")
         pages += 1
         if not page_token:
@@ -240,7 +240,7 @@ def group_raw(raw, image_map):
             prod["_cMap"][c_key] = {
                 "color":   item.get("color"),
                 "imagen":  filename or None,
-                "imgId":   image_map.get(filename) if filename else None,
+                "imgId":   image_map.get(filename.lower()) if filename else None,
                 "_gMap":   {},
                 "_gOrder": [],
             }
