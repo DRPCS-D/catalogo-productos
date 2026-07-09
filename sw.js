@@ -10,8 +10,8 @@
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
-// v65: ⚠️ solo aparece cuando último sync es ERROR.
-const CACHE_VERSION = 'v65';
+// v66: PDF card image background blanco para eliminar bordes azules.
+const CACHE_VERSION = 'v66';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

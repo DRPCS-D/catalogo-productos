@@ -3622,7 +3622,7 @@
     #pdf-mobile-overlay .pdf-card { border: 1px solid #cbd5e1; border-radius: 2.5mm; overflow: hidden;
       page-break-inside: avoid; break-inside: avoid; display: flex; flex-direction: column; background: white; }
     #pdf-mobile-overlay .pdf-card-img-link { display: block; line-height: 0; text-decoration: none; color: inherit; }
-    #pdf-mobile-overlay .pdf-card-img { width: 100%; height: var(--pmo-img-height, 45mm); object-fit: contain; background: #f1f5f9; display: block; }
+    #pdf-mobile-overlay .pdf-card-img { width: 100%; height: var(--pmo-img-height, 45mm); object-fit: contain; background: white; display: block; }
     #pdf-mobile-overlay .pdf-card-img-ph { width: 100%; height: var(--pmo-img-height, 45mm); background: #f1f5f9; display: flex;
       align-items: center; justify-content: center; color: #94a3b8; font-size: 18pt; }
     #pdf-mobile-overlay .pdf-card-body { padding: 2mm 3mm 3mm; }
@@ -4823,7 +4823,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.12';
+var APP_VERSION  = '1.21.13';
 var APP_BUILD    = '2026-07-06';
 
 function renderAppVersion_() {
