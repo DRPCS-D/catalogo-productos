@@ -27,7 +27,7 @@ const DEFAULT_CONFIG = {
   formato_pdf: "A4",
   cantidad_min: 6,
   marcas: [],
-  coleccion: ""
+  colecciones: []
 };
 
 function loadConfig() {
@@ -52,7 +52,7 @@ function buildCatalogUrl(brand) {
   url += "suc=" + encodeURIComponent(c.sucursales.join(","));
   url += "&foto=" + (c.foto || "with");
   url += "&mode=ma";
-  if (c.coleccion) url += "&coleccion=" + encodeURIComponent(c.coleccion);
+  if (c.colecciones && c.colecciones.length) url += "&coleccion=" + encodeURIComponent(c.colecciones.join(","));
   return url;
 }
 
@@ -104,7 +104,7 @@ loadCacheIndex();
 
 function configHash() {
   const c = serverConfig;
-  return [c.sucursales.join(","), c.foto, c.cantidad_min, c.coleccion, c.marcas.join(",")].join("|");
+  return [c.sucursales.join(","), c.foto, c.cantidad_min, (c.colecciones||[]).join(","), c.marcas.join(",")].join("|");
 }
 
 function pdfCacheKey(brand) {
@@ -149,9 +149,11 @@ function drainQueue() {
   });
 }
 
-// ── Brand cache + fuzzy matching ──────────────────────────────────────────────
-let knownBrands    = [];
-let brandsLoadedAt = 0;
+// ── Brand + collection cache ──────────────────────────────────────────────────
+let knownBrands       = [];
+let brandsLoadedAt    = 0;
+let knownCollections  = [];
+let collectionsLoadedAt = 0;
 const BRANDS_TTL   = 60 * 60 * 1000;
 
 function normStr(s) {
@@ -221,6 +223,18 @@ async function extractBrandsFromPage(page) {
     var list = [];
     source.forEach(function(p) {
       if (p.marca && !set[p.marca]) { set[p.marca] = 1; list.push(p.marca); }
+    });
+    return list.sort();
+  }).catch(function() { return []; });
+}
+
+async function extractCollectionsFromPage(page) {
+  return page.evaluate(function() {
+    var source = window.products || [];
+    var set = {};
+    var list = [];
+    source.forEach(function(p) {
+      if (p.colecao && !set[p.colecao]) { set[p.colecao] = 1; list.push(p.colecao); }
     });
     return list.sort();
   }).catch(function() { return []; });
@@ -372,6 +386,32 @@ app.get("/brands", async function(req, res) {
     res.json({ ok: true, brands: result, cached: false });
   } catch (err) {
     console.error("brands error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// /collections — devuelve todas las colecciones disponibles en el catálogo
+app.get("/collections", async function(req, res) {
+  if (req.query.pin !== serverConfig.pin) return res.status(401).json({ error: "PIN incorrecto" });
+  try {
+    if (knownCollections.length && Date.now() - collectionsLoadedAt < BRANDS_TTL) {
+      return res.json({ ok: true, collections: knownCollections, cached: true });
+    }
+    const collections = await enqueueJob(async function() {
+      const { browser, page } = await newBrowserPage(buildCatalogUrl(null));
+      try {
+        await page.waitForSelector(".product-card", { timeout: 25000 }).catch(function() {});
+        await new Promise(function(r) { setTimeout(r, 2000); });
+        return await extractCollectionsFromPage(page);
+      } finally {
+        await browser.close();
+      }
+    });
+    knownCollections = collections;
+    collectionsLoadedAt = Date.now();
+    res.json({ ok: true, collections: collections, cached: false });
+  } catch (err) {
+    console.error("collections error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -542,13 +582,15 @@ app.post("/config", function(req, res) {
     formato_pdf: body.formato_pdf || serverConfig.formato_pdf,
     cantidad_min: parseInt(body.cantidad_min) >= 0 ? parseInt(body.cantidad_min) : serverConfig.cantidad_min,
     marcas: Array.isArray(body.marcas) ? body.marcas : serverConfig.marcas,
-    coleccion: body.coleccion !== undefined ? body.coleccion : serverConfig.coleccion
+    colecciones: Array.isArray(body.colecciones) ? body.colecciones : (serverConfig.colecciones || [])
   };
 
   saveConfig(newConfig);
   serverConfig = newConfig;
   knownBrands = [];
   brandsLoadedAt = 0;
+  knownCollections = [];
+  collectionsLoadedAt = 0;
   clearAllPdfCache();
   console.log("[config] actualizada:", JSON.stringify(newConfig));
   res.json({ ok: true });
@@ -560,6 +602,8 @@ app.post("/cache/clear", function(req, res) {
   clearAllPdfCache();
   knownBrands = [];
   brandsLoadedAt = 0;
+  knownCollections = [];
+  collectionsLoadedAt = 0;
   res.json({ ok: true });
 });
 
@@ -674,9 +718,14 @@ input:focus,select:focus{outline:none;border-color:#5b8dee}
       <div class="hint">Artículos con stock por color menor a este valor no aparecen en el catálogo</div>
     </div>
 
+    <div class="section-title">Colecciones</div>
     <div class="field">
-      <label>Colección (vacío = todas)</label>
-      <input type="text" id="coleccion" placeholder="Ej: INVIERNO 2025">
+      <div class="cb-actions">
+        <button class="btn-sm" style="background:#e8f0fe;color:#5b8dee" onclick="selectAllColecciones()">Todas</button>
+        <button class="btn-sm" style="background:#f5f5f5;color:#555" onclick="selectNoneColecciones()">Ninguna</button>
+      </div>
+      <div id="colecciones-list" class="cb-wrap"><div class="cb-loading">Cargando colecciones...</div></div>
+      <div class="hint" style="margin-top:6px">Sin selección = incluye todas las colecciones</div>
     </div>
 
     <div class="section-title">Marcas permitidas</div>
@@ -705,8 +754,10 @@ input:focus,select:focus{outline:none;border-color:#5b8dee}
 let currentPin = "";
 let allSucursales = [];
 let allMarcas = [];
+let allColecciones = [];
 let checkedSucursales = [];
 let checkedMarcas = [];
+let checkedColecciones = [];
 
 function showMsg(id, text, isOk) {
   const el = document.getElementById(id);
@@ -728,6 +779,7 @@ async function doLogin() {
     document.getElementById("panel-wrap").style.display = "block";
     fillForm(data);
     loadMarcas();
+    loadColecciones();
   } catch(e) {
     showMsg("login-msg", "Error de conexión", false);
   }
@@ -746,12 +798,12 @@ function fillForm(data) {
   allSucursales = data.sucursales_all || ["LA COSTA S.R.L.", "ON BRAND&TRADE"];
   checkedSucursales = data.sucursales || [];
   checkedMarcas = data.marcas || [];
+  checkedColecciones = data.colecciones || [];
   renderSucursales();
 
   document.getElementById("foto").value = data.foto || "with";
   document.getElementById("formato_pdf").value = data.formato_pdf || "A4";
   document.getElementById("cantidad_min").value = data.cantidad_min != null ? data.cantidad_min : 6;
-  document.getElementById("coleccion").value = data.coleccion || "";
   document.getElementById("cache-count").textContent = data.cache_count || 0;
 }
 
@@ -765,6 +817,40 @@ async function loadMarcas() {
   } catch(e) {
     document.getElementById("marcas-list").innerHTML = '<div class="cb-loading">Error de conexión</div>';
   }
+}
+
+async function loadColecciones() {
+  try {
+    const r = await fetch("/collections?pin=" + encodeURIComponent(currentPin));
+    if (!r.ok) { document.getElementById("colecciones-list").innerHTML = '<div class="cb-loading">Error al cargar colecciones</div>'; return; }
+    const data = await r.json();
+    allColecciones = data.collections || [];
+    renderColecciones();
+  } catch(e) {
+    document.getElementById("colecciones-list").innerHTML = '<div class="cb-loading">Error de conexión</div>';
+  }
+}
+
+function renderColecciones() {
+  const el = document.getElementById("colecciones-list");
+  if (!allColecciones.length) { el.innerHTML = '<div class="cb-loading">Sin colecciones disponibles</div>'; return; }
+  el.innerHTML = allColecciones.map(function(c) {
+    const checked = !checkedColecciones.length || checkedColecciones.indexOf(c) >= 0 ? "checked" : "";
+    const id = "col-" + c.replace(/[^a-z0-9]/gi, "_");
+    return '<label class="cb-item"><input type="checkbox" id="' + id + '" value="' + c + '" data-coleccion ' + checked + '><span>' + c + '</span></label>';
+  }).join("");
+}
+
+function selectAllColecciones() {
+  document.querySelectorAll("[data-coleccion]").forEach(function(cb) { cb.checked = true; });
+}
+function selectNoneColecciones() {
+  document.querySelectorAll("[data-coleccion]").forEach(function(cb) { cb.checked = false; });
+}
+function getCheckedColecciones() {
+  const all = Array.from(document.querySelectorAll("[data-coleccion]"));
+  const checked = all.filter(function(cb) { return cb.checked; }).map(function(cb) { return cb.value; });
+  return checked.length === all.length ? [] : checked;
 }
 
 function renderMarcas(list) {
@@ -821,7 +907,7 @@ async function saveConfig() {
     foto: document.getElementById("foto").value,
     formato_pdf: document.getElementById("formato_pdf").value,
     cantidad_min: parseInt(document.getElementById("cantidad_min").value) || 0,
-    coleccion: document.getElementById("coleccion").value.trim(),
+    colecciones: getCheckedColecciones(),
     marcas: getCheckedMarcas()
   };
   const newPin = document.getElementById("new_pin").value.trim();
