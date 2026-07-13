@@ -7,32 +7,39 @@ aliases: [Glossary]
 
 > Variables globales JS, claves `localStorage`, tokens CSS, IDs/clases recurrentes. Cuando buscás "¿dónde se define X?" — empezá acá.
 
-## Variables globales JS (`index.html` L2892–2933)
+## Variables globales JS (`index.html` L4250–4315)
 
 | Nombre | Línea | Tipo | Para qué |
 |---|---|---|---|
-| `rawData` | 2892 | array | Crudo de Supabase antes de agrupar |
-| `products` | 2893 | array | Jerarquía agrupada: producto → colores → talles |
-| `filteredProducts` | 2896 | array | Resultado de [[Búsqueda y Filtros]] |
-| `currentView` | 2899 | `'gallery' \| 'table'` | Vista activa |
-| `sortField` | 2900 | str | Campo de ordenamiento (`'id'` default) |
-| `sortDir` | 2901 | `'asc' \| 'desc'` | Dirección (`'desc'` default) |
-| `priceMode` | 2911 | `'minorista' \| 'mayorista'` | Selector global de precio |
-| `renderedCount` | 2932 | num | Cuántos items ya están en el DOM ([[Infinite Scroll]]) |
-| `BATCH_SIZE` | 2933 | num | Tamaño de lote del scroll infinito (50) |
-| `APP_VERSION` | 3312 | str | Versión de la app — visible en [[Sidebar]] |
-| `APP_BUILD` | 3313 | str | Fecha del build |
-| `_newSwWaiting` | 3362 | `ServiceWorker \| null` | SW nuevo en espera de activación ([[Auto-Update]]) |
-| `SUPABASE_URL` | 2748 | str | URL del proyecto Supabase (público) |
-| `SUPABASE_ANON_KEY` | 2749 | str | Key anon (público por design, RLS protege) |
-| `PAGE_CONFIGS` | 2778 | obj | Config por modo ([[Page Modes]]) |
+| `rawData` | 4250 | array | Crudo de Supabase antes de agrupar |
+| `products` | 4251 | array | Jerarquía agrupada: producto → colores → talles |
+| `filteredProducts` | 4254 | array | Resultado de [[Búsqueda y Filtros]] |
+| `currentView` | 4257 | `'gallery' \| 'table' \| 'favorites' \| 'cart'` | Vista activa |
+| `sortField` | 4258 | str | Campo de ordenamiento (`'id'` default) |
+| `sortDir` | 4259 | `'asc' \| 'desc'` | Dirección (`'desc'` default) |
+| `priceMode` | 4270 | `'minorista' \| 'mayorista'` | Selector global de precio — persistido en `lc_price_mode` |
+| `favorites` | 4274 | obj | Favoritos `{ "cod::color": {...} }` ([[Favoritos]]) |
+| `cart` | 4281 | obj | Carrito `{ "cod::color::talle": {...} }` ([[Carrito]]) |
+| `pdfHidePrice` | 4302 | bool | PDF sin precios ([[Exportar PDF Móvil]]) |
+| `renderedCount` | 4305 | num | Cuántos items ya están en el DOM ([[Infinite Scroll]]) |
+| `BATCH_SIZE` | 4306 | num | Tamaño de lote del scroll infinito (50) |
+| `lastSyncLogRow` | 4315 | obj\|null | Última fila de `sync_log` — alimenta el ⚠️ del [[Header]] |
+| `APP_VERSION` | 4855 | str | Versión de la app — visible en [[Sidebar]] |
+| `APP_BUILD` | 4856 | str | Fecha del build |
+| `_newSwWaiting` | 4905 | `ServiceWorker \| null` | SW nuevo en espera de activación ([[Auto-Update]]) |
+| `SUPABASE_URL` | 4106 | str | URL del proyecto Supabase (público) |
+| `SUPABASE_ANON_KEY` | 4107 | str | Key anon (público por design, RLS protege) |
+| `PAGE_CONFIGS` | 4136 | obj | Config por modo ([[Page Modes]]) |
 
 ## `localStorage` keys
 
 | Key | Var en código | Línea | Uso | Default |
 |---|---|---|---|---|
-| `pmo_print_scale` | `PMO_SCALE_KEY` | 5765 | Escala del PDF móvil | `1` |
-| `pmo_photo_h` (aprox) | `PMO_IMG_KEY` | 5796 | Alto de foto del PDF | `27mm` |
+| `lc_fav_v1` | `FAVORITES_STORAGE_KEY` | 4273 | [[Favoritos]] guardados | `{}` |
+| `lc_cart_v1` | `CART_STORAGE_KEY` | 4280 | [[Carrito]] guardado | `{}` |
+| `lc_price_mode` | — (literal) | 4620 / 5396 | Minorista/Mayorista elegido | `minorista` |
+| `pmo_print_scale` | `PMO_SCALE_KEY` | 8850 | Escala del PDF móvil | `1` |
+| `pmo_img_height` | `PMO_IMG_KEY` | 8876 | Alto de foto del PDF | `38mm` |
 
 > Para una lista exhaustiva: `grep -n "localStorage\\.\\(get\\|set\\)Item" index.html` — completar acá a medida que se identifiquen.
 
@@ -50,20 +57,27 @@ aliases: [Glossary]
 ## IDs y clases recurrentes
 
 **IDs (HTML)**:
-- `#search-input` (L2494) — buscador principal
-- `#filter-badge` (L2490) — contador de filtros activos
-- `#refresh-chip` (L2471) — chip de actualización
-- `#btn-view-toggle` (L2475) — toggle Galería ↔ Tabla
-- `#sidebar` (L2511) — panel lateral
-- `#app-version` (L2620) — versión en pie de sidebar
-- `#table-sentinel` (L2673), `#gallery-sentinel` (L2684) — sentinels de [[Infinite Scroll]]
-- `#gallery-container` (L2682), `#table-container` — contenedores de vista
-- `#modal` (L2693) — modal de [[Modal Detalle]]
-- `#lightbox` (L2709) — visor fullscreen
-- `#update-banner` (L6024) — banner de [[Auto-Update]]
+- `#search-input` (L3746) — buscador principal
+- `#btn-search-scan` (L3752) — escáner de código de barra ([[Escáner EAN]])
+- `#filter-badge` (L3742) — contador de filtros activos
+- `#sync-warning-icon` (L3687) — ⚠️ de sync con error ([[Header]])
+- `#refresh-chip` (L3688) — chip de actualización
+- `#btn-gallery` (L3692), `#btn-table` (L3701) — botones de vista desktop
+- `#bottom-nav` (L3709) — nav móvil ([[Bottom Nav]])
+- `#sidebar` (L3765) — panel lateral
+- `#app-version` (L3881) — versión en pie de sidebar (tap = diagnóstico de escáner)
+- `#table-sentinel` (L3937), `#gallery-sentinel` (L3948) — sentinels de [[Infinite Scroll]]
+- `#gallery-container` (L3946), `#table-container` — contenedores de vista
+- `#favorites-view` (L3955), `#cart-view` (L3967) — vistas [[Favoritos]] y [[Carrito]]
+- `#modal` (L3997) — modal de [[Modal Detalle]]
+- `#lightbox` (L4013) — visor fullscreen
+- `#barcode-overlay` (L4067) — popup EAN-13 ([[Escáner EAN]])
+- `#update-banner` (L9121) — banner de [[Auto-Update]]
 
 **Clases**:
-- `.card`, `.card-foot`, `.card-cta` — anatomía del card de [[Gallery View]]
+- `.card`, `.card-foot`, `.card-cta`, `.btn-card-fav` — anatomía del card de [[Gallery View]]
+- `.cart-line-barcode` — botón ▌▌▌ por línea de [[Carrito]]
+- `.bnav-btn`, `.bnav-icon-wrap`, `.bnav-badge` — [[Bottom Nav]]
 - `.multi-select-panel` — panel desplegable de [[Multi-Select]]
 - `.sidebar-body`, `.sidebar-label` — scroll de [[Sidebar]] (usados por `scrollFilterToTop_`)
 - `.refresh-chip`, `.view-toggle-btn`, `.filter-badge` — controles de [[Header]] y [[Filter Bar]]
@@ -76,3 +90,4 @@ aliases: [Glossary]
 | `lh3.googleusercontent.com` | Thumbnails de Drive | Cache SW 7 días — [[Google Drive Fotos]] |
 | `script.google.com` | Apps Script (admin/webhook) | [[Apps Script (Code.gs)]] |
 | `api.lacostasrl.com.py:56181` | API ERP origen | Solo lo consume [[Sync Server (Python)]] |
+| `192.168.90.19:3001` (LAN) | [[PDF Service]] Puppeteer | Solo red interna |

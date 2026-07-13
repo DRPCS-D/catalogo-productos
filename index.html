@@ -4708,6 +4708,30 @@ function applyPageConfig() {
     filterFoto = fotoParam;
   }
 
+  // Override por URL: ?coleccion=INVIERNO o ?coleccion=INVIERNO,VERANO
+  // Match exacto case-insensitive sobre p.colecao.
+  var coleccionParam = (new URLSearchParams(location.search)).get('coleccion');
+  if (coleccionParam) {
+    var requestedColecciones = coleccionParam.split(',')
+      .map(function (c) { return c.trim(); })
+      .filter(Boolean);
+    if (requestedColecciones.length) {
+      var availableColecciones = {};
+      products.forEach(function (p) { if (p.colecao) availableColecciones[p.colecao] = true; });
+      var availableColList = Object.keys(availableColecciones);
+      var matchedCol = [];
+      requestedColecciones.forEach(function (q) {
+        var ql = q.toLowerCase();
+        var exact = availableColList.filter(function (c) { return c.toLowerCase() === ql; });
+        var hits = exact.length ? exact : availableColList.filter(function (c) {
+          return c.toLowerCase().indexOf(ql) >= 0;
+        });
+        hits.forEach(function (c) { if (matchedCol.indexOf(c) < 0) matchedCol.push(c); });
+      });
+      if (matchedCol.length) filterColecao = matchedCol;
+    }
+  }
+
   // Promo desactivada → ocultar elementos de promo + setear pdfIncludePromo=false
   if (!cfg.promoVisible) {
     pdfIncludePromo = false;
@@ -4852,8 +4876,8 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.15';
-var APP_BUILD    = '2026-07-06';
+var APP_VERSION  = '1.21.16';
+var APP_BUILD    = '2026-07-13';
 
 function renderAppVersion_() {
   var el = document.getElementById('app-version');

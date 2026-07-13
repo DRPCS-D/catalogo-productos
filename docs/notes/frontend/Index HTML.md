@@ -5,45 +5,61 @@ aliases: [index.html, Monolito]
 
 # Index HTML
 
-> Monolito **6031 líneas** con HTML + CSS + JS inline. Esta nota es el mapa de secciones para grep dirigido.
+> Monolito **~9130 líneas** con HTML + CSS + JS inline. Esta nota es el mapa de secciones para grep dirigido.
 
 ## 📍 Mapa de secciones
 
 | Rango | Sección | Nota |
 |---|---|---|
 | 49–104 | CSS tokens, reset, Hanken Grotesk | [[Estilos y Tema]] |
-| ~106–244 | Header (logo, refresh chip, view toggle) | [[Header]] |
-| 2471–2495 | Refresh chip + view toggle + search input | [[Header]] · [[Filter Bar]] |
-| 2511–2620 | Sidebar (filtros + pie con `app-version`) | [[Sidebar]] |
-| 2673–2684 | Sentinels de tabla y galería | [[Infinite Scroll]] |
-| 2682 | `#gallery-container` (grid de cards) | [[Gallery View]] |
-| 2693 | `#modal` (modal-overlay) | [[Modal Detalle]] |
-| 2709 | `#lightbox` | [[Lightbox]] |
-| 2748–2814 | Config Supabase + `PAGE_CONFIGS` | [[Carga de Datos]] · [[Page Modes]] |
-| 2892–2933 | Variables globales JS | [[Glosario]] |
-| 3047–3222 | Data loading (Supabase fetch, page config, onLoad/onErr) | [[Carga de Datos]] |
-| 3249–3300 | `silentRefresh_` + `updateRefreshChip` | [[Auto-Refresh]] |
-| 3312–3313 | `APP_VERSION`, `APP_BUILD` | [[Sistema de Versiones]] |
-| 3321–3425 | `forceUpdateApp_` + `initAppAutoUpdate_` + `activateNewSwAndReload_` | [[Auto-Update]] |
-| 3427 | `relativeTime_` (relativo "hace X") | [[Auto-Refresh]] |
-| 3502 | `scrollFilterToTop_` (auto-scroll de sidebar) | [[Sidebar]] · [[Multi-Select]] |
-| 3533 | `isUserBusy_` (gate de auto-update) | [[Auto-Update]] |
-| 3901 | `populateFilters` | [[Búsqueda y Filtros]] |
-| ~3954–4076 | Multi-Select builder | [[Multi-Select]] |
-| 4075 | `_productPassesFilters_` | [[Búsqueda y Filtros]] |
-| 4138 | `applyFilters` | [[Búsqueda y Filtros]] |
-| 4320 | `toggleSidebar` | [[Sidebar]] |
-| 4374–4388 | `sortBy` + `updateSortHeaders` | [[Table View]] |
-| 4393–4515 | Render Tabla + `appendNextTableBatch` | [[Table View]] · [[Infinite Scroll]] |
-| 4519–4620 | Render Galería + `buildGalleryCardHtml_` + `appendNextGalleryBatch` | [[Gallery View]] · [[Infinite Scroll]] |
-| 4716–5025 | Modal detalle + productos similares | [[Modal Detalle]] · [[Productos Similares]] |
-| 5026–5066 | `switchView` + `toggleView_` | [[Header]] |
-| 5086+ | `getActivePrice` (lógica de promo) | [[Promociones y Precios]] |
-| 5201 | `normTxt_` (NFD accent-insensitive) | [[Búsqueda y Filtros]] |
-| 5315 | `exportToExcelTotalsByMarca_` | [[Exportar Excel]] |
-| 5432 | `exportToExcel` | [[Exportar Excel]] |
-| 5765–5812 | PDF móvil — `localStorage` keys (`pmo_print_scale`, `PMO_IMG_KEY`) | [[Exportar PDF Móvil]] |
-| 6024 | `#update-banner` (HTML, al final del archivo) | [[Auto-Update]] |
+| 342–408 | CSS bottom nav | [[Bottom Nav]] |
+| 614–628 | CSS `.cart-line-barcode` | [[Carrito]] |
+| 1351–1370 | CSS tabla (`.table-wrap` clip + `thead` sticky) | [[Table View]] |
+| 2572+ | CSS escáner de código de barra | [[Escáner EAN]] |
+| ~3070–3300 | Bloques responsive (≤600px compact, tablet) | [[Estilos y Tema]] |
+| 3680–3745 | Header (⚠️ sync, refresh chip, btns vista, chips) | [[Header]] |
+| 3709–3735 | `#bottom-nav` (HTML) | [[Bottom Nav]] |
+| 3742–3760 | Search input + botón escanear | [[Filter Bar]] · [[Escáner EAN]] |
+| 3765–3890 | Sidebar (filtros + switch PDF sin precio + pie con `app-version`) | [[Sidebar]] |
+| 3937 / 3948 | Sentinels de tabla y galería | [[Infinite Scroll]] |
+| 3946 | `#gallery-container` (grid de cards) | [[Gallery View]] |
+| 3955 / 3967 | `#favorites-view` / `#cart-view` | [[Favoritos]] · [[Carrito]] |
+| 3997 | `#modal` (modal-overlay) | [[Modal Detalle]] |
+| 4013 | `#lightbox` | [[Lightbox]] |
+| 4067 | `#barcode-overlay` (popup EAN-13) | [[Escáner EAN]] |
+| 4106–4136 | Config Supabase + `PAGE_CONFIGS` | [[Carga de Datos]] · [[Page Modes]] |
+| 4250–4315 | Variables globales JS | [[Glosario]] |
+| 4496–4720 | Data loading (Supabase fetch, sync_log, URL params) | [[Carga de Datos]] |
+| 4620 / 5396 | `lc_price_mode` restore / persist | [[Búsqueda y Filtros]] |
+| 4769–4838 | `silentRefresh_` + `updateRefreshChip` + `updateSyncWarningIcon_` | [[Auto-Refresh]] · [[Header]] |
+| 4855–4856 | `APP_VERSION`, `APP_BUILD` | [[Sistema de Versiones]] |
+| 4864–5010 | `forceUpdateApp_` + `initAppAutoUpdate_` + `activateNewSwAndReload_` | [[Auto-Update]] |
+| 4970 | `relativeTime_` (relativo "hace X") | [[Auto-Refresh]] |
+| 5050 | `scrollFilterToTop_` (auto-scroll de sidebar) | [[Sidebar]] · [[Multi-Select]] |
+| 5081 | `isUserBusy_` (gate de auto-update) | [[Auto-Update]] |
+| 5521 | `populateFilters` | [[Búsqueda y Filtros]] |
+| 5579+ | `buildMultiSelect` | [[Multi-Select]] |
+| 5757 | `_productPassesFilters_` | [[Búsqueda y Filtros]] |
+| 5839 | `applyFilters` | [[Búsqueda y Filtros]] |
+| 6025 | `toggleSidebar` | [[Sidebar]] |
+| 6081–6088 | `sortBy` + `updateSortHeaders` | [[Table View]] |
+| 6100–6210 | Render Tabla + `appendNextTableBatch` | [[Table View]] · [[Infinite Scroll]] |
+| 6226–6510 | Render Galería + `buildGalleryCardHtml_` + `appendNextGalleryBatch` | [[Gallery View]] · [[Infinite Scroll]] |
+| 6619–6860 | Modal detalle + productos similares | [[Modal Detalle]] · [[Productos Similares]] |
+| 6931–6943 | `openBarcodeModal_` / `closeBarcodeModal_` | [[Escáner EAN]] |
+| 6952–7090 | Escáner cámara (`BarcodeDetector`, diagnóstico) | [[Escáner EAN]] |
+| 7202–7250 | `switchView` + `toggleView_` + `openCartView_` + `openFavView_` | [[Header]] · [[Bottom Nav]] |
+| 7274–7420 | Favoritos (load/save/toggle/clear/render) | [[Favoritos]] |
+| 7424–7830 | Carrito (load/save/render/eventos/barcode) | [[Carrito]] |
+| 7976 | `renderCartPdf_` | [[Carrito]] |
+| 8152 | `getActivePrice` (lógica de promo) | [[Promociones y Precios]] |
+| 8267 | `normTxt_` (NFD accent-insensitive) | [[Búsqueda y Filtros]] |
+| 8385 | `exportToExcelTotalsByMarca_` | [[Exportar Excel]] |
+| 8507 | `exportToExcel` | [[Exportar Excel]] |
+| 8734 | `generatePDFMobile` | [[Exportar PDF Móvil]] |
+| 8850 / 8876 | PDF móvil — `localStorage` keys (`pmo_print_scale`, `pmo_img_height`) | [[Exportar PDF Móvil]] |
+| 9025 | `renderPdfCard_` | [[Exportar PDF Móvil]] |
+| 9121 | `#update-banner` (HTML, al final del archivo) | [[Auto-Update]] |
 
 ## ⚠️ Convención de mantenimiento
 

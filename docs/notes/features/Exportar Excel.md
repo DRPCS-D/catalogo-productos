@@ -5,11 +5,11 @@ aliases: [Excel, XLSX]
 
 # Exportar Excel
 
-> Exporta `filteredProducts` a XLSX. 2 modos: tabla detallada (productos × sucursales con totales por fila + grand total) y totales por marca.
+> Exporta `filteredProducts` a XLSX — o los [[Favoritos]] si la vista activa es favoritos. 2 modos: tabla detallada (productos × sucursales con totales por fila + grand total) y totales por marca.
 
 ## 📍 Ubicación
-- `index.html` L5432 — `exportToExcel(opts)` — export principal con columna **total** al final de cada fila + fila TOTAL al pie
-- `index.html` L5315 — `exportToExcelTotalsByMarca_()` — agregado por marca con fila TOTAL
+- `index.html` L8507 — `exportToExcel(opts)` — export principal con columna **total** al final de cada fila + fila TOTAL al pie
+- `index.html` L8385 — `exportToExcelTotalsByMarca_()` — agregado por marca con fila TOTAL
 
 ## 🎯 Qué hace
 - Construye headers desde la lista de sucursales filtradas.
@@ -23,6 +23,7 @@ aliases: [Excel, XLSX]
 
 ## 🔌 Depende de
 - [[Búsqueda y Filtros]] (`filteredProducts`)
+- [[Favoritos]] (fuente alternativa cuando `currentView === 'favorites'`)
 - [[Page Modes]] (qué sucursales considerar)
 
 ## ⚠️ Gotchas

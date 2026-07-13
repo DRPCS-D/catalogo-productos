@@ -14,7 +14,7 @@ aliases: [sync.py, Sync server]
 
 ## 🎯 Flujo
 1. **Fetch API** `http://api.lacostasrl.com.py:56181/productos` (~52 MB JSON).
-2. **List Drive** folder de fotos → mapea `cod_producto` → `file_id`.
+2. **List Drive** folder de fotos → mapea nombre de archivo → `file_id`. El matching es **case-insensitive** (`image_map` se llena con `f["name"].lower()` y se consulta con `filename.lower()`) — la base a veces tiene `LP8195.20_CMILITAR.jpg` y el archivo real es `..._CMilitar.jpg`.
 3. **Group** flat → jerarquía producto → colores → talles → stock.
 4. **Write Supabase** en una transacción atómica:
    - Tablas normalizadas: `products`, `product_colors`, `product_grades`, `product_stock`.
@@ -32,7 +32,7 @@ aliases: [sync.py, Sync server]
 - API URL La Costa — en `sync.py`.
 
 ## 🖥️ Host de producción
-- Server: `diago@lacostasrl` (Ubuntu). **Sólo accesible desde la LAN interna** — el hostname no resuelve fuera de la red local. Para deploy hay que estar conectado a la red de la oficina (o vía VPN si hay).
+- Server: `diago@lacostasrl` (Ubuntu, IP LAN `192.168.90.19`, key `~/.ssh/id_ed25519`). **Sólo accesible desde la LAN interna** — el hostname no resuelve fuera de la red local. Para deploy hay que estar conectado a la red de la oficina (o vía VPN si hay).
 - Ruta remota: `~/sync-server/` (= `/home/diago/sync-server/`).
 - Deploy de cambios (desde Windows local, dentro de la LAN):
   ```bash

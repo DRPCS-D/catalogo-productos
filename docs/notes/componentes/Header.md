@@ -5,28 +5,33 @@ aliases: [Topbar]
 
 # Header
 
-> Barra superior: logo + título + **refresh chip** + **view toggle** Galería/Tabla.
+> Barra superior: logo + título + **⚠️ advertencia de sync** + **refresh chip** + botones **Galería/Tabla** (desktop) + chips de favoritos y carrito.
 
 ## 📍 Ubicación
-- HTML: `index.html` ~L2440–2495
-- `#refresh-chip` L2471
-- `#btn-view-toggle` L2475
-- JS view toggle: `switchView` L5026, `toggleView_` L5044
+- HTML: `index.html` ~L3680–3745
+- `#sync-warning-icon` L3687 (oculto por default)
+- `#refresh-chip` L3688
+- `#btn-gallery` L3692, `#btn-table` L3701 (botones separados — ya no es un toggle único)
+- JS: `switchView` L7202, `toggleView_` L7239, `updateRefreshChip` L4817, `updateSyncWarningIcon_` L4838
 - CSS: tokens en [[Estilos y Tema]]
 
 ## 🎯 Qué hace
 - Muestra logo + nombre comercial.
+- **⚠️ Sync warning**: visible **solo si la última fila de `sync_log` tiene `status === 'ERROR'`** (no por antigüedad). El `title` incluye tiempo relativo + primeros 120 chars del error. Estado en `lastSyncLogRow` (L4315), cargado junto al catálogo.
 - **Refresh chip**: muestra solo el tiempo desde la última carga (sin "hace"); vacío si "recién".
-- **View toggle**: un único botón con icono `⊞` (galería) / `☰` (tabla) que alterna.
+- **Vista**: en desktop dos botones separados `⊞` Galería / `☰` Tabla con clase `.active`; en móvil los reemplaza la [[Bottom Nav]].
+- Chips de [[Favoritos]] y [[Carrito]] con contadores.
 
 ## 🔗 Variables / IDs / clases
-- HTML: `#refresh-chip`, `#btn-view-toggle`
-- JS: `currentView` ([[Glosario]]), `updateRefreshChip` (L3293)
-- CSS: `.refresh-chip`, `.view-toggle-btn`
+- HTML: `#sync-warning-icon`, `#refresh-chip`, `#btn-gallery`, `#btn-table`
+- JS: `currentView`, `lastSyncLogRow` ([[Glosario]])
+- CSS: `.refresh-chip`, `.view-toggle-btn`, `.sync-warning-btn`
 
 ## 🔌 Depende de
 - [[Auto-Refresh]] (alimenta `updateRefreshChip`)
-- [[Gallery View]] · [[Table View]] (objetos de switch)
+- [[Sync Server (Python)]] (escribe `sync_log` que alimenta el ⚠️)
+- [[Gallery View]] · [[Table View]] · [[Favoritos]] · [[Carrito]]
 
 ## ⚠️ Gotchas
-- El `updateRefreshChip` corta la string `hace ` del resultado de `relativeTime_` — si se cambia ese helper, revisar acá (L3293).
+- El `updateRefreshChip` corta la string `hace ` del resultado de `relativeTime_` (L4970) — si se cambia ese helper, revisar acá.
+- El ⚠️ antes también aparecía por staleness (>3h sin sync) — se quitó a propósito: solo ERROR. No reintroducir sin pedirlo.
