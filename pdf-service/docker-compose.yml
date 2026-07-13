@@ -5,3 +5,8 @@ services:
       - "3001:3001"
     restart: always
     shm_size: "256m"
+    volumes:
+      - pdf-data:/app/data
+
+volumes:
+  pdf-data:

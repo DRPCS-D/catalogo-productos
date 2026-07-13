@@ -18,7 +18,9 @@ const PMO_IMG_HEIGHT = 44;
 const CATALOG_BASE = "https://drpcs-d.github.io/catalogo-productos/";
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const CONFIG_FILE = path.join(__dirname, "config.json");
+const DATA_DIR   = path.join(__dirname, "data");
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+const CONFIG_FILE = path.join(DATA_DIR, "config.json");
 const DEFAULT_CONFIG = {
   pin: "1234",
   sucursales_all: ["LA COSTA S.R.L.", "ON BRAND&TRADE"],
