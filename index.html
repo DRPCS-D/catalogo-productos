@@ -2014,6 +2014,12 @@
       flex-direction: column;
       gap: 8px;
     }
+    .card-price-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
     .card-cta {
       width: 100%;
       padding: 8px 0;
@@ -2095,7 +2101,6 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      margin-top: 2px;
     }
 
     .stock-dot {
@@ -4886,7 +4891,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.21';
+var APP_VERSION  = '1.21.22';
 var APP_BUILD    = '2026-07-14';
 
 function renderAppVersion_() {
@@ -6515,7 +6520,7 @@ function buildGalleryCardHtml_(item) {
         '<button class="btn-card-quickadd" data-cod="' + escHtml(p.codFabrica) + '" data-color="' + escHtml(c.color) + '" title="Agregar al carrito" aria-label="Agregar al carrito"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>' +
       '</div>' +
       '<div class="card-body">' +
-        '<div class="card-code">Cód: ' + escHtml(p.codFabrica) +
+        '<div class="card-code">' + escHtml(p.codFabrica) +
           ' <button class="btn-copy-code" data-copy="' + escHtml(p.codFabrica) + '" title="Copiar código" aria-label="Copiar código">' + SVG_CLIPBOARD + '</button>' +
         '</div>' +
         '<div class="card-name">'  + escHtml(p.nmProduto) + '</div>' +
@@ -6523,10 +6528,12 @@ function buildGalleryCardHtml_(item) {
         (p.subgrupo ? '<div class="card-subgrupo">Subgrupo: <b>' + escHtml(p.subgrupo) + '</b></div>' : '') +
         '<div class="card-color">Color: <b>' + escHtml(c.color) + '</b></div>' +
         '<div class="card-foot">' +
-          '<div class="card-price">' + renderPriceHtml(p) + '</div>' +
-          '<div class="card-stock">' +
-            '<div class="stock-dot ' + dotClass + '"></div>' +
-            '<div class="card-stock-txt">' + stockLabel + ' · ' + cStock + ' uds</div>' +
+          '<div class="card-price-row">' +
+            '<div class="card-price">' + renderPriceHtml(p) + '</div>' +
+            '<div class="card-stock">' +
+              '<div class="stock-dot ' + dotClass + '"></div>' +
+              '<div class="card-stock-txt">' + cStock + ' uds</div>' +
+            '</div>' +
           '</div>' +
           '<button class="card-cta btn-card-detail" data-cod="' + escHtml(p.codFabrica) + '" data-color="' + escHtml(c.color) + '">Ver detalles</button>' +
         '</div>' +
