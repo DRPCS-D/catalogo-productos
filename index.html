@@ -1628,7 +1628,7 @@
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,.5);
-      z-index: 200;
+      z-index: 520;
       align-items: flex-end;
       justify-content: center;
     }
@@ -2178,6 +2178,28 @@
     }
 
     .modal-close:hover { background: rgba(255,255,255,.27); }
+
+    .modal-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .modal-action-btn {
+      width: 36px; height: 36px;
+      border: none;
+      background: rgba(255,255,255,.15);
+      color: white;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background .1s;
+      cursor: pointer;
+    }
+    .modal-action-btn:hover { background: rgba(255,255,255,.27); }
+    .modal-action-btn.is-fav { color: #f87171; }
 
     .modal-body {
       padding: 16px 20px;
@@ -4009,7 +4031,11 @@
         <div class="modal-title"    id="modal-title"></div>
         <div class="modal-subtitle" id="modal-subtitle"></div>
       </div>
-      <button class="modal-close" id="modal-close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <div class="modal-header-actions">
+        <button class="modal-action-btn" id="modal-btn-fav" title="Guardar en favoritos" aria-label="Favorito"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+        <button class="modal-action-btn" id="modal-btn-cart" title="Agregar al carrito" aria-label="Agregar al carrito"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></button>
+        <button class="modal-close" id="modal-close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
     </div>
     <div class="modal-body" id="modal-body"></div>
   </div>
@@ -4891,7 +4917,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.22';
+var APP_VERSION  = '1.21.23';
 var APP_BUILD    = '2026-07-14';
 
 function renderAppVersion_() {
@@ -5327,8 +5353,21 @@ function setupEvents() {
     if (imgWrap && imgWrap.getAttribute('data-img')) openLightbox(imgWrap);
   });
 
-  // Modal — cerrar + click en card de "Productos similares"
+  // Modal — botones de acción en el header
   document.getElementById('modal-close').addEventListener('click', closeModal);
+  document.getElementById('modal-btn-fav').addEventListener('click', function () {
+    var cod   = this.getAttribute('data-cod');
+    var color = this.getAttribute('data-color');
+    toggleFav_(cod, color);
+    var favActive = isFav_(cod, color);
+    this.classList.toggle('is-fav', favActive);
+    this.innerHTML = favActive
+      ? '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'
+      : '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+  });
+  document.getElementById('modal-btn-cart').addEventListener('click', function () {
+    openQuickAdd_(this.getAttribute('data-cod'), this.getAttribute('data-color'));
+  });
   document.getElementById('modal').addEventListener('click', function (e) {
     // Click en botón de copiar código (al lado del código en el título)
     var copyBtn = closest(e.target, '.btn-copy-code');
@@ -6672,6 +6711,19 @@ function openModal(codFabrica, colorName) {
     product.nmProduto +
     ' · Marca: ' + product.marca +
     ' · ' + product.grupo + ' / ' + product.subgrupo;
+
+  var activeColor = colorName || (product.colorsArr[0] && product.colorsArr[0].color) || '';
+  var modalFavBtn  = document.getElementById('modal-btn-fav');
+  var modalCartBtn = document.getElementById('modal-btn-cart');
+  modalFavBtn.setAttribute('data-cod', product.codFabrica);
+  modalFavBtn.setAttribute('data-color', activeColor);
+  modalCartBtn.setAttribute('data-cod', product.codFabrica);
+  modalCartBtn.setAttribute('data-color', activeColor);
+  var favActive = isFav_(product.codFabrica, activeColor);
+  modalFavBtn.classList.toggle('is-fav', favActive);
+  modalFavBtn.innerHTML = favActive
+    ? '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'
+    : '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
 
   var cols = colorName
     ? product.colorsArr.filter(function (c) { return c.color === colorName; })
