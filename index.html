@@ -1596,8 +1596,6 @@
       background: rgba(255,255,255,.95);
       color: var(--primary);
       border: none;
-      font-size: 22px;
-      font-weight: 700;
       cursor: pointer;
       box-shadow: 0 2px 6px rgba(0,0,0,.18);
       z-index: 2;
@@ -4888,7 +4886,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.19';
+var APP_VERSION  = '1.21.20';
 var APP_BUILD    = '2026-07-14';
 
 function renderAppVersion_() {
@@ -6514,7 +6512,7 @@ function buildGalleryCardHtml_(item) {
     return '<div class="product-card">' +
       '<div class="card-img-wrap"' + wrapAttrs + '>' + imgHtml +
         '<button class="btn-card-fav' + (isFavCard ? ' is-fav' : '') + '" data-cod="' + escHtml(p.codFabrica) + '" data-color="' + escHtml(c.color) + '" title="' + (isFavCard ? 'Quitar de favoritos' : 'Guardar en favoritos') + '" aria-label="Favorito">' + (isFavCard ? SVG_HEART_FULL : SVG_HEART_EMPTY) + '</button>' +
-        '<button class="btn-card-quickadd" data-cod="' + escHtml(p.codFabrica) + '" data-color="' + escHtml(c.color) + '" title="Agregar al carrito" aria-label="Agregar al carrito">+</button>' +
+        '<button class="btn-card-quickadd" data-cod="' + escHtml(p.codFabrica) + '" data-color="' + escHtml(c.color) + '" title="Agregar al carrito" aria-label="Agregar al carrito"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>' +
       '</div>' +
       '<div class="card-body">' +
         '<div class="card-code">Cód: ' + escHtml(p.codFabrica) +
