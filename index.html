@@ -444,7 +444,7 @@
       padding: 60px 20px;
       color: var(--gray-500);
     }
-    .cart-empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .cart-empty-icon { margin-bottom: 12px; color: var(--gray-300); }
     .cart-empty-title {
       font-size: 16px;
       font-weight: 600;
@@ -525,7 +525,7 @@
       justify-content: center;
     }
     .cart-line-thumb img { width: 100%; height: 100%; object-fit: cover; }
-    .cart-line-thumb-ph { font-size: 24px; color: var(--gray-400); }
+    .cart-line-thumb-ph { color: var(--gray-400); display:flex; align-items:center; justify-content:center; }
     .cart-line-info { min-width: 0; }
     .cart-line-cod {
       font-size: 10px;
@@ -908,7 +908,7 @@
     .cpo-table .cpo-col-num { width: 22px; text-align: center; color: var(--gray-500); }
     .cpo-table .cpo-col-foto { width: 50px; padding: 2px; text-align: center; }
     .cpo-table .cpo-col-foto img { width: 44px; height: 44px; object-fit: cover; border-radius: 3px; }
-    .cpo-table .cpo-col-foto-ph { color: var(--gray-300); font-size: 18pt; }
+    .cpo-table .cpo-col-foto-ph { color: var(--gray-300); }
     .cpo-table .cpo-col-cod { width: 60px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 9pt; }
     .cpo-table .cpo-col-color, .cpo-table .cpo-col-talle { width: 60px; }
     .cpo-table .cpo-col-cant { width: 50px; text-align: center; font-weight: 700; }
@@ -1318,7 +1318,7 @@
       text-align: center;
     }
 
-    .error-icon { font-size: 48px; }
+    .error-icon { color: var(--gray-300); }
     .error-msg   { font-size: 15px; font-weight: 600; color: var(--gray-700); }
     .error-detail { font-size: 12px; color: var(--gray-400); font-family: monospace; max-width: 400px; }
 
@@ -2652,7 +2652,7 @@
       transition: background .15s, border-color .15s;
     }
     .btn-menu:hover { background: var(--gray-100); border-color: var(--blue); color: var(--primary); }
-    .btn-menu .menu-icon { font-size: 14px; line-height: 1; }
+    .btn-menu .menu-icon { display:inline-flex; align-items:center; }
     .btn-menu .filter-badge {
       background: var(--blue);
       color: white;
@@ -3685,7 +3685,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <button class="sync-warning-btn" id="sync-warning-icon" style="display:none" title="" aria-label="Advertencia de sincronización">⚠️</button>
+      <button class="sync-warning-btn" id="sync-warning-icon" style="display:none" title="" aria-label="Advertencia de sincronización"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></button>
       <button class="refresh-chip" id="refresh-chip" onclick="manualRefresh()" title="Actualizar ahora">
         <span class="refresh-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span>
         <span id="refresh-label" style="display:none">—</span>
@@ -3742,7 +3742,7 @@
 <div class="filter-bar">
   <div class="filter-inner">
     <button class="btn-menu" id="btn-open-sidebar" onclick="toggleSidebar(true)" aria-label="Abrir filtros">
-      <span class="menu-icon">☰</span>
+      <span class="menu-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></span>
       <span>Filtros</span>
       <span class="filter-badge" id="filter-badge">0</span>
     </button>
@@ -3751,9 +3751,9 @@
       <input type="search" id="search-input" class="search-input"
         placeholder="Buscar código, producto, marca, color...">
       <button type="button" id="btn-search-clear" class="search-action-btn"
-              style="display:none" title="Borrar búsqueda" aria-label="Borrar">✕</button>
+              style="display:none" title="Borrar búsqueda" aria-label="Borrar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       <button type="button" id="btn-search-paste" class="search-action-btn"
-              title="Pegar del portapapeles" aria-label="Pegar">📋</button>
+              title="Pegar del portapapeles" aria-label="Pegar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></button>
       <button type="button" id="btn-search-scan" class="search-action-btn btn-scan-barcode"
               title="Escanear código de barra" aria-label="Escanear código de barra"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg></button>
     </div>
@@ -3769,8 +3769,8 @@
 
 <aside class="sidebar" id="sidebar" aria-label="Filtros y acciones">
   <div class="sidebar-header">
-    <h2>☰ Filtros</h2>
-    <button class="sidebar-close" onclick="toggleSidebar(false)" aria-label="Cerrar">✕</button>
+    <h2>Filtros</h2>
+    <button class="sidebar-close" onclick="toggleSidebar(false)" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
 
   <div class="sidebar-body">
@@ -3844,7 +3844,7 @@
   </div>
 
   <div class="sidebar-footer">
-    <button class="btn-clear-side" id="btn-clear">✕ Limpiar filtros</button>
+    <button class="btn-clear-side" id="btn-clear"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Limpiar filtros</button>
 
     <!-- Sección PDF (desplegable, colapsada por default) -->
     <details class="export-section" data-section="pdf-promo-wrap">
@@ -3905,7 +3905,7 @@
 
   <!-- Error -->
   <div id="error-state" class="error-state">
-    <div class="error-icon">⚠️</div>
+    <div class="error-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
     <div class="error-msg">No se pudieron cargar los productos</div>
     <div class="error-detail" id="error-detail"></div>
     <button class="btn-retry" onclick="location.reload()">Reintentar</button>
@@ -4006,7 +4006,7 @@
         <div class="modal-title"    id="modal-title"></div>
         <div class="modal-subtitle" id="modal-subtitle"></div>
       </div>
-      <button class="modal-close" id="modal-close">✕</button>
+      <button class="modal-close" id="modal-close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="modal-body" id="modal-body"></div>
   </div>
@@ -4017,7 +4017,7 @@
 <!-- ============================================================ -->
 <div class="lightbox" id="lightbox">
   <div class="lightbox-inner">
-    <button class="lightbox-close" id="lightbox-close" aria-label="Cerrar">✕</button>
+    <button class="lightbox-close" id="lightbox-close" aria-label="Cerrar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <img class="lightbox-img" id="lightbox-img" alt="">
     <div class="lightbox-caption" id="lightbox-caption"></div>
   </div>
@@ -4028,7 +4028,7 @@
 <!-- ============================================================ -->
 <div id="shortcuts-overlay" class="shortcuts-overlay" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title" onclick="if(event.target===this)closeShortcuts_()">
   <div class="shortcuts-card">
-    <button class="shortcuts-close" type="button" onclick="closeShortcuts_()" aria-label="Cerrar">✕</button>
+    <button class="shortcuts-close" type="button" onclick="closeShortcuts_()" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <h2 id="shortcuts-title">⌨️ Atajos de teclado</h2>
     <table class="shortcuts-table">
       <tbody>
@@ -4055,7 +4055,7 @@
 <div class="confirm-overlay" id="confirm-overlay" role="dialog" aria-modal="true">
   <div class="confirm-box">
     <div class="confirm-header">
-      <span class="confirm-icon" id="confirm-icon">⚠️</span>
+      <span class="confirm-icon" id="confirm-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
       <span class="confirm-title" id="confirm-title">Confirmar</span>
     </div>
     <div class="confirm-body" id="confirm-body"></div>
@@ -4073,7 +4073,7 @@
   <div class="barcode-box">
     <div class="barcode-header">
       <span class="barcode-title">Código de barra</span>
-      <button type="button" class="barcode-close" onclick="closeBarcodeModal_()" aria-label="Cerrar">✕</button>
+      <button type="button" class="barcode-close" onclick="closeBarcodeModal_()" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="barcode-body" id="barcode-body"></div>
   </div>
@@ -4085,7 +4085,7 @@
 <div class="scan-overlay" id="scan-overlay" role="dialog" aria-modal="true">
   <div class="scan-header">
     <span class="scan-title">Escanear código de barra</span>
-    <button type="button" class="scan-close" onclick="closeBarcodeScanner_()" aria-label="Cerrar">✕</button>
+    <button type="button" class="scan-close" onclick="closeBarcodeScanner_()" aria-label="Cerrar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
   <div class="scan-video-wrap">
     <video id="scan-video" autoplay playsinline muted></video>
@@ -4277,6 +4277,10 @@ var priceMode        = 'minorista';   // 'minorista' | 'mayorista' — selector 
 // SVG icons reutilizables
 var SVG_HEART_EMPTY = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
 var SVG_HEART_FULL  = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+var SVG_X         = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+var SVG_WARNING   = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+var SVG_CLIPBOARD = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>';
+var SVG_IMG_OFF   = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
 
 // ============ FAVORITOS ============
 var FAVORITES_STORAGE_KEY = 'lc_fav_v1';
@@ -4876,7 +4880,7 @@ function updateSyncWarningIcon_() {
   }
   var msg = 'Sincronización con errores desde ' + relativeTime_(Date.now() - new Date(lastSyncLogRow.ts).getTime()) +
             '. Detalle: ' + (lastSyncLogRow.error || 'error desconocido').slice(0, 120);
-  icon.title = '⚠️ ' + msg;
+  icon.title = msg;
   icon.style.display = 'inline-flex';
 }
 
@@ -4884,7 +4888,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.18';
+var APP_VERSION  = '1.21.19';
 var APP_BUILD    = '2026-07-14';
 
 function renderAppVersion_() {
@@ -5189,7 +5193,7 @@ function setupEvents() {
       if (!trimmed) {
         // Portapapeles vacío — feedback breve y enfocar input
         btnPaste.textContent = '∅';
-        setTimeout(function () { btnPaste.textContent = '📋'; }, 800);
+        setTimeout(function () { btnPaste.innerHTML = SVG_CLIPBOARD; }, 800);
         searchInput.focus();
         return;
       }
@@ -6514,7 +6518,7 @@ function buildGalleryCardHtml_(item) {
       '</div>' +
       '<div class="card-body">' +
         '<div class="card-code">Cód: ' + escHtml(p.codFabrica) +
-          ' <button class="btn-copy-code" data-copy="' + escHtml(p.codFabrica) + '" title="Copiar código" aria-label="Copiar código">📋</button>' +
+          ' <button class="btn-copy-code" data-copy="' + escHtml(p.codFabrica) + '" title="Copiar código" aria-label="Copiar código">' + SVG_CLIPBOARD + '</button>' +
         '</div>' +
         '<div class="card-name">'  + escHtml(p.nmProduto) + '</div>' +
         '<div class="card-marca">Marca: <b>' + escHtml(p.marca) + '</b></div>' +
@@ -6658,7 +6662,7 @@ function openModal(codFabrica, colorName) {
   document.getElementById('modal-title').innerHTML =
     escHtml(product.codFabrica) +
     ' <button class="btn-copy-code" data-copy="' + escHtml(product.codFabrica) +
-    '" title="Copiar código" aria-label="Copiar código">📋</button>';
+    '" title="Copiar código" aria-label="Copiar código">' + SVG_CLIPBOARD + '</button>';
   document.getElementById('modal-subtitle').textContent =
     product.nmProduto +
     ' · Marca: ' + product.marca +
@@ -7418,9 +7422,9 @@ function renderFavorites() {
     if (emptyEl) {
       emptyEl.style.display = 'block';
       emptyEl.innerHTML = '<div class="cart-empty">' +
-        '<div class="cart-empty-icon">❤️</div>' +
+        '<div class="cart-empty-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>' +
         '<div class="cart-empty-title">No hay favoritos guardados</div>' +
-        '<div class="cart-empty-sub">Tocá el 🤍 en cualquier producto para guardarlo aquí.</div>' +
+        '<div class="cart-empty-sub">Tocá el corazón en cualquier producto para guardarlo aquí.</div>' +
         '<button class="cart-empty-btn" onclick="switchView(\'gallery\')">Ir a galería</button>' +
         '</div>';
     }
@@ -7714,7 +7718,7 @@ function renderCart_() {
   if (!keys.length) {
     el.innerHTML =
       '<div class="cart-empty">' +
-        '<div class="cart-empty-icon">🛒</div>' +
+        '<div class="cart-empty-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>' +
         '<div class="cart-empty-title">El carrito está vacío</div>' +
         '<div class="cart-empty-sub">Agregá productos desde la galería para verlos acá.</div>' +
         '<button class="cart-empty-btn" onclick="switchView(\'gallery\')">Ir a galería</button>' +
@@ -7760,8 +7764,8 @@ function buildCartLineHtml_(key) {
   var safeKey  = escHtml(key);
   var thumb = line.fotoUrl
     ? '<img src="' + escHtml(line.fotoUrl) + '" alt="" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'">' +
-      '<div class="cart-line-thumb-ph" style="display:none">📷</div>'
-    : '<div class="cart-line-thumb-ph">📷</div>';
+      '<div class="cart-line-thumb-ph" style="display:none">' + SVG_IMG_OFF + '</div>'
+    : '<div class="cart-line-thumb-ph">' + SVG_IMG_OFF + '</div>';
 
   return '<div class="cart-line" data-key="' + safeKey + '">' +
     '<div class="cart-line-thumb">' + thumb + '</div>' +
@@ -7907,7 +7911,7 @@ function openCartPdfForm_() {
     '<div class="cpf-sheet" role="dialog" aria-label="Datos de la nota de pedido">' +
       '<div class="cpf-head">' +
         '<h3>Datos de la nota de pedido</h3>' +
-        '<button class="cpf-close" onclick="closeCartPdfForm_()" aria-label="Cerrar">✕</button>' +
+        '<button class="cpf-close" onclick="closeCartPdfForm_()" aria-label="Cerrar">' + SVG_X + '</button>' +
       '</div>' +
       '<div class="cpf-body">' +
         '<div class="cpf-field">' +
@@ -8030,7 +8034,7 @@ function renderCartPdf_(opts) {
     var subtotal = (l.precioUnit || 0) * (l.cantidad || 0);
     var fotoCell = l.fotoUrl
       ? '<img src="' + escHtml(l.fotoUrl) + '" alt="">'
-      : '<span class="cpo-col-foto-ph">📷</span>';
+      : '<span class="cpo-col-foto-ph">' + SVG_IMG_OFF + '</span>';
     return '<tr>' +
       '<td class="cpo-col-num">' + (i + 1) + '</td>' +
       '<td class="cpo-col-foto">' + fotoCell + '</td>' +
@@ -8123,7 +8127,7 @@ function renderCartPdf_(opts) {
   }
   overlay.innerHTML =
     '<div class="cpo-toolbar">' +
-      '<button class="cpo-close" onclick="closeCartPdf_()">✕ Cerrar</button>' +
+      '<button class="cpo-close" onclick="closeCartPdf_()">' + SVG_X + ' Cerrar</button>' +
       '<div class="cpo-hint">Tocá Imprimir y elegí "Guardar como PDF" en el diálogo del navegador.</div>' +
       '<button class="cpo-print" onclick="window.print()">🖨️ Imprimir</button>' +
     '</div>' +
@@ -8334,7 +8338,7 @@ function confirmDialog(opts) {
   var btnCanc  = document.getElementById('confirm-btn-cancel');
 
   elTitle.textContent = opts.title || 'Confirmar';
-  elIcon.textContent  = opts.icon  || '⚠️';
+  elIcon.innerHTML    = opts.icon  || SVG_WARNING;
   // body acepta HTML para que se pueda resaltar con <strong>
   elBody.innerHTML    = opts.body || '';
   btnOk.textContent   = opts.okText     || 'Continuar';
@@ -8844,7 +8848,7 @@ function generatePDFMobile() {
 
   overlay.innerHTML =
     '<div class="pmo-toolbar">' +
-      '<button class="pmo-close" onclick="closePdfMobile_()">✕ Cerrar</button>' +
+      '<button class="pmo-close" onclick="closePdfMobile_()">' + SVG_X + ' Cerrar</button>' +
       '<div class="pmo-scale" title="Ajusta el tamaño general con el que se imprime. Se guarda en este dispositivo.">' +
         '<span class="pmo-scale-label">Escala</span>' +
         '<button class="pmo-scale-btn" onclick="adjustPmoScale_(-1)" aria-label="Reducir escala">−</button>' +
@@ -8971,7 +8975,7 @@ function generatePDF() {
     var paginas = Math.ceil(cardCount / 9);
     confirmDialog({
       title:      'PDF largo',
-      icon:       '📄',
+      icon:       '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
       okText:     'Continuar',
       cancelText: 'Cancelar',
       body:
