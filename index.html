@@ -1009,7 +1009,8 @@
       transform: translateY(-50%);
       color: var(--gray-400);
       pointer-events: none;
-      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
     }
 
     .search-input {
@@ -3746,7 +3747,7 @@
       <span class="filter-badge" id="filter-badge">0</span>
     </button>
     <div class="search-wrap">
-      <span class="search-icon">🔍</span>
+      <span class="search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
       <input type="search" id="search-input" class="search-input"
         placeholder="Buscar código, producto, marca, color...">
       <button type="button" id="btn-search-clear" class="search-action-btn"
@@ -3754,7 +3755,7 @@
       <button type="button" id="btn-search-paste" class="search-action-btn"
               title="Pegar del portapapeles" aria-label="Pegar">📋</button>
       <button type="button" id="btn-search-scan" class="search-action-btn btn-scan-barcode"
-              title="Escanear código de barra" aria-label="Escanear código de barra">📷</button>
+              title="Escanear código de barra" aria-label="Escanear código de barra"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg></button>
     </div>
   </div>
 </div>
@@ -4272,6 +4273,10 @@ var filterSucursal   = [];   // sucursales seleccionadas (multi-select)
 var filterPrecioMin  = null;
 var filterPrecioMax  = null;
 var priceMode        = 'minorista';   // 'minorista' | 'mayorista' — selector global
+
+// SVG icons reutilizables
+var SVG_HEART_EMPTY = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+var SVG_HEART_FULL  = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
 
 // ============ FAVORITOS ============
 var FAVORITES_STORAGE_KEY = 'lc_fav_v1';
@@ -4879,7 +4884,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.17';
+var APP_VERSION  = '1.21.18';
 var APP_BUILD    = '2026-07-14';
 
 function renderAppVersion_() {
@@ -6504,7 +6509,7 @@ function buildGalleryCardHtml_(item) {
     var isFavCard = isFav_(p.codFabrica, c.color);
     return '<div class="product-card">' +
       '<div class="card-img-wrap"' + wrapAttrs + '>' + imgHtml +
-        '<button class="btn-card-fav' + (isFavCard ? ' is-fav' : '') + '" data-cod="' + escHtml(p.codFabrica) + '" data-color="' + escHtml(c.color) + '" title="' + (isFavCard ? 'Quitar de favoritos' : 'Guardar en favoritos') + '" aria-label="Favorito">' + (isFavCard ? '❤️' : '🤍') + '</button>' +
+        '<button class="btn-card-fav' + (isFavCard ? ' is-fav' : '') + '" data-cod="' + escHtml(p.codFabrica) + '" data-color="' + escHtml(c.color) + '" title="' + (isFavCard ? 'Quitar de favoritos' : 'Guardar en favoritos') + '" aria-label="Favorito">' + (isFavCard ? SVG_HEART_FULL : SVG_HEART_EMPTY) + '</button>' +
         '<button class="btn-card-quickadd" data-cod="' + escHtml(p.codFabrica) + '" data-color="' + escHtml(c.color) + '" title="Agregar al carrito" aria-label="Agregar al carrito">+</button>' +
       '</div>' +
       '<div class="card-body">' +
@@ -7328,7 +7333,7 @@ function toggleFav_(cod, color) {
   var now = isFav_(cod, color);
   document.querySelectorAll('.btn-card-fav[data-cod="' + cod + '"][data-color="' + color + '"]')
     .forEach(function (btn) {
-      btn.textContent = now ? '❤️' : '🤍';
+      btn.innerHTML = now ? SVG_HEART_FULL : SVG_HEART_EMPTY;
       btn.title = now ? 'Quitar de favoritos' : 'Guardar en favoritos';
       btn.classList.toggle('is-fav', now);
     });
@@ -7342,7 +7347,7 @@ function clearAllFavs_() {
   saveFavorites_();
   updateFavBadge_();
   document.querySelectorAll('.btn-card-fav').forEach(function (btn) {
-    btn.textContent = '🤍';
+    btn.innerHTML = SVG_HEART_EMPTY;
     btn.title = 'Guardar en favoritos';
     btn.classList.remove('is-fav');
   });
