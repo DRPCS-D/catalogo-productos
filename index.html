@@ -4917,7 +4917,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.23';
+var APP_VERSION  = '1.21.24';
 var APP_BUILD    = '2026-07-14';
 
 function renderAppVersion_() {
@@ -6772,6 +6772,9 @@ function openModal(codFabrica, colorName) {
     var colorTotal = visibleGrades.reduce(function (sum, g) { return sum + g.totalStock; }, 0);
     var displayTotal = restrictSet ? colorTotal : c.totalStock;
     var displayGradeCount = visibleGrades.length;
+
+    // Skip color blocks with no stock in the active sucursales
+    if (restrictSet && colorTotal === 0) return '';
 
     return '<div class="modal-color-block">' +
       '<div class="modal-color-head">' +
