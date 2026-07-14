@@ -4917,7 +4917,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.25';
+var APP_VERSION  = '1.21.26';
 var APP_BUILD    = '2026-07-14';
 
 function renderAppVersion_() {
@@ -6819,10 +6819,11 @@ function openModal(codFabrica, colorName) {
     '</div>';
   }).join('');
 
-  // Strip de colores disponibles (todos los colores del producto, no solo el mostrado)
-  if (product.colorsArr.length > 1) {
-    var colorsStripHtml = '<div class="modal-colors-strip"><span class="mcs-label">Colores disponibles (' + product.colorsArr.length + '):</span>' +
-      product.colorsArr.map(function (c) { var isActive = colorName && c.color === colorName; return '<span class="mcs-chip' + (isActive ? ' mcs-chip-active' : '') + '" role="button" tabindex="0" onclick="openModal(\'' + escHtml(product.codFabrica) + '\',\'' + escHtml(c.color) + '\')" onkeydown="if(event.key===\'Enter\')openModal(\'' + escHtml(product.codFabrica) + '\',\'' + escHtml(c.color) + '\')">' + escHtml(c.color) + '</span>'; }).join('') +
+  // Strip de colores disponibles — solo colores con stock en las sucursales activas
+  var availableColors = product.colorsArr.filter(function (c) { return getColorStock(c) > 0; });
+  if (availableColors.length > 1) {
+    var colorsStripHtml = '<div class="modal-colors-strip"><span class="mcs-label">Colores disponibles (' + availableColors.length + '):</span>' +
+      availableColors.map(function (c) { var isActive = colorName && c.color === colorName; return '<span class="mcs-chip' + (isActive ? ' mcs-chip-active' : '') + '" role="button" tabindex="0" onclick="openModal(\'' + escHtml(product.codFabrica) + '\',\'' + escHtml(c.color) + '\')" onkeydown="if(event.key===\'Enter\')openModal(\'' + escHtml(product.codFabrica) + '\',\'' + escHtml(c.color) + '\')">' + escHtml(c.color) + '</span>'; }).join('') +
       '</div>';
     modalBody.insertAdjacentHTML('beforeend', colorsStripHtml);
   }
