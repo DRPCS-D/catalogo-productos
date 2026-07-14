@@ -4917,7 +4917,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.24';
+var APP_VERSION  = '1.21.25';
 var APP_BUILD    = '2026-07-14';
 
 function renderAppVersion_() {
@@ -5386,8 +5386,9 @@ function setupEvents() {
     // Click en una card similar → reabrir el modal con ese producto
     var sim = closest(e.target, '.modal-similar-card');
     if (sim) {
-      var cod = sim.getAttribute('data-cod');
-      if (cod) openModal(cod, null);
+      var cod   = sim.getAttribute('data-cod');
+      var color = sim.getAttribute('data-color') || null;
+      if (cod) openModal(cod, color);
       return;
     }
     // Click fuera del contenedor → cerrar
@@ -6931,7 +6932,7 @@ function renderSimilarsBlock_(product) {
     var priceHtml = renderPriceHtml(p);
     var stock = getProductStock(p);
 
-    return '<div class="modal-similar-card" data-cod="' + escHtml(p.codFabrica) + '" role="button" tabindex="0" title="Ver detalles">' +
+    return '<div class="modal-similar-card" data-cod="' + escHtml(p.codFabrica) + '" data-color="' + escHtml(c0 ? c0.color : '') + '" role="button" tabindex="0" title="Ver detalles">' +
       (imgUrl
         ? '<img class="msc-img" src="' + imgUrl + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
         : '<div class="msc-img-ph">&#x1F45F;</div>') +
