@@ -5935,11 +5935,14 @@ function applyFilters() {
         va = a[sortField]; vb = b[sortField];
       }
       var na = Number(va), nb = Number(vb);
+      var cmp;
       if (va !== '' && vb !== '' && va != null && vb != null && !isNaN(na) && !isNaN(nb)) {
-        return sortDir === 'asc' ? na - nb : nb - na;
+        cmp = sortDir === 'asc' ? na - nb : nb - na;
+      } else {
+        va = String(va || ''); vb = String(vb || '');
+        cmp = sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
       }
-      va = String(va || ''); vb = String(vb || '');
-      return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+      return cmp !== 0 ? cmp : (b.id - a.id);
     });
   }
 
