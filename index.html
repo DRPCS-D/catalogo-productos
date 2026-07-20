@@ -2120,6 +2120,81 @@
     .btn-card-detail { min-height: 38px; }
 
     /* ===== MODAL ===== */
+    /* === Gate de contraseña de acceso === */
+    .access-gate {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: var(--primary-dark);
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .access-gate.open { display: flex; }
+    .access-box {
+      width: 100%;
+      max-width: 340px;
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      padding: 32px 24px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      animation: slideUp .2s;
+    }
+    .access-logo {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: .5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .access-title { font-size: 17px; font-weight: 700; color: var(--gray-900); margin: 0 0 4px; }
+    .access-sub   { font-size: 13px; color: var(--gray-500); margin: 0 0 20px; }
+    .access-input {
+      width: 100%;
+      padding: 11px 14px;
+      font-size: 15px;
+      border: 1px solid var(--gray-300);
+      border-radius: var(--radius);
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+      margin-bottom: 12px;
+    }
+    .access-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(43,65,147,.15); }
+    .access-btn {
+      width: 100%;
+      padding: 11px 14px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      background: var(--primary);
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: filter .15s;
+    }
+    .access-btn:hover:not(:disabled) { filter: brightness(1.1); }
+    .access-btn:disabled { opacity: .65; cursor: wait; }
+    .access-error {
+      min-height: 18px;
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--red-500);
+      font-weight: 500;
+    }
+
     .modal-overlay {
       display: none;
       position: fixed;
@@ -3931,6 +4006,20 @@
 <!-- ============================================================ -->
 <div class="main-content">
 
+  <!-- Contraseña de acceso (gate) — se muestra al abrir si no hay sesión guardada -->
+  <div id="access-gate" class="access-gate" role="dialog" aria-modal="true" aria-labelledby="access-title">
+    <form class="access-box" id="access-form" autocomplete="off">
+      <div class="access-logo">LC</div>
+      <h2 id="access-title" class="access-title">Catálogo de Productos</h2>
+      <p class="access-sub">Ingresá la contraseña de acceso</p>
+      <input type="password" id="access-input" class="access-input"
+             placeholder="Contraseña" autocomplete="current-password"
+             inputmode="text" maxlength="64" autofocus>
+      <button type="submit" id="access-btn" class="access-btn">Ingresar</button>
+      <div class="access-error" id="access-error"></div>
+    </form>
+  </div>
+
   <!-- Cargando -->
   <div id="loading-state" class="loading-state">
     <div class="spinner"></div>
@@ -4320,6 +4409,12 @@ var SVG_WARNING   = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"
 var SVG_CLIPBOARD = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>';
 var SVG_IMG_OFF   = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
 
+// ============ ACCESO (gate de contraseña) ============
+// Se guarda la contraseña en claro en localStorage para re-verificarla por RPC
+// en cada carga (así una rotación en el server deslogea a todos). Es una traba
+// client-side: frena accesos casuales, no es blindaje.
+var ACCESS_STORAGE_KEY = 'lc_access_pw_v1';
+
 // ============ FAVORITOS ============
 var FAVORITES_STORAGE_KEY = 'lc_fav_v1';
 var favorites = {};   // { "cod::color": {codFabrica, color}, ... }
@@ -4437,6 +4532,96 @@ window.clearLocalCatalogCache = function () {
 // INICIALIZACIÓN
 // =================================================================
 window.onload = function () {
+  checkAccess_();
+};
+
+// ===================================================================
+// GATE DE CONTRASEÑA DE ACCESO
+// ===================================================================
+// Verifica la contraseña contra Supabase vía RPC (verify_access_password).
+// El hash nunca sale del server; acá sólo se manda la clave y se recibe boolean.
+function verifyAccessPassword_(pw) {
+  var endpoint = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/rpc/verify_access_password';
+  return fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'apikey':        SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      'Content-Type':  'application/json',
+      'Accept':        'application/json'
+    },
+    body: JSON.stringify({ pw: pw })
+  }).then(function (resp) {
+    if (!resp.ok) throw new Error('verify_access_password HTTP ' + resp.status);
+    return resp.json();
+  }).then(function (result) { return result === true; });
+  // Nota: los errores de red NO se atrapan acá — el caller decide (fail-open al recargar,
+  // mensaje de error en el submit).
+}
+
+// Decide al arranque si mostrar el gate o entrar directo.
+function checkAccess_() {
+  var saved = null;
+  try { saved = localStorage.getItem(ACCESS_STORAGE_KEY); } catch (e) {}
+
+  if (saved) {
+    // Ya autorizado en este dispositivo: re-verificar (por si rotaron la clave).
+    verifyAccessPassword_(saved).then(function (ok) {
+      if (ok) {
+        startApp_();
+      } else {
+        // El server respondió y la clave ya no vale (rotación): pedir de nuevo.
+        try { localStorage.removeItem(ACCESS_STORAGE_KEY); } catch (e) {}
+        showAccessGate_();
+      }
+    }).catch(function () {
+      // Error de red / offline: fail-open para que la PWA siga usable sin conexión.
+      startApp_();
+    });
+  } else {
+    showAccessGate_();
+  }
+}
+
+function showAccessGate_() {
+  var gate = document.getElementById('access-gate');
+  gate.classList.add('open');
+  var form  = document.getElementById('access-form');
+  var input = document.getElementById('access-input');
+  var btn   = document.getElementById('access-btn');
+  var err   = document.getElementById('access-error');
+  setTimeout(function () { input.focus(); }, 50);
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var pw = input.value;
+    if (!pw) return;
+    btn.disabled = true;
+    btn.textContent = 'Verificando…';
+    err.textContent = '';
+
+    verifyAccessPassword_(pw).then(function (ok) {
+      if (ok) {
+        try { localStorage.setItem(ACCESS_STORAGE_KEY, pw); } catch (e) {}
+        input.value = '';
+        gate.classList.remove('open');
+        startApp_();
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Ingresar';
+        err.textContent = 'Contraseña incorrecta';
+        input.select();
+      }
+    }).catch(function () {
+      btn.disabled = false;
+      btn.textContent = 'Ingresar';
+      err.textContent = 'Error de conexión, reintentá';
+    });
+  });
+}
+
+// Arranque real de la app (antes era el cuerpo de window.onload).
+function startApp_() {
   setupEvents();
   registerServiceWorker_();
 
@@ -4472,7 +4657,7 @@ window.onload = function () {
       fetchCatalogFromServer_();
     });
   });
-};
+}
 
 /**
  * Lee la config del modo activo desde Supabase y la mergea en window.PAGE_CONFIG.
@@ -4926,7 +5111,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.21.26';
+var APP_VERSION  = '1.22.0';
 var APP_BUILD    = '2026-07-14';
 
 function renderAppVersion_() {
