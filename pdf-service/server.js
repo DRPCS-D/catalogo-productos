@@ -23,6 +23,7 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 const CONFIG_FILE = path.join(DATA_DIR, "config.json");
 const DEFAULT_CONFIG = {
   pin: "1234",
+  access_pw: "",          // contraseña de acceso al catálogo (lc_access_pw_v1)
   sucursales_all: ["LA COSTA S.R.L.", "ON BRAND&TRADE"],
   sucursales: ["LA COSTA S.R.L.", "ON BRAND&TRADE"],
   foto: "with",
@@ -209,6 +210,15 @@ async function newBrowserPage(url) {
   const page = await browser.newPage();
   await page.setViewport({ width: 1280, height: 900 });
   await page.setBypassCSP(true);
+
+  // Inyectar la contraseña de acceso en localStorage antes de cargar la página,
+  // para que el gate de contraseña no bloquee a Puppeteer.
+  if (serverConfig.access_pw) {
+    await page.evaluateOnNewDocument(function(key, value) {
+      try { localStorage.setItem(key, value); } catch (_) {}
+    }, "lc_access_pw_v1", serverConfig.access_pw);
+  }
+
   const cdp = await page.createCDPSession();
   await cdp.send("ServiceWorker.enable");
   await cdp.send("ServiceWorker.stopAllWorkers");
@@ -578,6 +588,7 @@ app.post("/config", function(req, res) {
 
   const newConfig = {
     pin: body.new_pin || serverConfig.pin,
+    access_pw: body.access_pw !== undefined ? body.access_pw : serverConfig.access_pw,
     sucursales_all: Array.isArray(body.sucursales_all) ? body.sucursales_all : serverConfig.sucursales_all,
     sucursales: Array.isArray(body.sucursales) ? body.sucursales : serverConfig.sucursales,
     foto: body.foto || serverConfig.foto,
@@ -743,8 +754,13 @@ input:focus,select:focus{outline:none;border-color:#5b8dee}
 
     <div class="section-title">Seguridad</div>
     <div class="field">
-      <label>Cambiar PIN (dejá vacío para no cambiar)</label>
+      <label>Cambiar PIN del panel (dejá vacío para no cambiar)</label>
       <input type="password" id="new_pin" placeholder="Nuevo PIN" maxlength="20" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Contraseña de acceso al catálogo</label>
+      <input type="password" id="access_pw" placeholder="Igual a la del catálogo web" maxlength="64" autocomplete="off">
+      <div class="hint">Debe coincidir con la contraseña configurada en Supabase. Puppeteer la usa para saltear el gate de acceso.</div>
     </div>
 
     <button class="btn btn-primary" onclick="saveConfig()">Guardar cambios</button>
@@ -807,6 +823,7 @@ function fillForm(data) {
   document.getElementById("formato_pdf").value = data.formato_pdf || "A4";
   document.getElementById("cantidad_min").value = data.cantidad_min != null ? data.cantidad_min : 6;
   document.getElementById("cache-count").textContent = data.cache_count || 0;
+  document.getElementById("access_pw").value = data.access_pw || "";
 }
 
 async function loadMarcas() {
@@ -914,6 +931,7 @@ async function saveConfig() {
   };
   const newPin = document.getElementById("new_pin").value.trim();
   if (newPin) payload.new_pin = newPin;
+  payload.access_pw = document.getElementById("access_pw").value;
 
   try {
     const r = await fetch("/config", {
