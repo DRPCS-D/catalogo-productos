@@ -3950,11 +3950,11 @@
               <th style="width:28px"></th>
               <th class="sortable" data-col="id" style="width:64px" title="ID interno del sistema (los más nuevos tienen el número más alto)">ID<span class="sort-icon"></span></th>
               <th class="sortable" data-col="codFabrica">Código<span class="sort-icon"></span></th>
-              <th class="sortable" data-col="nmProduto">Producto<span class="sort-icon"></span></th>
+              <th class="sortable hide-md" data-col="nmProduto">Producto<span class="sort-icon"></span></th>
               <th class="sortable"        data-col="totalStock" style="text-align:right" title="Stock total del producto (respeta filtro de sucursal)">Total<span class="sort-icon"></span></th>
               <th class="sortable hide-xs" data-col="marca">Marca<span class="sort-icon"></span></th>
               <th class="sortable hide-sm" data-col="grupo">Grupo<span class="sort-icon"></span></th>
-              <th class="sortable hide-md" data-col="subgrupo">Subgrupo<span class="sort-icon"></span></th>
+              <th class="sortable" data-col="subgrupo">Subgrupo<span class="sort-icon"></span></th>
               <th class="sortable"        data-col="precio" style="text-align:right">Precio<span class="sort-icon"></span></th>
               <th></th>
             </tr>
@@ -6210,11 +6210,11 @@ function buildTableRowsHtml_(p) {
     html += '<td><span class="toggle-icon' + (pExpand ? ' expanded' : '') + '">&#9658;</span></td>';
     html += '<td style="color:var(--gray-500); font-size:12px">' + (p.id != null ? escHtml(p.id) : '—') + '</td>';
     html += '<td><strong>' + escHtml(p.codFabrica) + '</strong></td>';
-    html += '<td>' + escHtml(p.nmProduto) + '</td>';
+    html += '<td class="hide-md">' + escHtml(p.nmProduto) + '</td>';
     html += '<td style="text-align:right"><strong>' + getProductStock(p) + '</strong> <span style="color:var(--gray-500);font-size:11px">uds</span></td>';
     html += '<td class="hide-xs">' + escHtml(p.marca) + '</td>';
     html += '<td class="hide-sm">' + escHtml(p.grupo) + '</td>';
-    html += '<td class="hide-md">' + escHtml(p.subgrupo) + '</td>';
+    html += '<td>' + escHtml(p.subgrupo) + '</td>';
     html += '<td class="price-cell">' + renderPriceHtml(p) + '</td>';
     html += '<td><button class="btn-detail" data-cod="' + escHtml(pKey) + '" data-color="">Ver detalles</button></td>';
     html += '</tr>';
