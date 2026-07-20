@@ -2805,12 +2805,21 @@
       cursor: pointer;
       transition: filter .15s, background .15s;
     }
-    .sidebar-footer .btn-clear-side {
+    .sidebar-footer .btn-clear-side,
+    .sidebar-body .btn-clear-side {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
       border: 1px solid var(--gray-200);
       background: white;
       color: var(--gray-700);
+      transition: filter .15s, background .15s;
     }
-    .sidebar-footer .btn-clear-side:hover { background: var(--gray-100); color: var(--gray-900); }
+    .sidebar-footer .btn-clear-side:hover,
+    .sidebar-body .btn-clear-side:hover { background: var(--gray-100); color: var(--gray-900); }
     .sidebar-footer .btn-pdf-side {
       border: 1px solid var(--primary);
       background: var(--primary);
