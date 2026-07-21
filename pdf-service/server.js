@@ -24,7 +24,6 @@ const CONFIG_FILE = path.join(DATA_DIR, "config.json");
 const DEFAULT_CONFIG = {
   pin: "1234",
   access_pw: "",          // contraseña de acceso al catálogo (lc_access_pw_v1)
-  sucursales_all: ["LA COSTA S.R.L.", "ON BRAND&TRADE"],
   sucursales: ["LA COSTA S.R.L.", "ON BRAND&TRADE"],
   foto: "with",
   formato_pdf: "A4",
@@ -160,6 +159,8 @@ let knownBrands       = [];
 let brandsLoadedAt    = 0;
 let knownCollections  = [];
 let collectionsLoadedAt = 0;
+let knownSucursales   = [];
+let sucursalesLoadedAt = 0;
 const BRANDS_TTL   = 60 * 60 * 1000;
 
 function normStr(s) {
@@ -250,6 +251,24 @@ async function extractCollectionsFromPage(page) {
     var list = [];
     source.forEach(function(p) {
       if (p.colecao && !set[p.colecao]) { set[p.colecao] = 1; list.push(p.colecao); }
+    });
+    return list.sort();
+  }).catch(function() { return []; });
+}
+
+async function extractSucursalesFromPage(page) {
+  return page.evaluate(function() {
+    var source = window.products || [];
+    var set = {};
+    var list = [];
+    source.forEach(function(p) {
+      (p.colorsArr || []).forEach(function(c) {
+        (c.gradesArr || []).forEach(function(g) {
+          (g.stock || []).forEach(function(s) {
+            if (s.sucursal && !set[s.sucursal]) { set[s.sucursal] = 1; list.push(s.sucursal); }
+          });
+        });
+      });
     });
     return list.sort();
   }).catch(function() { return []; });
@@ -442,6 +461,32 @@ app.get("/collections", async function(req, res) {
   }
 });
 
+// /sucursales — devuelve todas las sucursales con stock en el catálogo
+app.get("/sucursales", async function(req, res) {
+  if (req.query.pin !== serverConfig.pin) return res.status(401).json({ error: "PIN incorrecto" });
+  try {
+    if (knownSucursales.length && Date.now() - sucursalesLoadedAt < BRANDS_TTL) {
+      return res.json({ ok: true, sucursales: knownSucursales, cached: true });
+    }
+    const sucursales = await enqueueJob(async function() {
+      const { browser, page } = await newBrowserPage(buildCatalogUrl(null));
+      try {
+        await page.waitForSelector(".product-card", { timeout: 25000 }).catch(function() {});
+        await new Promise(function(r) { setTimeout(r, 2000); });
+        return await extractSucursalesFromPage(page);
+      } finally {
+        await browser.close();
+      }
+    });
+    knownSucursales = sucursales;
+    sucursalesLoadedAt = Date.now();
+    res.json({ ok: true, sucursales: sucursales, cached: false });
+  } catch (err) {
+    console.error("sucursales error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // /stock
 app.get("/stock", async function(req, res) {
   var brand = req.query.brand;
@@ -603,7 +648,6 @@ app.post("/config", function(req, res) {
   const newConfig = {
     pin: body.new_pin || serverConfig.pin,
     access_pw: body.access_pw !== undefined ? body.access_pw : serverConfig.access_pw,
-    sucursales_all: Array.isArray(body.sucursales_all) ? body.sucursales_all : serverConfig.sucursales_all,
     sucursales: Array.isArray(body.sucursales) ? body.sucursales : serverConfig.sucursales,
     foto: body.foto || serverConfig.foto,
     formato_pdf: body.formato_pdf || serverConfig.formato_pdf,
@@ -716,11 +760,12 @@ input:focus,select:focus{outline:none;border-color:#5b8dee}
 
     <div class="section-title">Sucursales</div>
     <div class="field">
-      <div id="suc-list" class="cb-wrap"></div>
-      <div class="add-row">
-        <input type="text" id="new-suc" placeholder="Agregar sucursal...">
-        <button onclick="addSucursal()">+</button>
+      <div class="cb-actions">
+        <button class="btn-sm" style="background:#e8f0fe;color:#5b8dee" onclick="selectAllSucursales()">Todas</button>
+        <button class="btn-sm" style="background:#f5f5f5;color:#555" onclick="selectNoneSucursales()">Ninguna</button>
       </div>
+      <div id="suc-list" class="cb-wrap"><div class="cb-loading">Cargando sucursales...</div></div>
+      <div class="hint" style="margin-top:6px">Sin selección = incluye todas las sucursales</div>
     </div>
 
     <div class="section-title">Filtros del catálogo</div>
@@ -849,26 +894,45 @@ async function doLogin() {
     fillForm(data);
     loadMarcas();
     loadColecciones();
+    loadSucursales();
   } catch(e) {
     showMsg("login-msg", "Error de conexión", false);
   }
 }
 
+async function loadSucursales() {
+  try {
+    const r = await fetch("/sucursales?pin=" + encodeURIComponent(currentPin));
+    if (!r.ok) { document.getElementById("suc-list").innerHTML = '<div class="cb-loading">Error al cargar sucursales</div>'; return; }
+    const data = await r.json();
+    allSucursales = data.sucursales || [];
+    renderSucursales();
+  } catch(e) {
+    document.getElementById("suc-list").innerHTML = '<div class="cb-loading">Error de conexión</div>';
+  }
+}
+
 function renderSucursales() {
   const el = document.getElementById("suc-list");
+  if (!allSucursales.length) { el.innerHTML = '<div class="cb-loading">Sin sucursales disponibles</div>'; return; }
   el.innerHTML = allSucursales.map(function(s) {
     const checked = checkedSucursales.indexOf(s) >= 0 ? "checked" : "";
     const id = "suc-" + s.replace(/[^a-z0-9]/gi, "_");
-    return '<label class="cb-item"><input type="checkbox" id="' + id + '" value="' + s + '" ' + checked + '><span>' + s + '</span></label>';
+    return '<label class="cb-item"><input type="checkbox" id="' + id + '" value="' + s + '" data-sucursal ' + checked + '><span>' + s + '</span></label>';
   }).join("");
 }
 
+function selectAllSucursales() {
+  document.querySelectorAll("[data-sucursal]").forEach(function(cb) { cb.checked = true; });
+}
+function selectNoneSucursales() {
+  document.querySelectorAll("[data-sucursal]").forEach(function(cb) { cb.checked = false; });
+}
+
 function fillForm(data) {
-  allSucursales = data.sucursales_all || ["LA COSTA S.R.L.", "ON BRAND&TRADE"];
   checkedSucursales = data.sucursales || [];
   checkedMarcas = data.marcas || [];
   checkedColecciones = data.colecciones || [];
-  renderSucursales();
 
   document.getElementById("foto").value = data.foto || "with";
   document.getElementById("formato_pdf").value = data.formato_pdf || "A4";
@@ -948,34 +1012,20 @@ function selectNoneMarcas() {
   document.querySelectorAll("[data-marca]").forEach(function(cb) { cb.checked = false; });
 }
 
-function addSucursal() {
-  const val = document.getElementById("new-suc").value.trim();
-  if (!val || allSucursales.indexOf(val) >= 0) return;
-  allSucursales.push(val);
-  checkedSucursales.push(val);
-  renderSucursales();
-  document.getElementById("new-suc").value = "";
-}
-
 document.addEventListener("keydown", function(e) {
   if (e.key === "Enter" && document.getElementById("login-wrap").style.display !== "none") doLogin();
-  if (e.key === "Enter" && document.getElementById("new-suc") === document.activeElement) addSucursal();
 });
 
 function getCheckedSucursales() {
-  return Array.from(document.querySelectorAll("#suc-list input[type=checkbox]:checked")).map(function(cb) { return cb.value; });
+  return Array.from(document.querySelectorAll("[data-sucursal]:checked")).map(function(cb) { return cb.value; });
 }
 function getCheckedMarcas() {
   return Array.from(document.querySelectorAll("[data-marca]:checked")).map(function(cb) { return cb.value; });
-}
-function getAllSucursales() {
-  return Array.from(document.querySelectorAll("#suc-list input[type=checkbox]")).map(function(cb) { return cb.value; });
 }
 
 async function saveConfig() {
   const payload = {
     pin: currentPin,
-    sucursales_all: getAllSucursales(),
     sucursales: getCheckedSucursales(),
     foto: document.getElementById("foto").value,
     formato_pdf: document.getElementById("formato_pdf").value,
