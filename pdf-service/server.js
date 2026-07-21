@@ -30,7 +30,9 @@ const DEFAULT_CONFIG = {
   formato_pdf: "A4",
   cantidad_min: 6,
   marcas: [],
-  colecciones: []
+  colecciones: [],
+  pdf_sort_field: "subgrupo",   // mismos campos que la tabla web (index.html sortField)
+  pdf_sort_dir: "asc"           // 'asc' | 'desc' — desempate por id descendente ya fijo en la app
 };
 
 function loadConfig() {
@@ -107,7 +109,7 @@ loadCacheIndex();
 
 function configHash() {
   const c = serverConfig;
-  return [c.sucursales.join(","), c.foto, c.cantidad_min, (c.colecciones||[]).join(","), c.marcas.join(",")].join("|");
+  return [c.sucursales.join(","), c.foto, c.cantidad_min, (c.colecciones||[]).join(","), c.marcas.join(","), c.pdf_sort_field, c.pdf_sort_dir].join("|");
 }
 
 function pdfCacheKey(brand) {
@@ -299,6 +301,15 @@ async function generatePdf(url, waitSelector, delayMs, catalogMode, brand) {
         if (typeof applyFilters === "function") applyFilters();
       }, stockMin);
       await new Promise(function(r) { setTimeout(r, 800); });
+
+      const sortField = serverConfig.pdf_sort_field || "subgrupo";
+      const sortDir   = serverConfig.pdf_sort_dir   || "asc";
+      await page.evaluate(function(field, dir) {
+        window.sortField = field;
+        window.sortDir   = dir;
+        if (typeof applyFilters === "function") applyFilters();
+      }, sortField, sortDir);
+      await new Promise(function(r) { setTimeout(r, 300); });
 
       await page.evaluate(function(s, h) {
         try { localStorage.setItem("pmo_print_scale", String(s)); } catch (_) {}
@@ -595,7 +606,10 @@ app.post("/config", function(req, res) {
     formato_pdf: body.formato_pdf || serverConfig.formato_pdf,
     cantidad_min: parseInt(body.cantidad_min) >= 0 ? parseInt(body.cantidad_min) : serverConfig.cantidad_min,
     marcas: Array.isArray(body.marcas) ? body.marcas : serverConfig.marcas,
-    colecciones: Array.isArray(body.colecciones) ? body.colecciones : (serverConfig.colecciones || [])
+    colecciones: Array.isArray(body.colecciones) ? body.colecciones : (serverConfig.colecciones || []),
+    pdf_sort_field: body.pdf_sort_field || serverConfig.pdf_sort_field,
+    pdf_sort_dir: (body.pdf_sort_dir === "asc" || body.pdf_sort_dir === "desc")
+      ? body.pdf_sort_dir : serverConfig.pdf_sort_dir
   };
 
   saveConfig(newConfig);
@@ -731,6 +745,31 @@ input:focus,select:focus{outline:none;border-color:#5b8dee}
       <div class="hint">Artículos con stock por color menor a este valor no aparecen en el catálogo</div>
     </div>
 
+    <div class="section-title">Orden del PDF</div>
+    <div class="row">
+      <div class="field">
+        <label>Ordenar por</label>
+        <select id="pdf_sort_field">
+          <option value="id">ID</option>
+          <option value="codFabrica">Código</option>
+          <option value="nmProduto">Producto</option>
+          <option value="totalStock">Stock total</option>
+          <option value="marca">Marca</option>
+          <option value="grupo">Grupo</option>
+          <option value="subgrupo">Subgrupo</option>
+          <option value="precio">Precio</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Dirección</label>
+        <select id="pdf_sort_dir">
+          <option value="asc">Ascendente</option>
+          <option value="desc">Descendente</option>
+        </select>
+      </div>
+    </div>
+    <div class="hint" style="margin-top:-8px;margin-bottom:18px">Si hay empate en el campo elegido, siempre se ordena por ID descendente (más nuevos primero).</div>
+
     <div class="section-title">Colecciones</div>
     <div class="field">
       <div class="cb-actions">
@@ -824,6 +863,8 @@ function fillForm(data) {
   document.getElementById("cantidad_min").value = data.cantidad_min != null ? data.cantidad_min : 6;
   document.getElementById("cache-count").textContent = data.cache_count || 0;
   document.getElementById("access_pw").value = data.access_pw || "";
+  document.getElementById("pdf_sort_field").value = data.pdf_sort_field || "subgrupo";
+  document.getElementById("pdf_sort_dir").value = data.pdf_sort_dir || "asc";
 }
 
 async function loadMarcas() {
@@ -927,7 +968,9 @@ async function saveConfig() {
     formato_pdf: document.getElementById("formato_pdf").value,
     cantidad_min: parseInt(document.getElementById("cantidad_min").value) || 0,
     colecciones: getCheckedColecciones(),
-    marcas: getCheckedMarcas()
+    marcas: getCheckedMarcas(),
+    pdf_sort_field: document.getElementById("pdf_sort_field").value,
+    pdf_sort_dir: document.getElementById("pdf_sort_dir").value
   };
   const newPin = document.getElementById("new_pin").value.trim();
   if (newPin) payload.new_pin = newPin;
