@@ -32,7 +32,8 @@ const DEFAULT_CONFIG = {
   marcas: [],
   colecciones: [],
   pdf_sort_field: "subgrupo",   // mismos campos que la tabla web (index.html sortField)
-  pdf_sort_dir: "asc"           // 'asc' | 'desc' — desempate por id descendente ya fijo en la app
+  pdf_sort_dir: "asc",          // 'asc' | 'desc'
+  pdf_sort_tie_dir: "desc"      // 'asc' | 'desc' — desempate por id cuando hay empate en pdf_sort_field
 };
 
 function loadConfig() {
@@ -109,7 +110,7 @@ loadCacheIndex();
 
 function configHash() {
   const c = serverConfig;
-  return [c.sucursales.join(","), c.foto, c.cantidad_min, (c.colecciones||[]).join(","), c.marcas.join(","), c.pdf_sort_field, c.pdf_sort_dir].join("|");
+  return [c.sucursales.join(","), c.foto, c.cantidad_min, (c.colecciones||[]).join(","), c.marcas.join(","), c.pdf_sort_field, c.pdf_sort_dir, c.pdf_sort_tie_dir].join("|");
 }
 
 function pdfCacheKey(brand) {
@@ -302,13 +303,15 @@ async function generatePdf(url, waitSelector, delayMs, catalogMode, brand) {
       }, stockMin);
       await new Promise(function(r) { setTimeout(r, 800); });
 
-      const sortField = serverConfig.pdf_sort_field || "subgrupo";
-      const sortDir   = serverConfig.pdf_sort_dir   || "asc";
-      await page.evaluate(function(field, dir) {
-        window.sortField = field;
-        window.sortDir   = dir;
+      const sortField  = serverConfig.pdf_sort_field   || "subgrupo";
+      const sortDir    = serverConfig.pdf_sort_dir     || "asc";
+      const sortTieDir = serverConfig.pdf_sort_tie_dir || "desc";
+      await page.evaluate(function(field, dir, tieDir) {
+        window.sortField  = field;
+        window.sortDir    = dir;
+        window.sortTieDir = tieDir;
         if (typeof applyFilters === "function") applyFilters();
-      }, sortField, sortDir);
+      }, sortField, sortDir, sortTieDir);
       await new Promise(function(r) { setTimeout(r, 300); });
 
       await page.evaluate(function(s, h) {
@@ -609,7 +612,9 @@ app.post("/config", function(req, res) {
     colecciones: Array.isArray(body.colecciones) ? body.colecciones : (serverConfig.colecciones || []),
     pdf_sort_field: body.pdf_sort_field || serverConfig.pdf_sort_field,
     pdf_sort_dir: (body.pdf_sort_dir === "asc" || body.pdf_sort_dir === "desc")
-      ? body.pdf_sort_dir : serverConfig.pdf_sort_dir
+      ? body.pdf_sort_dir : serverConfig.pdf_sort_dir,
+    pdf_sort_tie_dir: (body.pdf_sort_tie_dir === "asc" || body.pdf_sort_tie_dir === "desc")
+      ? body.pdf_sort_tie_dir : serverConfig.pdf_sort_tie_dir
   };
 
   saveConfig(newConfig);
@@ -768,7 +773,14 @@ input:focus,select:focus{outline:none;border-color:#5b8dee}
         </select>
       </div>
     </div>
-    <div class="hint" style="margin-top:-8px;margin-bottom:18px">Si hay empate en el campo elegido, siempre se ordena por ID descendente (más nuevos primero).</div>
+    <div class="field">
+      <label>Desempate por ID</label>
+      <select id="pdf_sort_tie_dir">
+        <option value="desc">Descendente (más nuevos primero)</option>
+        <option value="asc">Ascendente (más antiguos primero)</option>
+      </select>
+      <div class="hint">Se usa cuando dos productos empatan en el campo elegido arriba.</div>
+    </div>
 
     <div class="section-title">Colecciones</div>
     <div class="field">
@@ -865,6 +877,7 @@ function fillForm(data) {
   document.getElementById("access_pw").value = data.access_pw || "";
   document.getElementById("pdf_sort_field").value = data.pdf_sort_field || "subgrupo";
   document.getElementById("pdf_sort_dir").value = data.pdf_sort_dir || "asc";
+  document.getElementById("pdf_sort_tie_dir").value = data.pdf_sort_tie_dir || "desc";
 }
 
 async function loadMarcas() {
@@ -970,7 +983,8 @@ async function saveConfig() {
     colecciones: getCheckedColecciones(),
     marcas: getCheckedMarcas(),
     pdf_sort_field: document.getElementById("pdf_sort_field").value,
-    pdf_sort_dir: document.getElementById("pdf_sort_dir").value
+    pdf_sort_dir: document.getElementById("pdf_sort_dir").value,
+    pdf_sort_tie_dir: document.getElementById("pdf_sort_tie_dir").value
   };
   const newPin = document.getElementById("new_pin").value.trim();
   if (newPin) payload.new_pin = newPin;

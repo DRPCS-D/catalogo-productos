@@ -4389,6 +4389,7 @@ var expandedColors   = {};   // cKey → bool
 var currentView      = 'gallery';
 var sortField        = 'id';      // los productos más nuevos primero (id DESC)
 var sortDir          = 'desc';
+var sortTieDir       = 'desc';    // desempate por id cuando el campo ordenado tiene empates
 var searchText       = '';
 var filterMarca      = [];   // arrays para multi-selección
 var filterGrupo      = [];
@@ -5111,7 +5112,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.22.0';
+var APP_VERSION  = '1.22.1';
 var APP_BUILD    = '2026-07-14';
 
 function renderAppVersion_() {
@@ -6136,7 +6137,7 @@ function applyFilters() {
         va = String(va || ''); vb = String(vb || '');
         cmp = sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
       }
-      return cmp !== 0 ? cmp : (b.id - a.id);
+      return cmp !== 0 ? cmp : (sortTieDir === 'asc' ? (a.id - b.id) : (b.id - a.id));
     });
   }
 
