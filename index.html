@@ -5068,7 +5068,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.23.1';
+var APP_VERSION  = '1.24.0';
 var APP_BUILD    = '2026-07-14';
 
 function renderAppVersion_() {
@@ -6068,14 +6068,30 @@ function _productPassesFilters_(p, skipSearch) {
   return true;
 }
 
+// Con búsqueda activa, prioriza productos cuyo código de fábrica matchea el
+// texto buscado (rank 0) por sobre los que solo matchean por otro campo
+// (nombre, marca, subgrupo, color, EAN, etc. — rank 1). Sin búsqueda no se usa.
+function codigoMatchRank_(p, q) {
+  return (p.codFabrica && normTxt_(p.codFabrica).indexOf(q) >= 0) ? 0 : 1;
+}
+
 function applyFilters() {
   renderedCount = 0;   // al filtrar volvemos a renderizar desde el inicio
   filteredProducts = products.filter(function (p) {
     return _productPassesFilters_(p, false);   // false = aplicar todos los filtros (incluye search)
   });
 
-  if (sortField) {
+  var qActive = normTxt_(searchText || '').trim();
+
+  if (sortField || qActive) {
     filteredProducts.sort(function (a, b) {
+      if (qActive) {
+        var ra = codigoMatchRank_(a, qActive);
+        var rb = codigoMatchRank_(b, qActive);
+        if (ra !== rb) return ra - rb;
+      }
+      if (!sortField) return 0;
+
       // Caso especial: ordenar por "precio" usa el precio activo (minorista/mayorista)
       var va, vb;
       if (sortField === 'precio') {
