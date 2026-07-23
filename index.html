@@ -2954,53 +2954,9 @@
       margin-bottom: 8px;
     }
 
-    /* ============ BANNER NUEVA VERSIÓN DISPONIBLE ============ */
-    .update-banner {
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-      z-index: 800;
-      background: var(--primary);
-      color: white;
-      padding: 10px 14px 10px 16px;
-      border-radius: 999px;
-      box-shadow: 0 6px 24px rgba(0,0,0,.25);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 13px;
-      font-weight: 600;
-      max-width: calc(100vw - 32px);
-      animation: updateBannerIn .35s ease-out;
-    }
-    .update-banner .update-banner-btn {
-      background: rgba(255,255,255,.20);
-      border: none;
-      color: white;
-      padding: 6px 12px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: background .15s;
-    }
-    .update-banner .update-banner-btn:hover { background: rgba(255,255,255,.32); }
-    .update-banner .update-banner-close {
-      background: transparent;
-      border: none;
-      color: rgba(255,255,255,.7);
-      cursor: pointer;
-      font-size: 18px;
-      line-height: 1;
-      padding: 2px 4px;
-    }
-    .update-banner .update-banner-close:hover { color: white; }
-    @keyframes updateBannerIn {
-      from { opacity: 0; transform: translate(-50%, 20px); }
-      to   { opacity: 1; transform: translate(-50%, 0);    }
-    }
+    /* ============ POPUP NUEVA VERSIÓN DISPONIBLE ============ */
+    /* Reutiliza el look & feel de .access-gate/.access-box (overlay + caja centrada). */
+    .update-gate { z-index: 9999; }
 
     /* ============ APP VERSION + FORCE UPDATE ============ */
     .sidebar-footer .app-version-row {
@@ -5112,7 +5068,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.22.1';
+var APP_VERSION  = '1.23.1';
 var APP_BUILD    = '2026-07-14';
 
 function renderAppVersion_() {
@@ -5205,13 +5161,15 @@ function initAppAutoUpdate_() {
 }
 
 function showUpdateBanner_() {
-  var el = document.getElementById('update-banner');
-  if (el) el.style.display = '';
+  var el = document.getElementById('update-gate');
+  if (el) el.classList.add('open');
 }
 
 function activateNewSwAndReload_() {
   if (!_newSwWaiting || _swReloadInProgress) return;
   _swReloadInProgress = true;
+  var btn = document.getElementById('update-gate-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Actualizando...'; }
   var sw = _newSwWaiting;
   _newSwWaiting = null;
 
@@ -8817,6 +8775,7 @@ function exportToExcel(opts) {
   var sucursalActive = !isFavView && effectiveSucursalFilter_().length > 0;
   var stockActive    = !isFavView && (filterStockMin !== null || filterStockMax !== null);
   var fotoActive     = !isFavView && (filterFoto !== 'all');
+  var talleActive    = !isFavView && filterTalle.length > 0;
 
   // 1) Determinar la lista de sucursales que aparecerán como columnas
   var sucursales;
@@ -8863,8 +8822,10 @@ function exportToExcel(opts) {
       if (fotoActive     && !colorPassesFoto_(c)) return;
 
       if (withGrade) {
-        // 1 fila por talle
+        // 1 fila por talle — si hay filtro de talle activo, solo esos talles
         c.gradesArr.forEach(function (g) {
+          if (talleActive && filterTalle.indexOf(g.grade) < 0) return;
+
           // Stock por sucursal SOLO de este talle
           var stockBySucursal = {};
           g.stock.forEach(function (s) {
@@ -8887,17 +8848,24 @@ function exportToExcel(opts) {
           rows.push(row);
         });
       } else {
-        // 1 fila por color — sumar stock de TODOS los talles
+        // 1 fila por color — sumar stock de TODOS los talles, o solo de los
+        // talles seleccionados si hay filtro de talle activo.
         var stockBySucursal = {};
         c.gradesArr.forEach(function (g) {
+          if (talleActive && filterTalle.indexOf(g.grade) < 0) return;
           g.stock.forEach(function (s) {
             if (sucursales.indexOf(s.sucursal) < 0) return;
             stockBySucursal[s.sucursal] = (stockBySucursal[s.sucursal] || 0) + (s.cantidad || 0);
           });
         });
 
-        var row = [p.codFabrica, p.nmProduto, p.marca, c.color, c.imagen || '', topVenta];
         var rowTotal = 0;
+        sucursales.forEach(function (suc) { rowTotal += stockBySucursal[suc] || 0; });
+        // Skipear fila si el filtro de talle deja el color sin stock
+        if (talleActive && rowTotal <= 0) return;
+
+        var row = [p.codFabrica, p.nmProduto, p.marca, c.color, c.imagen || '', topVenta];
+        rowTotal = 0;
         sucursales.forEach(function (suc) {
           var q = stockBySucursal[suc] || 0;
           rowTotal += q;
@@ -9413,11 +9381,14 @@ function buildFilterSummary_() {
 // y updateInfiniteFooter_ (ver bloque RENDER — GALERÍA arriba).
 </script>
 
-<!-- Banner discreto que aparece cuando hay una nueva versión instalada y esperando -->
-<div id="update-banner" class="update-banner" style="display:none">
-  <span>🎉 Nueva versión disponible</span>
-  <button class="update-banner-btn" onclick="activateNewSwAndReload_()">Recargar</button>
-  <button class="update-banner-close" onclick="document.getElementById('update-banner').style.display='none'" title="Ocultar">×</button>
+<!-- Popup bloqueante que aparece cuando hay una nueva versión instalada y esperando -->
+<div id="update-gate" class="access-gate update-gate" role="dialog" aria-modal="true" aria-labelledby="update-gate-title">
+  <div class="access-box">
+    <div class="access-logo">🎉</div>
+    <h2 id="update-gate-title" class="access-title">Nueva versión disponible</h2>
+    <p class="access-sub">Actualizá para seguir usando el catálogo con las últimas mejoras.</p>
+    <button type="button" id="update-gate-btn" class="access-btn" onclick="activateNewSwAndReload_()">Actualizar</button>
+  </div>
 </div>
 
 </body>
