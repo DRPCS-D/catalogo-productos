@@ -1841,6 +1841,7 @@
     }
 
     .lightbox-img-wrap {
+      --lb-margin: 15%;
       position: relative;
       display: inline-flex;
       align-items: center;
@@ -1858,15 +1859,33 @@
       background: white;
     }
 
-    /* Cuadrícula de margen del 15% — se muestra mientras se mantiene apretada la tecla M */
+    /* Cuadrícula de margen — se muestra mientras se mantiene apretada la tecla M.
+       Flechas ↑/↓ (con M apretada) ajustan --lb-margin en vivo. */
     .lightbox-margin-grid {
       position: absolute;
-      inset: 15%;
+      inset: var(--lb-margin);
       border: 2px dashed rgba(255,60,60,.9);
       pointer-events: none;
       opacity: 0;
     }
     .lightbox-margin-grid.show { opacity: 1; }
+
+    .lightbox-margin-label {
+      position: absolute;
+      left: var(--lb-margin);
+      top: calc(var(--lb-margin) - 6px);
+      transform: translateY(-100%);
+      background: rgba(255,60,60,.9);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+    }
+    .lightbox-margin-label.show { opacity: 1; }
 
     .lightbox-caption {
       color: white;
@@ -4123,6 +4142,7 @@
     <div class="lightbox-img-wrap" id="lightbox-img-wrap">
       <img class="lightbox-img" id="lightbox-img" alt="">
       <div class="lightbox-margin-grid" id="lightbox-margin-grid"></div>
+      <div class="lightbox-margin-label" id="lightbox-margin-label">Margen: 15%</div>
     </div>
     <div class="lightbox-caption" id="lightbox-caption"></div>
   </div>
@@ -4141,7 +4161,8 @@
         <tr><td><kbd>Home</kbd> / <kbd>End</kbd></td><td>Primera / última card</td></tr>
         <tr><td><kbd>Space</kbd></td><td>Abrir / cerrar foto (lightbox)</td></tr>
         <tr><td><kbd>←</kbd> <kbd>→</kbd> en lightbox</td><td>Foto del producto anterior / siguiente</td></tr>
-        <tr><td><kbd>M</kbd> (mantener) en lightbox</td><td>Ver cuadrícula de margen 15% sobre la foto</td></tr>
+        <tr><td><kbd>M</kbd> (mantener) en lightbox</td><td>Ver cuadrícula de margen sobre la foto</td></tr>
+        <tr><td><kbd>M</kbd> + <kbd>↑</kbd> <kbd>↓</kbd> en lightbox</td><td>Ajustar el % de margen de la cuadrícula</td></tr>
         <tr><td><kbd>V</kbd> o <kbd>Enter</kbd></td><td>Abrir / cerrar "Ver detalles"</td></tr>
         <tr><td><kbd>+</kbd></td><td>Agregar al carrito (quick-add)</td></tr>
         <tr><td><kbd>C</kbd></td><td>Copiar código al portapapeles</td></tr>
@@ -5091,7 +5112,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.25.0';
+var APP_VERSION  = '1.25.1';
 var APP_BUILD    = '2026-07-14';
 
 function renderAppVersion_() {
@@ -5602,7 +5623,12 @@ function setupEvents() {
   // M soltada → ocultar cuadrícula de margen del lightbox (comportamiento
   // "mantener presionada", no toggle).
   document.addEventListener('keyup', function (e) {
-    if (e.key === 'm' || e.key === 'M') hideLightboxMarginGrid_();
+    if (e.key === 'm' || e.key === 'M') { lightboxMDown_ = false; hideLightboxMarginGrid_(); }
+  });
+  // Si la ventana pierde foco con M apretada (alt-tab, etc.), el keyup no
+  // llega — soltamos igual para que no quede "trabada".
+  window.addEventListener('blur', function () {
+    if (lightboxMDown_) { lightboxMDown_ = false; hideLightboxMarginGrid_(); }
   });
 
   // Segmented control de foto
@@ -6623,16 +6649,23 @@ function onGalleryKeyNav_(e) {
     return;
   }
 
+  // M (mantenida) dentro del lightbox → mostrar cuadrícula de margen
+  if (lightboxOpen && (key === 'm' || key === 'M')) {
+    e.preventDefault();
+    lightboxMDown_ = true;
+    showLightboxMarginGrid_();
+    return;
+  }
+  // Con M apretada, ↑/↓ ajustan el % de margen en vez de navegar de foto
+  if (lightboxOpen && lightboxMDown_ && (key === 'ArrowUp' || key === 'ArrowDown')) {
+    e.preventDefault();
+    adjustLightboxMarginPct_(key === 'ArrowUp' ? 1 : -1);
+    return;
+  }
   // Flechas dentro del lightbox → navegar al producto anterior/siguiente con foto
   if (lightboxOpen && (key === 'ArrowLeft' || key === 'ArrowRight' || key === 'ArrowUp' || key === 'ArrowDown')) {
     e.preventDefault();
     advanceLightbox_(key);
-    return;
-  }
-  // M (mantenida) dentro del lightbox → mostrar cuadrícula de margen 15%
-  if (lightboxOpen && (key === 'm' || key === 'M')) {
-    e.preventDefault();
-    showLightboxMarginGrid_();
     return;
   }
   // Space cierra el lightbox si estaba abierto
@@ -7425,15 +7458,33 @@ function openLightbox(wrap) {
   hideLightboxMarginGrid_();
 }
 
-// Cuadrícula de margen del 15% dentro de la imagen — se muestra mientras
-// se mantiene apretada la tecla M (keydown/keyup, no toggle).
+// Cuadrícula de margen dentro de la imagen — se muestra mientras se mantiene
+// apretada la tecla M (keydown/keyup, no toggle). Con M apretada, ↑/↓ ajustan
+// el porcentaje de margen en vivo (lightboxMarginPct_).
+var lightboxMarginPct_ = 15;
+var lightboxMDown_     = false;
+
 function showLightboxMarginGrid_() {
   var g = document.getElementById('lightbox-margin-grid');
+  var l = document.getElementById('lightbox-margin-label');
   if (g) g.classList.add('show');
+  if (l) l.classList.add('show');
 }
 function hideLightboxMarginGrid_() {
   var g = document.getElementById('lightbox-margin-grid');
+  var l = document.getElementById('lightbox-margin-label');
   if (g) g.classList.remove('show');
+  if (l) l.classList.remove('show');
+}
+function setLightboxMarginPct_(pct) {
+  lightboxMarginPct_ = Math.max(0, Math.min(45, pct));
+  var wrap  = document.getElementById('lightbox-img-wrap');
+  var label = document.getElementById('lightbox-margin-label');
+  if (wrap)  wrap.style.setProperty('--lb-margin', lightboxMarginPct_ + '%');
+  if (label) label.textContent = 'Margen: ' + lightboxMarginPct_ + '%';
+}
+function adjustLightboxMarginPct_(delta) {
+  setLightboxMarginPct_(lightboxMarginPct_ + delta);
 }
 
 // Avanza el lightbox al siguiente/anterior producto con foto.
@@ -7461,6 +7512,7 @@ function advanceLightbox_(key) {
 function closeLightbox() {
   document.getElementById('lightbox').classList.remove('open');
   document.getElementById('lightbox-img').src = '';
+  lightboxMDown_ = false;
   hideLightboxMarginGrid_();
   if (!document.getElementById('modal').classList.contains('open')) {
     document.body.style.overflow = '';
