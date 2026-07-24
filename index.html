@@ -5068,7 +5068,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.24.0';
+var APP_VERSION  = '1.24.1';
 var APP_BUILD    = '2026-07-14';
 
 function renderAppVersion_() {
@@ -6213,6 +6213,9 @@ function sucursalLockedByConfig_() {
 
 function clearFilters() {
   searchText = '';
+  sortField  = 'id';
+  sortDir    = 'desc';
+  sortTieDir = 'desc';
   filterPrecioMin = filterPrecioMax = null;
   filterStockMin  = filterStockMax  = null;
   filterUltCompraDesde = filterUltCompraHasta = null;
