@@ -11,7 +11,7 @@
  */
 
 // v68: botón código de barra EAN en cada línea del carrito.
-const CACHE_VERSION = 'v91';
+const CACHE_VERSION = 'v92';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;

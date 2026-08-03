@@ -3963,8 +3963,8 @@
         <span class="export-switch-label">Ocultar precio</span>
       </label>
       <div class="export-buttons-row">
-        <button class="btn-pdf-side"        id="btn-pdf"        onclick="exportPdfNormal_()"  title="Generar catálogo PDF del filtro actual (automático, vía servidor)">Normal</button>
-        <button class="btn-pdf-mobile-side" id="btn-pdf-mobile" onclick="generatePDFMobile()" title="Generador de PDF optimizado para móviles">📱 Móvil (beta)</button>
+        <button class="btn-pdf-side"        id="btn-pdf"        onclick="exportPdfNormal_()"  title="Generar catálogo PDF del filtro actual (automático, vía servidor)">Descargar PDF</button>
+        <button class="btn-pdf-mobile-side" id="btn-pdf-mobile" onclick="generatePDFMobile()" title="Generador de PDF optimizado para móviles">Imprimir PDF</button>
       </div>
     </details>
 
@@ -5112,7 +5112,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.27.0';
+var APP_VERSION  = '1.27.1';
 var APP_BUILD    = '2026-07-14';
 
 function renderAppVersion_() {
