@@ -405,6 +405,8 @@ async function generateNormalPdf(filters) {
       window.sortField   = f.sortField   || "id";
       window.sortDir      = f.sortDir      || "desc";
       window.sortTieDir   = f.sortTieDir   || "desc";
+      window.pdfIncludePromo = !!f.pdfIncludePromo;
+      window.pdfHidePrice    = !!f.pdfHidePrice;
       if (typeof applyFilters === "function") applyFilters();
     }, filters || {});
     await new Promise(function(r) { setTimeout(r, 500); });
