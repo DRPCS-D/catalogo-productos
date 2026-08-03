@@ -3963,7 +3963,7 @@
         <span class="export-switch-label">Ocultar precio</span>
       </label>
       <div class="export-buttons-row">
-        <button class="btn-pdf-side"        id="btn-pdf"        onclick="generatePDF()"       title="Generar catálogo PDF del filtro actual">Normal</button>
+        <button class="btn-pdf-side"        id="btn-pdf"        onclick="exportPdfNormal_()"  title="Generar catálogo PDF del filtro actual (automático, vía servidor)">Normal</button>
         <button class="btn-pdf-mobile-side" id="btn-pdf-mobile" onclick="generatePDFMobile()" title="Generador de PDF optimizado para móviles">📱 Móvil (beta)</button>
       </div>
     </details>
@@ -5112,7 +5112,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.25.1';
+var APP_VERSION  = '1.26.0';
 var APP_BUILD    = '2026-07-14';
 
 function renderAppVersion_() {
@@ -9292,24 +9292,7 @@ function generatePDF() {
     return;
   }
 
-  var container         = document.getElementById('print-catalog');
-  var sucursalActive    = !isFavView && effectiveSucursalFilter_().length > 0;
-  var stockActive       = !isFavView && (filterStockMin !== null || filterStockMax !== null);
-  var filtroResumen     = isFavView ? 'Favoritos' : buildFilterSummary_();
-  var fecha             = new Date().toLocaleDateString('es-PY',
-                            { day: '2-digit', month: '2-digit', year: 'numeric' });
-
-  // Primera pasada: contar cuántas cards van a salir (sin armar el HTML).
-  // Si son muchas, avisar ANTES para que el usuario pueda cancelar sin esperar.
-  var cardCount = 0;
-  sourceProds.forEach(function (p) {
-    p.colorsArr.forEach(function (c) {
-      if (sucursalActive && getColorStock(c) <= 0) return;
-      if (stockActive    && !colorPassesStock_(c)) return;
-      if (!isFavView && filterFoto !== 'all' && !colorPassesFoto_(c)) return;
-      cardCount++;
-    });
-  });
+  var cardCount = countPdfCards_(sourceProds, isFavView);
 
   if (cardCount === 0) {
     alert('Los filtros activos no dejan ningún producto/color para imprimir.');
@@ -9331,25 +9314,55 @@ function generatePDF() {
         'La preparación puede tardar entre 10 y 60 segundos según cuántas ' +
         'imágenes haya que descargar.\n\n¿Querés continuar?'
     }).then(function (ok) {
-      if (ok) buildAndPrintPdf_();
+      if (ok) printCatalogPdf_();
     });
     return;
   }
 
-  buildAndPrintPdf_();
+  printCatalogPdf_();
+}
 
-  // Función interna que arma el HTML y dispara window.print().
-  // Se define al vuelo dentro de generatePDF para reutilizar las variables.
-  function buildAndPrintPdf_() {
-    var cardsHtml = '';
-    sourceProds.forEach(function (p) {
-      p.colorsArr.forEach(function (c) {
-        if (sucursalActive && getColorStock(c) <= 0) return;
-        if (stockActive    && !colorPassesStock_(c)) return;
-        if (!isFavView && filterFoto !== 'all' && !colorPassesFoto_(c)) return;
-        cardsHtml += renderPdfCard_(p, c);
-      });
+// Cuenta cuántas cards (producto×color) van a salir en el PDF "Normal" con
+// los filtros activos, sin armar el HTML todavía (para el aviso de PDF largo).
+function countPdfCards_(sourceProds, isFavView) {
+  var sucursalActive = !isFavView && effectiveSucursalFilter_().length > 0;
+  var stockActive    = !isFavView && (filterStockMin !== null || filterStockMax !== null);
+  var cardCount = 0;
+  sourceProds.forEach(function (p) {
+    p.colorsArr.forEach(function (c) {
+      if (sucursalActive && getColorStock(c) <= 0) return;
+      if (stockActive    && !colorPassesStock_(c)) return;
+      if (!isFavView && filterFoto !== 'all' && !colorPassesFoto_(c)) return;
+      cardCount++;
     });
+  });
+  return cardCount;
+}
+
+// Arma el HTML del catálogo "Normal" (#print-catalog) para el filtro/vista
+// actual. Reutilizado por el botón (que después llama a window.print()) y por
+// buildPdfCatalogForExport_ (que llama pdf-service/Puppeteer directamente).
+function renderPrintCatalogHtml_() {
+  var isFavView      = currentView === 'favorites';
+  var sourceProds     = isFavView ? getFavoriteProducts_() : filteredProducts;
+  var container       = document.getElementById('print-catalog');
+  var sucursalActive  = !isFavView && effectiveSucursalFilter_().length > 0;
+  var stockActive     = !isFavView && (filterStockMin !== null || filterStockMax !== null);
+  var filtroResumen   = isFavView ? 'Favoritos' : buildFilterSummary_();
+  var fecha           = new Date().toLocaleDateString('es-PY',
+                          { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+  var cardsHtml = '';
+  var cardCount = 0;
+  sourceProds.forEach(function (p) {
+    p.colorsArr.forEach(function (c) {
+      if (sucursalActive && getColorStock(c) <= 0) return;
+      if (stockActive    && !colorPassesStock_(c)) return;
+      if (!isFavView && filterFoto !== 'all' && !colorPassesFoto_(c)) return;
+      cardsHtml += renderPdfCard_(p, c);
+      cardCount++;
+    });
+  });
 
   container.innerHTML =
     '<div class="pdf-header">' +
@@ -9359,6 +9372,14 @@ function generatePDF() {
     '</div>' +
     '<div class="pdf-grid">' + cardsHtml + '</div>';
 
+  return { container: container, cardCount: cardCount };
+}
+
+// Arma el catálogo y dispara el diálogo de impresión del navegador (uso
+// interactivo del botón "Normal").
+function printCatalogPdf_() {
+  var res = renderPrintCatalogHtml_();
+
   // Feedback en el botón mientras carga
   var btn = document.getElementById('btn-pdf');
   var btnOriginal = btn ? btn.innerHTML : '';
@@ -9367,14 +9388,140 @@ function generatePDF() {
   // ESPERAR a que TODAS las imágenes carguen antes de window.print().
   // Sin esto, las imágenes que aún no estaban en cache del browser aparecen
   // vacías en la vista previa (window.print no espera por imágenes async).
-  waitForImages_(container).then(function () {
+  waitForImages_(res.container).then(function () {
     if (btn) { btn.innerHTML = btnOriginal; btn.disabled = false; }
     window.print();
     // Limpiar el DOM después de que se cierra el diálogo
-    setTimeout(function () { container.innerHTML = ''; }, 500);
+    setTimeout(function () { res.container.innerHTML = ''; }, 500);
   });
-  }   // ← cierre de buildAndPrintPdf_
-}     // ← cierre de generatePDF
+}
+
+// Usado por pdf-service (Puppeteer): arma el catálogo "Normal" con los
+// filtros ya seteados en window.* (ver server.js) y espera a que las
+// imágenes carguen. Sin window.print() — page.pdf() del lado del server lee
+// directamente el DOM ya armado (usa media "print" por default). Devuelve
+// una Promise<cardCount> para que Puppeteer sepa si hubo contenido.
+function buildPdfCatalogForExport_() {
+  var res = renderPrintCatalogHtml_();
+  return waitForImages_(res.container).then(function () {
+    return res.cardCount;
+  });
+}
+
+// =================================================================
+// EXPORTAR PDF "NORMAL" VÍA PDF-SERVICE (sin diálogo de impresión)
+// =================================================================
+// URL pública de pdf-service (Puppeteer corriendo en el servidor). Reemplazar
+// por la URL real (ngrok u otro túnel/dominio con HTTPS) antes de deployar —
+// tiene que ser HTTPS porque esta página se sirve por HTTPS (GitHub Pages) y
+// el navegador bloquea fetch() a HTTP ("mixed content").
+var PDF_SERVICE_URL = 'https://britta-preburlesque-everlastingly.ngrok-free.dev';
+
+// Arma un objeto con el estado de filtros/orden/búsqueda actual de la sesión,
+// tal cual lo necesita generateNormalPdf() en server.js para reproducirlo.
+function buildCurrentFilterState_() {
+  return {
+    filterMarca:    filterMarca.slice(),
+    filterGrupo:    filterGrupo.slice(),
+    filterSubgrupo: filterSubgrupo.slice(),
+    filterColecao:  filterColecao.slice(),
+    filterTalle:    filterTalle.slice(),
+    filterColor:    filterColor.slice(),
+    filterSucursal: effectiveSucursalFilter_().slice(),
+    filterStockMin: filterStockMin,
+    filterStockMax: filterStockMax,
+    filterFoto:     filterFoto,
+    filterPromo:    filterPromo,
+    searchText:     searchText,
+    sortField:      sortField,
+    sortDir:        sortDir,
+    sortTieDir:     sortTieDir
+  };
+}
+
+// Botón "Normal" del menú de Filtros. Genera el PDF del lado del servidor
+// (pdf-service/Puppeteer) con los filtros actuales y lo descarga directo,
+// sin pasar por window.print(). La vista de Favoritos vive solo en
+// localStorage del dispositivo — pdf-service no tiene acceso a eso, así que
+// para esa vista seguimos usando el flujo de impresión normal.
+function exportPdfNormal_() {
+  if (currentView === 'favorites') { generatePDF(); return; }
+
+  var sourceProds = filteredProducts;
+  if (!sourceProds || !sourceProds.length) {
+    alert('No hay productos para incluir en el PDF. Ajustá los filtros.');
+    return;
+  }
+
+  var cardCount = countPdfCards_(sourceProds, false);
+  if (cardCount === 0) {
+    alert('Los filtros activos no dejan ningún producto/color para imprimir.');
+    return;
+  }
+
+  var PDF_WARN_THRESHOLD = 150;
+  if (cardCount > PDF_WARN_THRESHOLD) {
+    var paginas = Math.ceil(cardCount / 9);
+    confirmDialog({
+      title:      'PDF largo',
+      icon:       '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+      okText:     'Continuar',
+      cancelText: 'Cancelar',
+      body:
+        'El PDF va a tener <strong>' + cardCount + ' artículos</strong> en ' +
+        'aproximadamente <strong>' + paginas + ' páginas</strong>.\n\n' +
+        'La generación puede tardar entre 10 y 60 segundos según cuántas ' +
+        'imágenes haya que descargar.\n\n¿Querés continuar?'
+    }).then(function (ok) {
+      if (ok) requestPdfFromService_();
+    });
+    return;
+  }
+
+  requestPdfFromService_();
+}
+
+function requestPdfFromService_() {
+  var btn = document.getElementById('btn-pdf');
+  var btnOriginal = btn ? btn.innerHTML : '';
+  if (btn) { btn.innerHTML = '⏳ Generando...'; btn.disabled = true; }
+
+  fetch(PDF_SERVICE_URL + '/pdf/normal', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true'
+    },
+    body: JSON.stringify({
+      filters:  buildCurrentFilterState_(),
+      filename: 'catalogo.pdf'
+    })
+  })
+    .then(function (res) {
+      if (!res.ok) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          throw new Error(data.error || ('Error del servidor (' + res.status + ')'));
+        });
+      }
+      return res.blob();
+    })
+    .then(function (blob) {
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'catalogo.pdf';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+    })
+    .catch(function (err) {
+      alert('No se pudo generar el PDF: ' + err.message + '\n\n¿Está el servicio de PDF encendido y accesible?');
+    })
+    .finally(function () {
+      if (btn) { btn.innerHTML = btnOriginal; btn.disabled = false; }
+    });
+}
 
 /**
  * Espera a que todas las <img> dentro de `root` terminen de cargar (o fallen).

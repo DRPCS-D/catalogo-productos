@@ -7,6 +7,16 @@ const crypto = require("crypto");
 const app = express();
 app.use(express.json());
 
+// CORS — el catálogo (GitHub Pages, HTTPS) le pega a este servicio (ngrok,
+// HTTPS) via fetch() desde el navegador del cliente para /pdf/normal.
+app.use(function (req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, ngrok-skip-browser-warning");
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
+
 const CHROMIUM_PATH = "/usr/bin/chromium";
 const LAUNCH_ARGS = [
   "--no-sandbox", "--disable-setuid-sandbox",
@@ -365,6 +375,62 @@ async function generatePdf(url, waitSelector, delayMs, catalogMode, brand) {
   }
 }
 
+// ── PDF "Normal" — reproduce los filtros de la sesión del usuario ────────────
+// A diferencia de generatePdf() (catálogo del bot, filtrado por marca +
+// config del panel /admin), este toma el estado de filtros TAL CUAL lo tiene
+// el usuario en su navegador (filterMarca, filterSubgrupo, searchText, orden,
+// etc.) y llama a buildPdfCatalogForExport_() — el mismo layout que arma el
+// botón "Normal" del catálogo, pero sin pasar por window.print(): page.pdf()
+// lee directo el HTML ya armado en #print-catalog.
+async function generateNormalPdf(filters) {
+  const { browser, page } = await newBrowserPage(CATALOG_BASE);
+  try {
+    await page.waitForSelector(".product-card", { timeout: 25000 }).catch(function() {});
+    await new Promise(function(r) { setTimeout(r, 1500); });
+    await page.evaluate(function() { window.alert = function() {}; });
+
+    await page.evaluate(function(f) {
+      if (Array.isArray(f.filterMarca))    window.filterMarca    = f.filterMarca;
+      if (Array.isArray(f.filterGrupo))    window.filterGrupo    = f.filterGrupo;
+      if (Array.isArray(f.filterSubgrupo)) window.filterSubgrupo = f.filterSubgrupo;
+      if (Array.isArray(f.filterColecao))  window.filterColecao  = f.filterColecao;
+      if (Array.isArray(f.filterTalle))    window.filterTalle    = f.filterTalle;
+      if (Array.isArray(f.filterColor))    window.filterColor    = f.filterColor;
+      if (Array.isArray(f.filterSucursal)) window.filterSucursal = f.filterSucursal;
+      window.filterStockMin = (f.filterStockMin === null || f.filterStockMin === undefined) ? null : Number(f.filterStockMin);
+      window.filterStockMax = (f.filterStockMax === null || f.filterStockMax === undefined) ? null : Number(f.filterStockMax);
+      window.filterFoto  = f.filterFoto  || "all";
+      window.filterPromo = f.filterPromo || "all";
+      window.searchText  = f.searchText  || "";
+      window.sortField   = f.sortField   || "id";
+      window.sortDir      = f.sortDir      || "desc";
+      window.sortTieDir   = f.sortTieDir   || "desc";
+      if (typeof applyFilters === "function") applyFilters();
+    }, filters || {});
+    await new Promise(function(r) { setTimeout(r, 500); });
+
+    const cardCount = await page.evaluate(function() {
+      return (typeof buildPdfCatalogForExport_ === "function")
+        ? buildPdfCatalogForExport_()
+        : Promise.reject(new Error("buildPdfCatalogForExport_ no definida — ¿versión vieja del catálogo?"));
+    });
+
+    if (!cardCount) {
+      const e = new Error("Los filtros no dejan productos para exportar");
+      e.code = "NO_CARDS";
+      throw e;
+    }
+
+    return await page.pdf({
+      format: serverConfig.formato_pdf || "A4",
+      printBackground: true,
+      margin: { top: "0mm", right: "0mm", bottom: "0mm", left: "0mm" }
+    });
+  } finally {
+    await browser.close();
+  }
+}
+
 // ── Cleanup archivos viejos cada 5 min ────────────────────────────────────────
 setInterval(function() {
   const now = Date.now();
@@ -630,6 +696,46 @@ async function handlePdf(params, req, res) {
 
 app.get("/pdf",  function(req, res) { handlePdf(req.query, req, res); });
 app.post("/pdf", function(req, res) { handlePdf(req.body,  req, res); });
+
+// /pdf/normal — botón "Normal" del catálogo web: recibe los filtros de la
+// sesión del usuario tal cual y devuelve el PDF ya armado (sin diálogo de
+// impresión). No usa caché ni whitelist de marcas — es 1 a 1 con lo que el
+// usuario está viendo filtrado en su navegador.
+app.post("/pdf/normal", async function(req, res) {
+  const body     = req.body || {};
+  const filters  = body.filters;
+  const filename = body.filename || "catalogo.pdf";
+  const format   = body.format;
+
+  if (!filters || typeof filters !== "object") {
+    return res.status(400).json({ error: "filters requerido" });
+  }
+
+  try {
+    const pdf = await enqueueJob(function() {
+      return generateNormalPdf(filters);
+    });
+
+    if (format === "url") {
+      const uuid = crypto.randomUUID();
+      const filePath = path.join(TMP_DIR, uuid + ".pdf");
+      fs.writeFileSync(filePath, pdf);
+      const host = req.headers.host || "192.168.90.19:3001";
+      return res.json({ ok: true, url: "http://" + host + "/files/" + uuid + ".pdf", fileName: filename });
+    }
+
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "attachment; filename=\"" + filename + "\"",
+      "Content-Length": pdf.length
+    });
+    res.end(pdf);
+  } catch (err) {
+    if (err.code === "NO_CARDS") return res.status(422).json({ error: "no_cards" });
+    console.error("PDF normal error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // /config GET — devuelve config sin PIN
 app.get("/config", function(req, res) {
