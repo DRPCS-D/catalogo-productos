@@ -5114,7 +5114,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.28.0';
+var APP_VERSION  = '1.28.1';
 var APP_BUILD    = '2026-07-14';
 
 function renderAppVersion_() {
@@ -5528,6 +5528,12 @@ function setupEvents() {
       clickedCard.classList.add('is-selected');
     }
 
+    var shareCardBtn = closest(e.target, '.btn-share-card');
+    if (shareCardBtn) {
+      e.stopPropagation();
+      shareProduct_(shareCardBtn.getAttribute('data-cod'), shareCardBtn.getAttribute('data-color'), shareCardBtn);
+      return;
+    }
     var copyBtn = closest(e.target, '.btn-copy-code');
     if (copyBtn) {
       e.stopPropagation();
@@ -6762,7 +6768,7 @@ function onGalleryKeyNav_(e) {
     }
   } else if (isC) {
     if (!current) return;
-    var copy = current.querySelector('.btn-copy-code');
+    var copy = current.querySelector('.btn-copy-code:not(.btn-share-card)');
     if (copy) {
       e.preventDefault();
       copyCodeToClipboard_(copy);
@@ -6810,6 +6816,7 @@ function buildGalleryCardHtml_(item) {
       '<div class="card-body">' +
         '<div class="card-code">' + escHtml(p.codFabrica) +
           ' <button class="btn-copy-code" data-copy="' + escHtml(p.codFabrica) + '" title="Copiar código" aria-label="Copiar código">' + SVG_CLIPBOARD + '</button>' +
+          ' <button class="btn-copy-code btn-share-card" data-cod="' + escHtml(p.codFabrica) + '" data-color="' + escHtml(c.color) + '" title="Compartir por WhatsApp" aria-label="Compartir por WhatsApp"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>' +
         '</div>' +
         '<div class="card-name">'  + escHtml(p.nmProduto) + '</div>' +
         '<div class="card-marca">Marca: <b>' + escHtml(p.marca) + '</b></div>' +
@@ -7783,6 +7790,8 @@ function renderFavorites() {
   // Delegación de eventos para las tarjetas de la vista favoritos
   // (reutiliza el mismo patrón que gallery-container)
   container.onclick = function (e) {
+    var shareCardBtn = closest(e.target, '.btn-share-card');
+    if (shareCardBtn) { e.stopPropagation(); shareProduct_(shareCardBtn.getAttribute('data-cod'), shareCardBtn.getAttribute('data-color'), shareCardBtn); return; }
     var favBtn = closest(e.target, '.btn-card-fav');
     if (favBtn) { e.stopPropagation(); toggleFav_(favBtn.getAttribute('data-cod'), favBtn.getAttribute('data-color')); return; }
     var qaBtn = closest(e.target, '.btn-card-quickadd');
@@ -8545,9 +8554,9 @@ function shareProduct_(cod, colorName, btn) {
   if (!color) color = product.colorsArr[0];
 
   var price = getActivePrice(product).price;
-  var lines = [product.nmProduto + ' (' + product.codFabrica + ')'];
+  var lines = ['Código: ' + product.codFabrica];
   if (color && color.color) lines.push('Color: ' + color.color);
-  lines.push(fmtPrice(price));
+  lines.push('Precio: ' + fmtPrice(price));
   var text = lines.join('\n');
   var imgUrl = (color && color.imgId) ? getImgUrl(color.imgId, 1200) : null;
 
