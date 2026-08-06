@@ -3676,10 +3676,14 @@
         height: 45mm;
         background: #f1f5f9;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
+        gap: 2mm;
         color: #94a3b8;
-        font-size: 18pt;
+      }
+      .pdf-card-img-ph-txt {
+        font-size: 7pt;
       }
       .pdf-card-body {
         padding: 2mm 3mm 3mm;
@@ -3747,7 +3751,7 @@
     #pdf-mobile-overlay .pdf-card-img-link { display: block; line-height: 0; text-decoration: none; color: inherit; }
     #pdf-mobile-overlay .pdf-card-img { width: 100%; height: var(--pmo-img-height, 45mm); object-fit: contain; background: white; display: block; }
     #pdf-mobile-overlay .pdf-card-img-ph { width: 100%; height: var(--pmo-img-height, 45mm); background: #f1f5f9; display: flex;
-      align-items: center; justify-content: center; color: #94a3b8; font-size: 18pt; }
+      flex-direction: column; align-items: center; justify-content: center; gap: 1.5mm; color: #94a3b8; }
     #pdf-mobile-overlay .pdf-card-body { padding: 2mm 3mm 3mm; }
     #pdf-mobile-overlay .pdf-card-cod { color: #64748b; font-size: 7pt; letter-spacing: 0.2px; }
     #pdf-mobile-overlay .pdf-card-name { font-weight: 700; font-size: 9pt; line-height: 1.15; margin: 0.8mm 0 1mm; color: #0f172a; }
@@ -5114,7 +5118,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.28.1';
+var APP_VERSION  = '1.28.3';
 var APP_BUILD    = '2026-07-14';
 
 function renderAppVersion_() {
@@ -9518,7 +9522,8 @@ function buildCurrentFilterState_() {
     sortDir:        sortDir,
     sortTieDir:     sortTieDir,
     pdfIncludePromo: pdfIncludePromo,
-    pdfHidePrice:    pdfHidePrice
+    pdfHidePrice:    pdfHidePrice,
+    priceMode:       priceMode
   };
 }
 
@@ -9670,7 +9675,7 @@ function renderPdfCard_(p, c) {
       ? '<a class="pdf-card-img-link" href="' + fullImgUrl + '" target="_blank" rel="noopener">' +
           '<img class="pdf-card-img" src="' + imgUrl + '" alt="">' +
         '</a>'
-      : '<div class="pdf-card-img-ph">&#x1F45F;</div>') +
+      : '<div class="pdf-card-img-ph"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span class="pdf-card-img-ph-txt">Sin imagen</span></div>') +
     '<div class="pdf-card-body">' +
       '<div class="pdf-card-cod">Cód: ' + escHtml(p.codFabrica) +
         ' · ' + escHtml(p.marca) + '</div>' +

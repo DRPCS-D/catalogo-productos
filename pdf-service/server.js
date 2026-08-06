@@ -407,6 +407,7 @@ async function generateNormalPdf(filters) {
       window.sortTieDir   = f.sortTieDir   || "desc";
       window.pdfIncludePromo = !!f.pdfIncludePromo;
       window.pdfHidePrice    = !!f.pdfHidePrice;
+      window.priceMode       = (f.priceMode === "mayorista") ? "mayorista" : "minorista";
       if (typeof applyFilters === "function") applyFilters();
     }, filters || {});
     await new Promise(function(r) { setTimeout(r, 500); });
