@@ -401,6 +401,12 @@ async function generateNormalPdf(filters) {
       window.filterStockMax = (f.filterStockMax === null || f.filterStockMax === undefined) ? null : Number(f.filterStockMax);
       window.filterFoto  = f.filterFoto  || "all";
       window.filterPromo = f.filterPromo || "all";
+      window.filterPrecioMin = (f.filterPrecioMin === null || f.filterPrecioMin === undefined) ? null : Number(f.filterPrecioMin);
+      window.filterPrecioMax = (f.filterPrecioMax === null || f.filterPrecioMax === undefined) ? null : Number(f.filterPrecioMax);
+      window.filterUltCompraDesde = f.filterUltCompraDesde || null;
+      window.filterUltCompraHasta = f.filterUltCompraHasta || null;
+      window.filterUltVentaDesde  = f.filterUltVentaDesde  || null;
+      window.filterUltVentaHasta  = f.filterUltVentaHasta  || null;
       window.searchText  = f.searchText  || "";
       window.sortField   = f.sortField   || "id";
       window.sortDir      = f.sortDir      || "desc";
