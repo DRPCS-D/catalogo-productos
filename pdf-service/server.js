@@ -25,7 +25,7 @@ const LAUNCH_ARGS = [
 
 const PMO_SCALE = 110;
 const PMO_IMG_HEIGHT = 44;
-const CATALOG_BASE = "https://drpcs-d.github.io/catalogo-productos/";
+const CATALOG_BASE = "https://catalogo-drpcs.vercel.app/";
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const DATA_DIR   = path.join(__dirname, "data");
