@@ -4639,30 +4639,35 @@ function startApp_() {
   loadFavorites_();
   updateFavBadge_();
 
-  // 1) Cargar la config del modo activo desde Supabase (page_config table).
-  //    Esto sobrescribe el PAGE_CONFIG hardcoded con lo que el admin guardó.
-  //    Si falla la red, el hardcoded queda como fallback — la app sigue funcionando.
-  // 2) Luego cargar el catálogo (desde IDB cache o Supabase).
+  // 1) Cargar la config del modo activo desde Supabase (page_config table) y
+  //    leer el cache local (IDB) EN PARALELO — son independientes, no hay
+  //    motivo para esperar el round-trip de config antes de mirar el cache.
+  //    Si falla la red de config, el hardcoded queda como fallback.
+  // 2) Con ambas resueltas: si el cache está fresco, se usa directo; si no,
+  //    se pide el catálogo al server (fetchCatalogFromServer_ decide si hace
+  //    falta bajarlo completo o si alcanza con el chequeo liviano de updated_at).
   // 3) En paralelo (no bloquea), chequear salud del sync (sync_log).
   fetchSyncHealthFromSupabase_();
-  fetchPageConfigFromSupabase_().finally(function () {
-    idbGet_(IDB_KEY).then(function (cached) {
-      var ageMs = cached && cached.ts ? (Date.now() - cached.ts) : Infinity;
-      var fresh = cached && cached.data && ageMs < IDB_TTL_MS;
-      if (fresh) {
-        console.log('[cache local] hit, edad:', Math.floor(ageMs/60000), 'min');
-        onProductsLoaded(cached.data);
-        lastUpdateTs = cached.ts;       // chip muestra la edad real
-        catalogServerUpdatedAt = cached.updatedAt || null;
-        updateSyncWarningIcon_();
-        return;
-      }
-      console.log('[cache local] miss o expirado, fetch del server');
-      fetchCatalogFromServer_();
-    }).catch(function () {
-      // IDB no disponible o falló: fetch normal sin caché
-      fetchCatalogFromServer_();
-    });
+
+  var pageConfigReady = fetchPageConfigFromSupabase_();
+  var idbCacheReady    = idbGet_(IDB_KEY).catch(function () { return null; }); // IDB no disponible/falló → tratar como miss
+
+  Promise.all([pageConfigReady, idbCacheReady]).then(function (results) {
+    var cached = results[1];
+    var ageMs  = cached && cached.ts ? (Date.now() - cached.ts) : Infinity;
+    var fresh  = cached && cached.data && ageMs < IDB_TTL_MS;
+
+    if (fresh) {
+      console.log('[cache local] hit, edad:', Math.floor(ageMs/60000), 'min');
+      onProductsLoaded(cached.data);
+      lastUpdateTs = cached.ts;       // chip muestra la edad real
+      catalogServerUpdatedAt = cached.updatedAt || null;
+      updateSyncWarningIcon_();
+      return;
+    }
+
+    console.log('[cache local] miss o expirado, fetch del server');
+    fetchCatalogFromServer_(cached); // cached (vencido) se usa para el chequeo liviano de updated_at
   });
 }
 
@@ -4736,7 +4741,38 @@ function fetchSyncHealthFromSupabase_() {
   });
 }
 
-function fetchCatalogFromServer_() {
+/**
+ * Punto de entrada para refrescar el catálogo cuando el cache local venció
+ * (o no existe). Si tenemos datos vencidos en IDB con un updatedAt conocido,
+ * primero preguntamos SOLO la fecha de última sync del server (payload de
+ * unos bytes) antes de bajar el catálogo completo (~2MB gzip / ~20MB JSON).
+ * Si no cambió desde la última vez, reusamos los datos que ya teníamos —
+ * mismo resultado, sin la transferencia ni el parseo del JSON completo.
+ *
+ * staleCached (opcional): { data, updatedAt } tal como viene de idbGet_.
+ */
+function fetchCatalogFromServer_(staleCached) {
+  if (staleCached && staleCached.data && staleCached.updatedAt) {
+    fetchCatalogUpdatedAt_()
+      .then(function (serverUpdatedAt) {
+        if (serverUpdatedAt && serverUpdatedAt === staleCached.updatedAt) {
+          console.log('[cache local] catálogo sin cambios en el server, reuso cache');
+          catalogServerUpdatedAt = serverUpdatedAt;
+          onProductsLoaded(staleCached.data);
+          // Refrescamos el timestamp local para no volver a chequear hasta la próxima TTL.
+          idbSet_(IDB_KEY, { data: staleCached.data, ts: Date.now(), updatedAt: serverUpdatedAt });
+          updateSyncWarningIcon_();
+          return;
+        }
+        fetchFullCatalog_();
+      })
+      .catch(function () { fetchFullCatalog_(); }); // chequeo liviano falló → fetch completo de siempre
+    return;
+  }
+  fetchFullCatalog_();
+}
+
+function fetchFullCatalog_() {
   fetchSupabaseCatalog_()
     .then(function (result) {
       catalogServerUpdatedAt = result.updatedAt;
@@ -4775,6 +4811,30 @@ function fetchSupabaseCatalog_() {
       throw new Error('catalog_cache vacío en Supabase');
     }
     return { data: arr[0].data, updatedAt: arr[0].updated_at };
+  });
+}
+
+/**
+ * Igual que fetchSupabaseCatalog_ pero pidiendo SOLO updated_at (sin la
+ * columna data) — se usa para decidir si vale la pena bajar el catálogo
+ * completo cuando el cache local venció por TTL.
+ */
+function fetchCatalogUpdatedAt_() {
+  var endpoint = SUPABASE_URL.replace(/\/$/, '') +
+                 '/rest/v1/catalog_cache?select=updated_at&id=eq.1';
+  return fetch(endpoint, {
+    method: 'GET',
+    headers: {
+      'apikey':        SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      'Accept':        'application/json'
+    }
+  }).then(function (resp) {
+    if (!resp.ok) throw new Error('catalog_cache (updated_at) HTTP ' + resp.status);
+    return resp.json();
+  }).then(function (arr) {
+    if (!arr || !arr.length) throw new Error('catalog_cache vacío en Supabase');
+    return arr[0].updated_at;
   });
 }
 
@@ -5118,7 +5178,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.28.5';
+var APP_VERSION  = '1.29.0';
 var APP_BUILD    = '2026-08-10';
 
 function renderAppVersion_() {
