@@ -5118,8 +5118,8 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.28.4';
-var APP_BUILD    = '2026-07-14';
+var APP_VERSION  = '1.28.5';
+var APP_BUILD    = '2026-08-10';
 
 function renderAppVersion_() {
   var el = document.getElementById('app-version');
@@ -6870,8 +6870,7 @@ function attachSentinel_(view) {
     sentinelObserver = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
         if (!e.isIntersecting) return;
-        if (currentView === 'gallery') appendNextGalleryBatch();
-        else                            appendNextTableBatch();
+        fillViewportWithBatches_(currentView);
       });
     }, { rootMargin: '400px 0px' });
   }
@@ -6879,6 +6878,34 @@ function attachSentinel_(view) {
   // garantiza que dispare aunque ya estuviera dentro del viewport.
   sentinelObserver.unobserve(sentinel);
   sentinelObserver.observe(sentinel);
+
+  // Si tras (re)renderizar el sentinel ya está visible (p.ej. el listado
+  // filtrado quedó corto pero el scroll seguía abajo del filtro anterior),
+  // el observer no va a disparar porque no hay CAMBIO de intersección.
+  // Rellenamos manualmente hasta que el sentinel salga del viewport.
+  fillViewportWithBatches_(view);
+}
+
+// Sigue appendeando lotes mientras el sentinel esté dentro (o cerca, según
+// el mismo rootMargin del observer) del viewport. Cubre el caso en que un
+// solo batch no alcanza para empujar el sentinel fuera de vista.
+function fillViewportWithBatches_(view) {
+  var sentinelId = view === 'gallery' ? 'gallery-sentinel' : 'table-sentinel';
+  var sentinel = document.getElementById(sentinelId);
+  if (!sentinel) return;
+
+  var guard = 200; // tope defensivo (10k items)
+  while (guard-- > 0) {
+    var rect = sentinel.getBoundingClientRect();
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    var visible = rect.top < vh + 400 && rect.bottom > -400; // mismo margen del observer
+    if (!visible) break;
+
+    var before = renderedCount;
+    if (view === 'gallery') appendNextGalleryBatch();
+    else                    appendNextTableBatch();
+    if (renderedCount === before) break; // ya no hay más para appendear
+  }
 }
 
 // Después de un refresh silencioso, appendea lotes adicionales hasta llegar al
