@@ -416,7 +416,11 @@
       height: 32px;
       border-radius: 50%;
       border: none;
-      background: rgba(0,0,0,.35);
+      /* Sin backdrop-filter (era blur(4px)): con una card por variante en
+         pantalla, el blur en tiempo real es caro para la GPU en equipos de
+         gama baja y causa jank al scrollear. Compensamos el fondo un poco
+         más opaco para mantener el contraste sobre la foto. */
+      background: rgba(0,0,0,.45);
       color: white;
       cursor: pointer;
       display: flex;
@@ -426,7 +430,6 @@
       line-height: 1;
       padding: 0;
       transition: transform .12s, background .15s;
-      backdrop-filter: blur(4px);
       z-index: 2;
     }
     .btn-card-fav:hover  { background: rgba(0,0,0,.55); transform: scale(1.1); }
@@ -1536,6 +1539,14 @@
       display: flex;
       flex-direction: column;
       transition: box-shadow .15s, transform .15s;
+      /* El scroll infinito solo agrega cards, nunca las saca del DOM — en
+         listados largos se pueden acumular cientos. content-visibility hace
+         que el navegador se salte el layout/paint de las que están fuera de
+         pantalla (se recalcula solo, sin tocar la selección ni el teclado).
+         contain-intrinsic-size evita que el grid colapse mientras tanto.
+         Ignorado sin efecto en navegadores que no lo soportan. */
+      content-visibility: auto;
+      contain-intrinsic-size: 0 360px;
     }
 
     .product-card:hover {
@@ -4850,6 +4861,10 @@ function onProductsLoaded(data) {
   // setea priceMode y filterSucursal según el modo.
   applyPageConfig();
 
+  // Después de aplicar la config (que puede sacar marcas excluidas de products)
+  // para no precalcular texto normalizado de productos que ni se van a mostrar.
+  precomputeSearchFields_();
+
   populateFilters();
   applyFilters();
   productsLoaded = true;
@@ -4900,6 +4915,29 @@ function precomputeLastPurchaseDates_() {
     p._ultCompraMaxLabel = maxCmp ? fmtDate(maxCmp) : null;
     p._ultVentaMaxIso    = maxVnd;
     p._ultVentaMaxLabel  = maxVnd ? fmtDate(maxVnd) : null;
+  });
+}
+
+// Precalcula la versión normalizada (normTxt_: minúsculas + sin acentos) de
+// todos los campos usados en la búsqueda por texto. Sin esto, normTxt_ (que
+// hace normalize('NFKD') + regex) se recalculaba desde cero sobre los mismos
+// campos 2-3 veces por búsqueda: en el filtro (_productPassesFilters_), en
+// el sort (codigoMatchRank_) y de nuevo en renderGallery al armar las cards.
+// Se llama una sola vez al cargar los datos (o tras excluir marcas).
+function precomputeSearchFields_() {
+  products.forEach(function (p) {
+    p._normCod      = normTxt_(p.codFabrica);
+    p._normNombre   = normTxt_(p.nmProduto);
+    p._normMarca    = normTxt_(p.marca);
+    p._normGrupo    = normTxt_(p.grupo);
+    p._normSubgrupo = normTxt_(p.subgrupo);
+    p._normColecao  = normTxt_(p.colecao);
+    p.colorsArr.forEach(function (c) {
+      c._normColor = normTxt_(c.color);
+      c.gradesArr.forEach(function (g) {
+        g._normEan = normTxt_(g.ean);
+      });
+    });
   });
 }
 
@@ -5178,7 +5216,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.29.0';
+var APP_VERSION  = '1.29.1';
 var APP_BUILD    = '2026-08-10';
 
 function renderAppVersion_() {
@@ -6180,17 +6218,19 @@ function _productPassesFilters_(p, skipSearch) {
   if (filterPromo === 'without' && productHasActivePromo_(p)) return false;
 
   // Búsqueda por texto (se puede saltar para los similares).
-  // Insensible a mayúsculas y a acentos (normTxt_).
+  // Insensible a mayúsculas y a acentos (normTxt_). Usa los campos ya
+  // normalizados por precomputeSearchFields_ — evita rehacer normalize('NFKD')
+  // sobre los mismos strings en cada tecla.
   if (!skipSearch) {
     var q = normTxt_(searchText).trim();
     if (q) {
-      var inProd = [p.codFabrica, p.nmProduto, p.marca, p.grupo, p.subgrupo, p.colecao]
-        .some(function (v) { return v && normTxt_(v).indexOf(q) >= 0; });
+      var inProd = [p._normCod, p._normNombre, p._normMarca, p._normGrupo, p._normSubgrupo, p._normColecao]
+        .some(function (v) { return v && v.indexOf(q) >= 0; });
       var inColor = p.colorsArr.some(function (c) {
-        return c.color && normTxt_(c.color).indexOf(q) >= 0;
+        return c._normColor && c._normColor.indexOf(q) >= 0;
       });
       var inEan = p.colorsArr.some(function (c) {
-        return c.gradesArr.some(function (g) { return g.ean && normTxt_(g.ean).indexOf(q) >= 0; });
+        return c.gradesArr.some(function (g) { return g._normEan && g._normEan.indexOf(q) >= 0; });
       });
       if (!inProd && !inColor && !inEan) return false;
     }
@@ -6202,7 +6242,7 @@ function _productPassesFilters_(p, skipSearch) {
 // texto buscado (rank 0) por sobre los que solo matchean por otro campo
 // (nombre, marca, subgrupo, color, EAN, etc. — rank 1). Sin búsqueda no se usa.
 function codigoMatchRank_(p, q) {
-  return (p.codFabrica && normTxt_(p.codFabrica).indexOf(q) >= 0) ? 0 : 1;
+  return (p._normCod && p._normCod.indexOf(q) >= 0) ? 0 : 1;
 }
 
 function applyFilters() {
@@ -6622,10 +6662,10 @@ function renderGallery() {
   var qSearch = normTxt_((searchText || '').trim());
   var colorFilterActive = filterColor.length > 0;
   filteredProducts.forEach(function (p) {
-    var prodFieldMatched = !qSearch || [p.codFabrica, p.nmProduto, p.marca, p.grupo, p.subgrupo, p.colecao]
-      .some(function (v) { return v && normTxt_(v).indexOf(qSearch) >= 0; });
+    var prodFieldMatched = !qSearch || [p._normCod, p._normNombre, p._normMarca, p._normGrupo, p._normSubgrupo, p._normColecao]
+      .some(function (v) { return v && v.indexOf(qSearch) >= 0; });
     var colorNameMatched = qSearch && !prodFieldMatched && p.colorsArr.some(function (c) {
-      return c.color && normTxt_(c.color).indexOf(qSearch) >= 0;
+      return c._normColor && c._normColor.indexOf(qSearch) >= 0;
     });
     p.colorsArr.forEach(function (c) {
       // Filtro Color: si está activo, solo mostrar las variantes seleccionadas
@@ -6633,10 +6673,10 @@ function renderGallery() {
       if (qSearch && !prodFieldMatched) {
         if (colorNameMatched) {
           // Búsqueda matcheó por nombre de color → restringir a esos colores
-          if (!c.color || normTxt_(c.color).indexOf(qSearch) < 0) return;
+          if (!c._normColor || c._normColor.indexOf(qSearch) < 0) return;
         } else {
           // Búsqueda matcheó solo por EAN → restringir al color que tiene ese EAN
-          if (!c.gradesArr.some(function (g) { return g.ean && normTxt_(g.ean).indexOf(qSearch) >= 0; })) return;
+          if (!c.gradesArr.some(function (g) { return g._normEan && g._normEan.indexOf(qSearch) >= 0; })) return;
         }
       }
       if (sucursalFilterActive && getColorStock(c) <= 0) return;
