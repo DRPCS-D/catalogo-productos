@@ -11,7 +11,7 @@
  */
 
 // v68: botón código de barra EAN en cada línea del carrito.
-const CACHE_VERSION = 'v101';
+const CACHE_VERSION = 'v102';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
@@ -19,6 +19,8 @@ const IMG_CACHE   = 'img-'   + CACHE_VERSION;
 const SHELL_URLS = [
   './',
   './index.html',
+  './style.css',
+  './app.js',
   './manifest.json',
   './manifest-mayorista.json',
   './manifest-minorista.json',
