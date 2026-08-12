@@ -3,15 +3,15 @@
  *
  * Estrategias de cache:
  *   - Shell (HTML, manifest, icons): precache + cache-first
- *   - Supabase catalog_cache: stale-while-revalidate (devuelve el cache si existe,
- *     y refresca en background)
+ *   - Supabase catalog_cache: network-first, cache solo como respaldo offline
+ *     (ver nota más abajo — antes era stale-while-revalidate)
  *   - Imágenes de Google Drive (lh3.googleusercontent.com): cache-first 7 días
  *
  * Para invalidar todo cuando hagas un deploy nuevo: bumpear CACHE_VERSION.
  */
 
 // v68: botón código de barra EAN en cada línea del carrito.
-const CACHE_VERSION = 'v102';
+const CACHE_VERSION = 'v103';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
@@ -77,9 +77,15 @@ self.addEventListener('fetch', function (event) {
     return;
   }
 
-  // 2) Supabase catalog_cache → stale-while-revalidate
+  // 2) Supabase catalog_cache → network-first, cache solo como respaldo offline.
+  //    Antes era stale-while-revalidate (devolvía el cache viejo siempre que
+  //    existiera). Eso rompía el chequeo liviano de updated_at en app.js —
+  //    que necesita la verdad ACTUAL del servidor para decidir si hace falta
+  //    bajar el catálogo completo — y también podía servir el catálogo
+  //    completo desactualizado (productos/imágenes recién subidas que no
+  //    aparecían hasta el siguiente ciclo de revalidación en background).
   if (url.hostname.endsWith('.supabase.co') && url.pathname.indexOf('/rest/v1/catalog_cache') >= 0) {
-    event.respondWith(staleWhileRevalidate_(req, DATA_CACHE));
+    event.respondWith(networkFirstWithCacheFallback_(req, DATA_CACHE));
     return;
   }
 
@@ -147,14 +153,13 @@ function cacheFirstWithTtl_(req, cacheName, ttlMs) {
   });
 }
 
-function staleWhileRevalidate_(req, cacheName) {
+function networkFirstWithCacheFallback_(req, cacheName) {
   return caches.open(cacheName).then(function (cache) {
-    return cache.match(req).then(function (cached) {
-      var networkFetch = fetch(req).then(function (resp) {
-        if (resp.ok) cache.put(req, resp.clone());
-        return resp;
-      }).catch(function () { return cached; });
-      return cached || networkFetch;
+    return fetch(req).then(function (resp) {
+      if (resp.ok) cache.put(req, resp.clone());
+      return resp;
+    }).catch(function () {
+      return cache.match(req);   // offline → lo último que tengamos (puede no existir)
     });
   });
 }
