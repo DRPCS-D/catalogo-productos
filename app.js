@@ -968,7 +968,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.30.2';
+var APP_VERSION  = '1.31.0';
 var APP_BUILD    = '2026-08-10';
 
 function renderAppVersion_() {
@@ -4451,6 +4451,19 @@ function shareProduct_(cod, colorName, btn) {
 // selector nativo). Con foto cuando el navegador soporta adjuntar archivos
 // (navigator.canShare + files) — solo celulares. Si no hay soporte, cae a un
 // link wa.me con el texto (sin foto).
+//
+// IMPORTANTE: navigator.share() (y window.open) sólo funcionan mientras el
+// navegador todavía considera que estás "cerca" del click del usuario (user
+// activation). El fetch() de la imagen puede tardar (wifi de tienda, cache
+// frío) y para cuando termina esa ventana ya se cerró — ahí navigator.share
+// rechaza con NotAllowedError y el fallback a window.open también queda
+// bloqueado por el navegador (el aviso de "popup bloqueado" que se veía).
+// Por eso: si la foto tarda más de IMG_FETCH_TIMEOUT_MS, se abandona y se
+// comparte solo texto de inmediato (mucho más liviano, se mantiene dentro
+// de esa ventana). window.open queda solo para el caso 100% sincrónico
+// (navegadores sin Web Share API), que nunca pierde el gesto.
+var IMG_FETCH_TIMEOUT_MS = 1200;
+
 function shareViaWhatsapp_(text, imgUrl, btn) {
   function fallbackToLink_() {
     window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
@@ -4458,30 +4471,59 @@ function shareViaWhatsapp_(text, imgUrl, btn) {
   function done_() {
     if (btn) btn.disabled = false;
   }
+  function shareTextOnly_() {
+    navigator.share({ text: text })
+      .catch(function (err) {
+        if (err && err.name === 'AbortError') return;   // el usuario canceló el selector
+        fallbackToLink_();
+      })
+      .then(done_);
+  }
 
   if (!navigator.share) { fallbackToLink_(); return; }
 
   if (!imgUrl || !navigator.canShare) {
-    navigator.share({ text: text }).catch(function () {}).then(done_);
+    shareTextOnly_();
     return;
   }
 
   if (btn) btn.disabled = true;
 
+  var settled = false;   // ya se compartió (por timeout o por la foto) — evita duplicar
+  var timer = setTimeout(function () {
+    if (settled) return;
+    settled = true;
+    shareTextOnly_();
+  }, IMG_FETCH_TIMEOUT_MS);
+
   fetch(imgUrl)
     .then(function (res) { return res.blob(); })
     .then(function (blob) {
+      if (settled) return;   // ya se compartió solo texto por timeout, no duplicar
+      clearTimeout(timer);
+      settled = true;
       var file = new File([blob], 'producto.jpg', { type: blob.type || 'image/jpeg' });
-      if (navigator.canShare({ files: [file] })) {
-        return navigator.share({ files: [file], text: text });
-      }
-      return navigator.share({ text: text });
+      var sharePromise = navigator.canShare({ files: [file] })
+        ? navigator.share({ files: [file], text: text })
+        : navigator.share({ text: text });
+      return sharePromise
+        .catch(function (err) {
+          if (err && err.name === 'AbortError') return;
+          // Reintento liviano (sin foto) antes de recurrir al popup — todavía
+          // estamos cerca en el tiempo del click, más chances de que funcione.
+          return navigator.share({ text: text }).catch(function (err2) {
+            if (err2 && err2.name === 'AbortError') return;
+            fallbackToLink_();
+          });
+        })
+        .then(done_);
     })
-    .catch(function (err) {
-      if (err && err.name === 'AbortError') return;   // el usuario canceló el selector
-      fallbackToLink_();
-    })
-    .then(done_);
+    .catch(function () {
+      if (settled) return;   // ya se compartió solo texto por timeout
+      clearTimeout(timer);
+      settled = true;
+      shareTextOnly_();
+    });
 }
 
 // =================================================================
