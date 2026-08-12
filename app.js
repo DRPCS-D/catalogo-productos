@@ -899,6 +899,7 @@ function silentRefresh_() {
       products = data;
       precomputeLastPurchaseDates_();
       applyExcludedBrands_();
+      precomputeSearchFields_();
       populateFilters();
 
       // applyFilters resetea renderedCount=0. Después del renderCurrentView,
@@ -967,7 +968,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.30.1';
+var APP_VERSION  = '1.30.2';
 var APP_BUILD    = '2026-08-10';
 
 function renderAppVersion_() {
@@ -1143,6 +1144,7 @@ function manualRefresh() {
         products = data;
         precomputeLastPurchaseDates_();
         applyExcludedBrands_();
+        precomputeSearchFields_();
         populateFilters();
         applyFilters();
         renderCurrentView();
