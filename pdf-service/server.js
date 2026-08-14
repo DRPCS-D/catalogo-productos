@@ -18,9 +18,14 @@ app.use(function (req, res, next) {
 });
 
 const CHROMIUM_PATH = "/usr/bin/chromium";
+// Sin --single-process: corre todo (browser + renderer) en un solo proceso,
+// modo no soportado oficialmente por Chromium y conocido por causar fallos
+// intermitentes de lanzamiento ("Failed to launch the browser process!") en
+// contenedores Docker — exactamente el error que se veía. shm_size:256m en
+// docker-compose.yml ya cubre lo que --disable-dev-shm-usage protegía.
 const LAUNCH_ARGS = [
   "--no-sandbox", "--disable-setuid-sandbox",
-  "--disable-dev-shm-usage", "--disable-gpu", "--single-process"
+  "--disable-dev-shm-usage", "--disable-gpu"
 ];
 
 const PMO_SCALE = 110;
@@ -215,12 +220,21 @@ function fuzzyBrands(query, list, max) {
 }
 
 // ── Puppeteer helpers ─────────────────────────────────────────────────────────
+// El lanzamiento de Chromium puede fallar de forma transitoria en Docker
+// (recursos del host, timing). Un reintento cubre esos casos sin que el
+// usuario tenga que volver a tocar el botón "Descargar PDF".
+async function launchBrowser_() {
+  try {
+    return await puppeteer.launch({ executablePath: CHROMIUM_PATH, headless: true, args: LAUNCH_ARGS });
+  } catch (err) {
+    console.warn("[puppeteer] fallo al lanzar el browser, reintentando en 500ms:", err.message);
+    await new Promise(function (r) { setTimeout(r, 500); });
+    return puppeteer.launch({ executablePath: CHROMIUM_PATH, headless: true, args: LAUNCH_ARGS });
+  }
+}
+
 async function newBrowserPage(url) {
-  const browser = await puppeteer.launch({
-    executablePath: CHROMIUM_PATH,
-    headless: true,
-    args: LAUNCH_ARGS
-  });
+  const browser = await launchBrowser_();
   const page = await browser.newPage();
   await page.setViewport({ width: 1280, height: 900 });
   await page.setBypassCSP(true);
