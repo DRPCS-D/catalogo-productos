@@ -428,6 +428,15 @@ async function generateNormalPdf(filters) {
       window.pdfIncludePromo = !!f.pdfIncludePromo;
       window.pdfHidePrice    = !!f.pdfHidePrice;
       window.priceMode       = (f.priceMode === "mayorista") ? "mayorista" : "minorista";
+      // Vista Favoritos: los favoritos viven en el localStorage del dispositivo
+      // del usuario, al que este browser (recién abierto, sin ese localStorage)
+      // no tiene acceso — por eso el cliente manda el objeto `favorites` tal
+      // cual, y acá lo pisamos directo en window antes de armar el PDF. El resto
+      // del código (renderPrintCatalogHtml_ vía isFavView) ya sabe usarlo.
+      if (f.favorites && typeof f.favorites === "object") {
+        window.favorites   = f.favorites;
+        window.currentView = "favorites";
+      }
       if (typeof applyFilters === "function") applyFilters();
     }, filters || {});
     await new Promise(function(r) { setTimeout(r, 500); });

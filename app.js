@@ -968,7 +968,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.31.1';
+var APP_VERSION  = '1.32.0';
 var APP_BUILD    = '2026-08-10';
 
 function renderAppVersion_() {
@@ -5472,20 +5472,23 @@ function buildCurrentFilterState_() {
 }
 
 // Botón "Normal" del menú de Filtros. Genera el PDF del lado del servidor
-// (pdf-service/Puppeteer) con los filtros actuales y lo descarga directo,
-// sin pasar por window.print(). La vista de Favoritos vive solo en
-// localStorage del dispositivo — pdf-service no tiene acceso a eso, así que
-// para esa vista seguimos usando el flujo de impresión normal.
+// (pdf-service/Puppeteer) y lo descarga directo, sin pasar por window.print().
+// En Favoritos: como esa lista vive solo en el localStorage de este
+// dispositivo (pdf-service abre una página nueva, sin ese localStorage), se
+// manda el objeto `favorites` en el request para que el servidor lo reproduzca
+// (ver generateNormalPdf en server.js).
 function exportPdfNormal_() {
-  if (currentView === 'favorites') { generatePDF(); return; }
+  var isFavView   = currentView === 'favorites';
+  var sourceProds = isFavView ? getFavoriteProducts_() : filteredProducts;
 
-  var sourceProds = filteredProducts;
   if (!sourceProds || !sourceProds.length) {
-    alert('No hay productos para incluir en el PDF. Ajustá los filtros.');
+    alert(isFavView
+      ? 'No hay favoritos guardados para incluir en el PDF.'
+      : 'No hay productos para incluir en el PDF. Ajustá los filtros.');
     return;
   }
 
-  var cardCount = countPdfCards_(sourceProds, false);
+  var cardCount = countPdfCards_(sourceProds, isFavView);
   if (cardCount === 0) {
     alert('Los filtros activos no dejan ningún producto/color para imprimir.');
     return;
@@ -5505,18 +5508,22 @@ function exportPdfNormal_() {
         'La generación puede tardar entre 10 y 60 segundos según cuántas ' +
         'imágenes haya que descargar.\n\n¿Querés continuar?'
     }).then(function (ok) {
-      if (ok) requestPdfFromService_();
+      if (ok) requestPdfFromService_(isFavView);
     });
     return;
   }
 
-  requestPdfFromService_();
+  requestPdfFromService_(isFavView);
 }
 
-function requestPdfFromService_() {
+function requestPdfFromService_(isFavView) {
   var btn = document.getElementById('btn-pdf');
   var btnOriginal = btn ? btn.innerHTML : '';
   if (btn) { btn.innerHTML = '⏳ Generando...'; btn.disabled = true; }
+
+  var payloadFilters = buildCurrentFilterState_();
+  if (isFavView) payloadFilters.favorites = favorites;
+  var filename = isFavView ? 'favoritos.pdf' : 'catalogo.pdf';
 
   fetch(PDF_SERVICE_URL + '/pdf/normal', {
     method: 'POST',
@@ -5525,8 +5532,8 @@ function requestPdfFromService_() {
       'ngrok-skip-browser-warning': 'true'
     },
     body: JSON.stringify({
-      filters:  buildCurrentFilterState_(),
-      filename: 'catalogo.pdf'
+      filters:  payloadFilters,
+      filename: filename
     })
   })
     .then(function (res) {
@@ -5541,7 +5548,7 @@ function requestPdfFromService_() {
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url;
-      a.download = 'catalogo.pdf';
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
