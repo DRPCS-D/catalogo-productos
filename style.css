@@ -140,7 +140,14 @@
       color: white;
       border-color: rgba(255,255,255,.35);
     }
-    .refresh-chip .refresh-icon { display: inline-flex; align-items: center; }
+    .refresh-chip .refresh-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 15px;
+      height: 15px;
+      line-height: 0;
+    }
     #refresh-label { display: none; }
 
     /* Estado "viejo" — sutil amber/dorado, no llamativo */
@@ -173,7 +180,6 @@
       pointer-events: none;
     }
     .refresh-chip.refreshing .refresh-icon {
-      display: inline-block;
       animation: spin .8s linear infinite;
     }
 
