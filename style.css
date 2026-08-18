@@ -2005,7 +2005,7 @@
       gap: 3px;
     }
 
-    .card-code  { font-size: 10px; color: var(--gray-400); font-weight: 500; display: flex; align-items: center; gap: 4px; }
+    .card-code  { font-size: 10px; color: var(--gray-500); font-weight: 400; display: flex; align-items: center; gap: 4px; }
     .card-name  { font-size: 13px; font-weight: 700; color: var(--gray-800); line-height: 1.25; margin-bottom: 2px; }
     .card-marca    { font-size: 10px; color: var(--gray-500); }
     .card-subgrupo { font-size: 10px; color: var(--gray-500); }
