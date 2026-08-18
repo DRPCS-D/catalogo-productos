@@ -529,13 +529,26 @@ def write_to_supabase(grouped, api_ms, json_str=None):
                     # catalog_cache: fila única JSONB con la jerarquía
                     # completa. Es lo que lee el web app en runtime.
                     if json_str:
+                        # El WHERE evita tocar updated_at cuando el catálogo
+                        # quedó igual que la corrida anterior. El web app usa
+                        # updated_at para decidir si vale la pena bajar los
+                        # ~20 MB de JSON (fetchCatalogUpdatedAt_ en app.js);
+                        # si lo pisábamos con NOW() cada hora aunque nada
+                        # hubiera cambiado, todos los dispositivos se bajaban
+                        # el catálogo entero igual. Comparar jsonb ignora
+                        # orden de claves y espacios, así que sólo cuenta el
+                        # contenido real.
                         cur.execute("""
                             INSERT INTO catalog_cache (id, data, updated_at)
                             VALUES (1, %s::jsonb, NOW())
                             ON CONFLICT (id) DO UPDATE
                               SET data = EXCLUDED.data,
                                   updated_at = NOW()
+                            WHERE catalog_cache.data IS DISTINCT FROM EXCLUDED.data
                         """, (json_str,))
+                        if cur.rowcount == 0:
+                            print("   → catalog_cache sin cambios; updated_at "
+                                  "intacto (los clientes reusan su cache)")
         finally:
             conn.close()
 
