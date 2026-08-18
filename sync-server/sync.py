@@ -157,6 +157,20 @@ def fetch_products():
     return data
 
 
+def _img_version(mtime):
+    """Token de versión de una foto, derivado del modifiedTime de Drive
+    ('2026-08-18T12:34:56.789Z' -> '20260818123456').
+
+    Viaja al web app como imgV y termina en la URL de la imagen como ?v=
+    (ver getImgUrl en app.js). Cambia sólo cuando el archivo cambia, así
+    reemplazar una foto invalida el cache del navegador y del Service Worker
+    de esa foto y de ninguna otra.
+    """
+    if not mtime:
+        return None
+    return "".join(ch for ch in mtime if ch.isdigit())[:14] or None
+
+
 def fetch_image_map(drive):
     print(f"[{datetime.now().isoformat(timespec='seconds')}] Listing Drive folder...")
     t0 = time.time()
@@ -169,14 +183,24 @@ def fetch_image_map(drive):
         def _do(_pt=page_token):
             return drive.files().list(
                 q=f"'{DRIVE_FOLDER_ID}' in parents and trashed = false",
-                fields="nextPageToken, files(id, name)",
+                fields="nextPageToken, files(id, name, modifiedTime)",
                 pageSize=1000,
                 pageToken=_pt,
             ).execute()
 
         resp = with_retry(_do, f"Drive list (página {pages+1})")
         for f in resp.get("files", []):
-            image_map[f["name"].lower()] = f["id"]
+            key   = f["name"].lower()
+            mtime = f.get("modifiedTime") or ""
+            prev  = image_map.get(key)
+            # Drive permite dos archivos con el mismo nombre en la misma
+            # carpeta. Antes ganaba el último del listado (orden no
+            # garantizado), así que subir una foto nueva sin borrar la vieja
+            # podía dejar el catálogo apuntando a la vieja indefinidamente.
+            # Nos quedamos con la modificada más recientemente — modifiedTime
+            # es RFC3339 en UTC, así que ordena bien comparándolo como string.
+            if prev is None or mtime > prev["mtime"]:
+                image_map[key] = {"id": f["id"], "mtime": mtime}
         page_token = resp.get("nextPageToken")
         pages += 1
         if not page_token:
@@ -237,10 +261,12 @@ def group_raw(raw, image_map):
         c_key = str(item.get("color"))
         if c_key not in prod["_cMap"]:
             filename = item.get("imagen") or ""
+            img = image_map.get(filename.lower()) if filename else None
             prod["_cMap"][c_key] = {
                 "color":   item.get("color"),
                 "imagen":  filename or None,
-                "imgId":   image_map.get(filename.lower()) if filename else None,
+                "imgId":   img["id"] if img else None,
+                "imgV":    _img_version(img["mtime"]) if img else None,
                 "_gMap":   {},
                 "_gOrder": [],
             }
@@ -309,6 +335,7 @@ def group_raw(raw, image_map):
                 "color":      c["color"],
                 "imagen":     c["imagen"],
                 "imgId":      c["imgId"],
+                "imgV":       c["imgV"],
                 "gradesArr":  grades_arr,
                 "totalStock": total_color,
             })

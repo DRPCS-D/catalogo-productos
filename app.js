@@ -675,7 +675,12 @@ function precomputeLastPurchaseDates_() {
 // campos 2-3 veces por búsqueda: en el filtro (_productPassesFilters_), en
 // el sort (codigoMatchRank_) y de nuevo en renderGallery al armar las cards.
 // Se llama una sola vez al cargar los datos (o tras excluir marcas).
+//
+// De paso arma imgVersionMap_ (ver getImgUrl) aprovechando que ya recorremos
+// todos los colores — un segundo pase sobre ~12k productos costaría decenas
+// de ms en los equipos de gama baja.
 function precomputeSearchFields_() {
+  imgVersionMap_ = {};
   products.forEach(function (p) {
     p._normCod      = normTxt_(p.codFabrica);
     p._normNombre   = normTxt_(p.nmProduto);
@@ -685,6 +690,7 @@ function precomputeSearchFields_() {
     p._normColecao  = normTxt_(p.colecao);
     p.colorsArr.forEach(function (c) {
       c._normColor = normTxt_(c.color);
+      if (c.imgId && c.imgV) imgVersionMap_[c.imgId] = c.imgV;
       c.gradesArr.forEach(function (g) {
         g._normEan = normTxt_(g.ean);
       });
@@ -968,7 +974,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.32.1';
+var APP_VERSION  = '1.33.0';
 var APP_BUILD    = '2026-08-10';
 
 function renderAppVersion_() {
@@ -4407,12 +4413,32 @@ function updateStats() {
 // =================================================================
 // UTILIDADES
 // =================================================================
+// imgId de Drive → token de versión (derivado del modifiedTime del archivo).
+// Lo llena precomputeSearchFields_ con lo que manda la sync en cada color.
+var imgVersionMap_ = {};
+
 // fileId: el ID de Drive ya resuelto server-side (viene como c.imgId en cada color).
 // size:   ancho deseado en px. Drive sirve un thumbnail pre-cacheado → 10–50x más rápido.
+//
+// El ?v= final vale por la foto, no por el tamaño: cuando se reemplaza una
+// imagen en Drive conservando el mismo archivo (lo que hace el sync del NAS),
+// el fileId no cambia y la URL quedaba idéntica — así el Service Worker seguía
+// sirviendo la copia vieja hasta 7 días (IMG_TTL en sw.js) sin forma de
+// forzarla. El token cambia sólo cuando el archivo cambia, así que se
+// re-descarga esa foto y ninguna otra. Google ignora el parámetro y sirve la
+// imagen igual (verificado: mismos bytes con y sin él).
+//
+// El token se resuelve acá adentro a propósito: si cada llamada lo pasara por
+// su cuenta, un sitio que se lo olvide generaría una URL distinta para la
+// misma foto y la bajaría dos veces.
 function getImgUrl(fileId, size) {
   if (!fileId) return null;
   var url = 'https://lh3.googleusercontent.com/d/' + fileId;
-  return size ? url + '=w' + size : url;
+  if (size) url += '=w' + size;
+  var v = imgVersionMap_[fileId];
+  // Sin token (sync vieja todavía sin imgV) → URL de siempre.
+  if (v) url += '?v=' + encodeURIComponent(v);
+  return url;
 }
 
 function fmtPrice(v) {
