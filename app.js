@@ -974,7 +974,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.33.0';
+var APP_VERSION  = '1.33.1';
 var APP_BUILD    = '2026-08-10';
 
 function renderAppVersion_() {
@@ -5248,13 +5248,13 @@ function generatePDFMobile() {
       '<div class="pmo-scale" title="Ajusta el tamaño general con el que se imprime. Se guarda en este dispositivo.">' +
         '<span class="pmo-scale-label">Escala</span>' +
         '<button class="pmo-scale-btn" onclick="adjustPmoScale_(-1)" aria-label="Reducir escala">−</button>' +
-        '<span class="pmo-scale-val" id="pmo-scale-val">100%</span>' +
+        '<span class="pmo-scale-val" id="pmo-scale-val">110%</span>' +
         '<button class="pmo-scale-btn" onclick="adjustPmoScale_(1)" aria-label="Aumentar escala">+</button>' +
       '</div>' +
       '<div class="pmo-scale" title="Ajusta el alto de las fotos en el print. Se guarda en este dispositivo.">' +
         '<span class="pmo-scale-label">Foto</span>' +
         '<button class="pmo-scale-btn" onclick="adjustPmoImg_(-1)" aria-label="Foto más chica">−</button>' +
-        '<span class="pmo-scale-val" id="pmo-img-val">27mm</span>' +
+        '<span class="pmo-scale-val" id="pmo-img-val">46mm</span>' +
         '<button class="pmo-scale-btn" onclick="adjustPmoImg_(1)" aria-label="Foto más grande">+</button>' +
       '</div>' +
       '<button class="pmo-print" onclick="window.print()">🖨️ Imprimir</button>' +
@@ -5285,8 +5285,8 @@ var PMO_SCALE_MAX = 110;
 function getPmoScale_() {
   var raw = null;
   try { raw = localStorage.getItem(PMO_SCALE_KEY); } catch (e) {}
-  var v = parseInt(raw || '100', 10);
-  if (isNaN(v)) v = 100;
+  var v = parseInt(raw || '110', 10);
+  if (isNaN(v)) v = 110;
   if (v < PMO_SCALE_MIN) v = PMO_SCALE_MIN;
   if (v > PMO_SCALE_MAX) v = PMO_SCALE_MAX;
   return v;
@@ -5311,8 +5311,8 @@ var PMO_IMG_MAX = 50;
 function getPmoImg_() {
   var raw = null;
   try { raw = localStorage.getItem(PMO_IMG_KEY); } catch (e) {}
-  var v = parseInt(raw || '27', 10);
-  if (isNaN(v)) v = 27;
+  var v = parseInt(raw || '46', 10);
+  if (isNaN(v)) v = 46;
   if (v < PMO_IMG_MIN) v = PMO_IMG_MIN;
   if (v > PMO_IMG_MAX) v = PMO_IMG_MAX;
   return v;
