@@ -376,7 +376,42 @@ async function generatePdf(url, waitSelector, delayMs, catalogMode, brand) {
         throw e;
       }
 
-      await new Promise(function(r) { setTimeout(r, 3000); });
+      // Esperar a que las fotos terminen de cargar. Antes eran 3 s fijos:
+      // con ~40 imágenes pidiéndose de golpe a Google casi siempre había al
+      // menos una que no llegaba a tiempo y esa card salía en blanco.
+      // Ojo: acá el Service Worker está apagado (stopAllWorkers), así que el
+      // reintento del sw.js no aplica y hay que reintentar del lado del DOM.
+      await page.evaluate(function() {
+        var root = document.getElementById("pdf-mobile-overlay");
+        if (!root) return null;
+        var imgs = Array.prototype.slice.call(root.querySelectorAll("img"));
+        return Promise.all(imgs.map(function(img) {
+          if (img.complete && img.naturalWidth > 0) return null;
+          return new Promise(function(resolve) {
+            var done = false;
+            var cap = setTimeout(finish, 25000);
+            function finish() { if (!done) { done = true; clearTimeout(cap); resolve(); } }
+            function onError() {
+              // Un reintento con URL nueva (Google ignora los params extra).
+              if (!img.getAttribute("data-retried")) {
+                img.setAttribute("data-retried", "1");
+                var s = img.src;
+                img.addEventListener("error", finish, { once: true });
+                setTimeout(function() {
+                  img.src = s + (s.indexOf("?") < 0 ? "?" : "&") + "r=1";
+                }, 500);
+                return;
+              }
+              finish();
+            }
+            img.addEventListener("load", finish);
+            img.addEventListener("error", onError, { once: true });
+            // Ya falló antes de que llegáramos a escuchar: el evento 'error'
+            // no se repite, así que sin esto quedaría colgado hasta el cap.
+            if (img.complete && img.getAttribute("src")) onError();
+          });
+        }));
+      });
     }
 
     return await page.pdf({

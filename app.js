@@ -974,7 +974,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.34.0';
+var APP_VERSION  = '1.35.0';
 var APP_BUILD    = '2026-08-10';
 
 function renderAppVersion_() {
@@ -5274,7 +5274,7 @@ function generatePDFMobile() {
         '<span class="pmo-scale-val" id="pmo-img-val">46mm</span>' +
         '<button class="pmo-scale-btn" onclick="adjustPmoImg_(1)" aria-label="Foto más grande">+</button>' +
       '</div>' +
-      '<button class="pmo-print" onclick="window.print()">🖨️ Imprimir</button>' +
+      '<button class="pmo-print" onclick="printPdfMobile_(this)">🖨️ Imprimir</button>' +
     '</div>' +
     pagesHtml;
 
@@ -5283,6 +5283,26 @@ function generatePDFMobile() {
   document.body.style.overflow = 'hidden';
   applyPmoScale_(getPmoScale_());
   applyPmoImg_(getPmoImg_());
+
+  // Promise que resuelve cuando las fotos terminaron. El overlay ya se ve;
+  // esto sólo le da al que imprime (pdf-service o el botón Imprimir) algo
+  // concreto que esperar en vez de un tiempo fijo.
+  pmoImagesReady_ = waitForImages_(overlay);
+  return pmoImagesReady_;
+}
+
+// Última promesa de carga de fotos del overlay (la consume printPdfMobile_).
+var pmoImagesReady_ = null;
+
+// El botón "Imprimir" del overlay: esperar las fotos antes de abrir el
+// diálogo, si no las que todavía no llegaron salen en blanco.
+function printPdfMobile_(btn) {
+  var original = btn ? btn.innerHTML : '';
+  if (btn) { btn.innerHTML = '⏳ Cargando fotos...'; btn.disabled = true; }
+  Promise.resolve(pmoImagesReady_).then(function () {
+    if (btn) { btn.innerHTML = original; btn.disabled = false; }
+    window.print();
+  });
 }
 
 function closePdfMobile_() {
@@ -5635,6 +5655,13 @@ function waitForImages_(root) {
         }
         img.addEventListener('load',  finish);
         img.addEventListener('error', onError, { once: true });
+
+        // complete con naturalWidth 0 = ya falló antes de que llegáramos a
+        // escuchar. El evento 'error' no se vuelve a disparar, así que sin
+        // esto el promise queda colgado hasta el timeout y la card sale en
+        // blanco. Pasa cuando el que espera corre después del render (el
+        // pdf-service llama a generatePDFMobile y recién ahí espera).
+        if (img.complete && img.getAttribute('src')) onError();
       }));
     })(imgs[i]);
   }
