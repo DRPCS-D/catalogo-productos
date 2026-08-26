@@ -11,7 +11,7 @@
  */
 
 // v68: botón código de barra EAN en cada línea del carrito.
-const CACHE_VERSION = 'v110';
+const CACHE_VERSION = 'v111';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
@@ -126,29 +126,44 @@ function cacheFirstWithTtl_(req, cacheName, ttlMs) {
           return cached;
         }
       }
-      return fetch(req).then(function (resp) {
-        if (resp.ok || resp.type === 'opaque') {
-          var headers = new Headers(resp.headers);
-          headers.set('sw-cache-date', String(Date.now()));
-          // No podemos modificar headers de respuesta opaca, pero la guardamos igual
-          var clone = resp.clone();
-          if (resp.type === 'basic' || resp.type === 'cors') {
-            clone.blob().then(function (blob) {
-              var wrapped = new Response(blob, {
-                status: resp.status,
-                statusText: resp.statusText,
-                headers: headers
+      function fetchAndCache_() {
+        return fetch(req).then(function (resp) {
+          if (resp.ok || resp.type === 'opaque') {
+            var headers = new Headers(resp.headers);
+            headers.set('sw-cache-date', String(Date.now()));
+            // No podemos modificar headers de respuesta opaca, pero la guardamos igual
+            var clone = resp.clone();
+            if (resp.type === 'basic' || resp.type === 'cors') {
+              clone.blob().then(function (blob) {
+                var wrapped = new Response(blob, {
+                  status: resp.status,
+                  statusText: resp.statusText,
+                  headers: headers
+                });
+                cache.put(req, wrapped);
               });
-              cache.put(req, wrapped);
-            });
-          } else {
-            cache.put(req, clone);
+            } else {
+              cache.put(req, clone);
+            }
           }
-        }
-        return resp;
-      }).catch(function () {
-        return cached;   // si network falla, devolver lo que sea que tengamos
-      });
+          return resp;
+        });
+      }
+
+      // Un reintento antes de darla por perdida: en móvil los cortes son
+      // transitorios y sin esto una sola falla deja la foto rota hasta el
+      // próximo render (la <img> ya disparó onerror y nadie la revive).
+      return fetchAndCache_()
+        .catch(function () {
+          return new Promise(function (r) { setTimeout(r, 400); })
+            .then(fetchAndCache_);
+        })
+        .catch(function () {
+          // respondWith() exige un Response: devolver undefined acá es un
+          // NetworkError, que es justo lo que rompía la imagen. Servir lo
+          // vencido si lo hay antes que romperla.
+          return cached || Response.error();
+        });
     });
   });
 }

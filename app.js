@@ -974,7 +974,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.33.1';
+var APP_VERSION  = '1.34.0';
 var APP_BUILD    = '2026-08-10';
 
 function renderAppVersion_() {
@@ -2657,7 +2657,7 @@ function buildGalleryCardHtml_(item) {
     // src vacío + data-src → IntersectionObserver carga la imagen al entrar al viewport
     var imgHtml = imgUrl
       ? '<img class="card-img lazy-img" data-src="' + imgUrl + '" alt="' + escHtml(c.color) + '"' +
-        ' onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\';this.parentNode.style.cursor=\'default\'">' +
+        ' onerror="if(!retryImgOnce_(this)){this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';this.parentNode.style.cursor=\'default\';}">' +
         '<div class="card-img-ph" style="display:none"><div class="ph-icon">&#x1F45F;</div><div>Sin imagen</div></div>' +
         '<div class="card-img-zoom">&#x1F50D;</div>'
       : '<div class="card-img-ph"><div class="ph-icon">&#x1F45F;</div><div>Sin imagen</div></div>';
@@ -2804,6 +2804,23 @@ function updateInfiniteFooter_(view, shown, total) {
 // botella de Drive cuando hay 50 cards intentando descargar a la vez.
 var lazyObserver = null;
 
+/**
+ * Da un reintento a una <img> que falló antes de dar la foto por perdida.
+ * Sin esto, un corte de red puntual deja la imagen rota hasta el próximo
+ * render, porque nadie la vuelve a pedir. El ?r=1 fuerza una request nueva
+ * (Google ignora los query params extra del thumbnail).
+ * Devuelve true si reintentó → el caller todavía no debe mostrar el placeholder.
+ */
+function retryImgOnce_(img) {
+  if (img.getAttribute('data-retried')) return false;
+  img.setAttribute('data-retried', '1');
+  var src = img.src;
+  setTimeout(function () {
+    img.src = src + (src.indexOf('?') < 0 ? '?' : '&') + 'r=1';
+  }, 600);
+  return true;
+}
+
 function observeLazyImages() {
   if (!('IntersectionObserver' in window)) {
     // Fallback: navegadores muy viejos → cargar todo de una
@@ -2893,7 +2910,7 @@ function openModal(codFabrica, colorName) {
         ' data-cap-cod="' + escHtml(product.codFabrica) + '"' +
         ' data-cap-price="' + escHtml(fmtPrice(getActivePrice(product).price)) + '"' +
         ' title="Click para ampliar"' +
-        ' onerror="this.style.display=\'none\'">'
+        ' onerror="if(!retryImgOnce_(this))this.style.display=\'none\'">'
       : '<div class="modal-color-ph">&#x1F45F;</div>';
 
     // Si el config del modo dice restringir sucursales, armar un set para filtrar.
@@ -5606,8 +5623,18 @@ function waitForImages_(root) {
       promises.push(new Promise(function (resolve) {
         var done = false;
         function finish() { if (!done) { done = true; resolve(); } }
+        function onError() {
+          // Antes resolvía acá directamente: una falla puntual de red dejaba
+          // esa card sin foto en el PDF impreso (el <a> al 1600px seguía
+          // andando, por eso al clickear sí se veía). Reintentar una vez.
+          if (retryImgOnce_(img)) {
+            img.addEventListener('error', finish, { once: true });
+            return;
+          }
+          finish();
+        }
         img.addEventListener('load',  finish);
-        img.addEventListener('error', finish);
+        img.addEventListener('error', onError, { once: true });
       }));
     })(imgs[i]);
   }
