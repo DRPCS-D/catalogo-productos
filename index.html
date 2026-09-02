@@ -231,40 +231,8 @@
   </div>
 
   <div class="sidebar-footer">
-    <!-- Sección PDF (desplegable, colapsada por default) -->
-    <details class="export-section" data-section="pdf-promo-wrap">
-      <summary class="export-section-title">PDF</summary>
-      <label class="export-switch" for="pdf-include-promo-switch" data-section="pdf-promo">
-        <input type="checkbox" id="pdf-include-promo-switch">
-        <span class="export-switch-track"><span class="export-switch-thumb"></span></span>
-        <span class="export-switch-label">Mostrar precio promo</span>
-      </label>
-      <label class="export-switch" for="pdf-hide-price-switch">
-        <input type="checkbox" id="pdf-hide-price-switch">
-        <span class="export-switch-track"><span class="export-switch-thumb"></span></span>
-        <span class="export-switch-label">Ocultar precio</span>
-      </label>
-      <div class="export-buttons-row">
-        <button class="btn-pdf-side"        id="btn-pdf"        onclick="exportPdfNormal_()"  title="Generar catálogo PDF del filtro actual (automático, vía servidor)">Descargar PDF</button>
-        <button class="btn-pdf-mobile-side" id="btn-pdf-mobile" onclick="generatePDFMobile()" title="Generador de PDF optimizado para móviles">Imprimir PDF</button>
-      </div>
-    </details>
-
-    <!-- Sección Excel (desplegable, colapsada por default) -->
-    <details class="export-section">
-      <summary class="export-section-title">Excel</summary>
-      <label class="export-switch" for="excel-with-grade">
-        <input type="checkbox" id="excel-with-grade" onchange="onExcelSwitchChange_('grade')">
-        <span class="export-switch-track"><span class="export-switch-thumb"></span></span>
-        <span class="export-switch-label">Incluir talle (1 fila por talle)</span>
-      </label>
-      <label class="export-switch" for="excel-totals-marca">
-        <input type="checkbox" id="excel-totals-marca" onchange="onExcelSwitchChange_('marca')">
-        <span class="export-switch-track"><span class="export-switch-thumb"></span></span>
-        <span class="export-switch-label">Solo totales por marca por tienda</span>
-      </label>
-      <button class="btn-excel-side" id="btn-excel" onclick="exportExcelFromSwitch_()" title="Exportar a Excel (CSV) el filtro actual">Exportar Excel</button>
-    </details>
+    <!-- Un solo botón: abre el modal con las opciones de PDF y Excel -->
+    <button class="btn-export-side" id="btn-export-open" onclick="openExportModal_()" title="Exportar el catálogo filtrado a PDF o Excel">⬆️ Exportar</button>
 
     <!-- Versión + Atajos + Forzar actualización (iconos compactos) -->
     <div class="app-version-row">
@@ -456,6 +424,49 @@
       </tbody>
     </table>
     <div class="shortcuts-hint">No funcionan mientras escribís en un campo de texto ni con Ctrl/Cmd/Alt apretado.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MODAL EXPORTAR (PDF + Excel, todas las opciones juntas)       -->
+<!-- ============================================================ -->
+<div id="export-modal-overlay" class="export-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="export-modal-title" onclick="if(event.target===this)closeExportModal_()">
+  <div class="export-modal-card">
+    <button class="export-modal-close" type="button" onclick="closeExportModal_()" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <h2 id="export-modal-title">Exportar</h2>
+
+    <div class="export-modal-section">
+      <div class="export-modal-section-title">PDF</div>
+      <label class="export-switch" for="pdf-include-promo-switch" data-section="pdf-promo">
+        <input type="checkbox" id="pdf-include-promo-switch">
+        <span class="export-switch-track"><span class="export-switch-thumb"></span></span>
+        <span class="export-switch-label">Mostrar precio promo</span>
+      </label>
+      <label class="export-switch" for="pdf-hide-price-switch">
+        <input type="checkbox" id="pdf-hide-price-switch">
+        <span class="export-switch-track"><span class="export-switch-thumb"></span></span>
+        <span class="export-switch-label">Ocultar precio</span>
+      </label>
+      <div class="export-buttons-row">
+        <button class="btn-pdf-side"        id="btn-pdf"        onclick="exportPdfNormal_()"  title="Generar catálogo PDF del filtro actual (automático, vía servidor)">Descargar PDF</button>
+        <button class="btn-pdf-mobile-side" id="btn-pdf-mobile" onclick="generatePDFMobile()" title="Generador de PDF optimizado para móviles">Imprimir PDF</button>
+      </div>
+    </div>
+
+    <div class="export-modal-section">
+      <div class="export-modal-section-title">Excel</div>
+      <label class="export-switch" for="excel-with-grade">
+        <input type="checkbox" id="excel-with-grade" onchange="onExcelSwitchChange_('grade')">
+        <span class="export-switch-track"><span class="export-switch-thumb"></span></span>
+        <span class="export-switch-label">Incluir talle (1 fila por talle)</span>
+      </label>
+      <label class="export-switch" for="excel-totals-marca">
+        <input type="checkbox" id="excel-totals-marca" onchange="onExcelSwitchChange_('marca')">
+        <span class="export-switch-track"><span class="export-switch-thumb"></span></span>
+        <span class="export-switch-label">Solo totales por marca por tienda</span>
+      </label>
+      <button class="btn-excel-side" id="btn-excel" onclick="exportExcelFromSwitch_()" title="Exportar a Excel (CSV) el filtro actual">Exportar Excel</button>
+    </div>
   </div>
 </div>
 

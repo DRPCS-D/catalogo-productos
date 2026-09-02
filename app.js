@@ -974,7 +974,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.35.0';
+var APP_VERSION  = '1.36.0';
 var APP_BUILD    = '2026-08-10';
 
 function renderAppVersion_() {
@@ -1473,6 +1473,7 @@ function setupEvents() {
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
       if (document.getElementById('shortcuts-overlay').classList.contains('open')) closeShortcuts_();
+      else if (document.getElementById('export-modal-overlay').classList.contains('open')) closeExportModal_();
       else if (document.getElementById('scan-overlay').classList.contains('open')) closeBarcodeScanner_();
       else if (document.getElementById('barcode-overlay').classList.contains('open')) closeBarcodeModal_();
       else if (document.getElementById('lightbox').classList.contains('open'))     closeLightbox();
@@ -2644,6 +2645,13 @@ function openShortcuts_() {
 }
 function closeShortcuts_() {
   document.getElementById('shortcuts-overlay').classList.remove('open');
+}
+
+function openExportModal_() {
+  document.getElementById('export-modal-overlay').classList.add('open');
+}
+function closeExportModal_() {
+  document.getElementById('export-modal-overlay').classList.remove('open');
 }
 
 function buildGalleryCardHtml_(item) {

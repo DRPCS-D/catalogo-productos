@@ -2878,7 +2878,8 @@
       gap: 8px;
       flex-shrink: 0;
     }
-    .sidebar-footer button {
+    .sidebar-footer button,
+    .export-modal-card .btn-pdf-side, .export-modal-card .btn-pdf-mobile-side, .export-modal-card .btn-excel-side {
       width: 100%;
       padding: 10px 12px;
       border-radius: 6px;
@@ -2902,26 +2903,32 @@
     }
     .sidebar-footer .btn-clear-side:hover,
     .sidebar-body .btn-clear-side:hover { background: var(--gray-100); color: var(--gray-900); }
-    .sidebar-footer .btn-pdf-side {
+    .sidebar-footer .btn-pdf-side, .export-modal-card .btn-pdf-side {
       border: 1px solid var(--primary);
       background: var(--primary);
       color: white;
     }
-    .sidebar-footer .btn-pdf-side:hover { filter: brightness(1.1); }
-    .sidebar-footer .btn-pdf-side:disabled { opacity: .65; cursor: wait; }
-    .sidebar-footer .btn-excel-side {
+    .sidebar-footer .btn-pdf-side:hover, .export-modal-card .btn-pdf-side:hover { filter: brightness(1.1); }
+    .sidebar-footer .btn-pdf-side:disabled, .export-modal-card .btn-pdf-side:disabled { opacity: .65; cursor: wait; }
+    .sidebar-footer .btn-excel-side, .export-modal-card .btn-excel-side {
       border: 1px solid #16a34a;
       background: #16a34a;
       color: white;
     }
-    .sidebar-footer .btn-excel-side:hover { filter: brightness(1.1); }
-    .sidebar-footer .btn-pdf-mobile-side {
+    .sidebar-footer .btn-excel-side:hover, .export-modal-card .btn-excel-side:hover { filter: brightness(1.1); }
+    .sidebar-footer .btn-pdf-mobile-side, .export-modal-card .btn-pdf-mobile-side {
       border: 1px dashed #f59e0b;
       background: rgba(245,158,11,.10);
       color: #c2410c;
       font-size: 12px;
     }
-    .sidebar-footer .btn-pdf-mobile-side:hover { background: rgba(245,158,11,.20); }
+    .sidebar-footer .btn-pdf-mobile-side:hover, .export-modal-card .btn-pdf-mobile-side:hover { background: rgba(245,158,11,.20); }
+    .sidebar-footer .btn-export-side {
+      border: 1px solid var(--primary);
+      background: var(--primary);
+      color: white;
+    }
+    .sidebar-footer .btn-export-side:hover { filter: brightness(1.1); }
 
     /* ============ FILTER MORE OPTIONS — <details>/<summary> colapsable ============ */
     .sidebar .filter-more {
@@ -3015,54 +3022,67 @@
       border-color: var(--primary);
     }
 
-    /* ============ EXPORT SECTIONS (PDF / Excel) — <details>/<summary> ============ */
-    .sidebar-footer .export-section {
-      border-top: 1px solid var(--gray-200);
-      padding-top: 10px;
-      margin-top: 2px;
+    /* ============ MODAL EXPORTAR (PDF + Excel) ============ */
+    /* Mismo look & feel que .shortcuts-overlay/.shortcuts-card. */
+    .export-modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.55);
+      display: none;
+      align-items: center; justify-content: center;
+      z-index: 9000;
+      padding: 16px;
     }
-    .sidebar-footer .export-section-title {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .export-modal-overlay.open { display: flex; }
+    .export-modal-card {
+      background: white;
+      border-radius: 8px;
+      max-width: 420px;
+      width: 100%;
+      padding: 22px 24px 18px;
+      position: relative;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 12px 40px rgba(0,0,0,.25);
+    }
+    .export-modal-card h2 {
+      margin: 0 0 14px;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+    .export-modal-close {
+      position: absolute;
+      top: 8px; right: 8px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      color: var(--gray-500);
+      width: 32px; height: 32px;
+      border-radius: 6px;
+      line-height: 1;
+    }
+    .export-modal-close:hover { background: var(--gray-100); color: var(--gray-900); }
+    .export-modal-section {
+      border-top: 1px solid var(--gray-200);
+      padding-top: 12px;
+      margin-top: 12px;
+    }
+    .export-modal-section:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+    .export-modal-section-title {
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--gray-500);
       font-weight: 700;
-      padding: 4px 0;
-      cursor: pointer;
-      user-select: none;
-      list-style: none;        /* Firefox/Safari */
-      transition: color .12s;
-    }
-    .sidebar-footer .export-section-title::-webkit-details-marker { display: none; }
-    .sidebar-footer .export-section-title:hover { color: var(--gray-700); }
-
-    /* Caret ▸ que rota a ▾ al abrirse — al final para que no compita con el emoji */
-    .sidebar-footer .export-section-title::after {
-      content: '▸';
-      margin-left: auto;
-      color: var(--gray-400);
-      font-size: 10px;
-      transition: transform .15s ease;
-    }
-    .sidebar-footer .export-section[open] > .export-section-title::after {
-      transform: rotate(90deg);
-      color: var(--primary);
-    }
-
-    /* Espacio entre el summary y el contenido al abrir */
-    .sidebar-footer .export-section[open] > .export-section-title {
       margin-bottom: 8px;
     }
-    .sidebar-footer .export-buttons-row {
+    .export-modal-section .export-buttons-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 6px;
     }
-    /* Switch tipo iOS para "Incluir talle" */
-    .sidebar-footer .export-switch {
+    /* Switch tipo iOS para "Incluir talle" / opciones del modal de exportar */
+    .export-modal-section .export-switch {
       display: flex;
       align-items: center;
       gap: 10px;
@@ -3073,8 +3093,8 @@
       user-select: none;
       padding: 4px 0;
     }
-    .sidebar-footer .export-switch input { display: none; }
-    .sidebar-footer .export-switch-track {
+    .export-modal-section .export-switch input { display: none; }
+    .export-modal-section .export-switch-track {
       width: 38px; height: 22px;
       background: var(--gray-300);
       border-radius: 11px;
@@ -3082,7 +3102,7 @@
       transition: background .15s;
       flex-shrink: 0;
     }
-    .sidebar-footer .export-switch-thumb {
+    .export-modal-section .export-switch-thumb {
       position: absolute;
       top: 2px; left: 2px;
       width: 18px; height: 18px;
@@ -3091,13 +3111,13 @@
       box-shadow: 0 1px 3px rgba(0,0,0,.2);
       transition: left .15s;
     }
-    .sidebar-footer .export-switch input:checked + .export-switch-track {
+    .export-modal-section .export-switch input:checked + .export-switch-track {
       background: #16a34a;
     }
-    .sidebar-footer .export-switch input:checked + .export-switch-track .export-switch-thumb {
+    .export-modal-section .export-switch input:checked + .export-switch-track .export-switch-thumb {
       left: 18px;
     }
-    .sidebar-footer .export-switch-label { flex: 1; }
+    .export-modal-section .export-switch-label { flex: 1; }
 
     .sidebar-backdrop {
       position: fixed;
