@@ -974,7 +974,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.36.1';
+var APP_VERSION  = '1.36.2';
 var APP_BUILD    = '2026-08-10';
 
 function renderAppVersion_() {
@@ -5189,6 +5189,10 @@ function csvCell_(v) {
 // Esto evita por completo los problemas de timing/permisos.
 
 function generatePDFMobile() {
+  // Si se disparó desde el modal de Exportar, cerrarlo — si no, queda
+  // arriba de esta vista (z-index más alto) y tapa el botón Imprimir.
+  closeExportModal_();
+
   var isFavView   = currentView === 'favorites';
   var sourceProds = isFavView ? getFavoriteProducts_() : filteredProducts;
 
