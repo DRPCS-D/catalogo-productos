@@ -148,6 +148,16 @@ function setCachedPdf(brand, filePath) {
 let queueProcessing = false;
 const jobQueue = [];
 
+// Tope duro por trabajo. Cada paso interno (goto, waitForSelector, espera de
+// imágenes) ya tiene su propio timeout, y en el peor caso legítimo (catálogo
+// grande, browser.close() lento) suman bastante menos que esto. Sin este tope,
+// si un trabajo queda colgado (p.ej. el browser no responde a Browser.close())
+// "queueProcessing" nunca vuelve a false y TODOS los pedidos siguientes —de
+// cualquier usuario— se acumulan sin correr nunca, sin ningún error visible;
+// el único síntoma es "Failed to fetch" en el navegador, y hasta ahora la
+// única forma de destrabarlo era reiniciar el contenedor a mano.
+const JOB_TIMEOUT_MS = 6 * 60 * 1000;
+
 function enqueueJob(fn) {
   return new Promise(function(resolve, reject) {
     jobQueue.push({ fn: fn, resolve: resolve, reject: reject });
@@ -159,13 +169,29 @@ function drainQueue() {
   if (queueProcessing || jobQueue.length === 0) return;
   queueProcessing = true;
   var job = jobQueue.shift();
-  job.fn().then(function(result) {
-    job.resolve(result);
-  }).catch(function(err) {
-    job.reject(err);
-  }).finally(function() {
+  var released = false;
+  function release() {
+    if (released) return;
+    released = true;
     queueProcessing = false;
     drainQueue();
+  }
+
+  var timer = setTimeout(function() {
+    console.error("[queue] trabajo excedió " + (JOB_TIMEOUT_MS / 1000) +
+      "s — liberando la cola. Puede seguir corriendo en segundo plano; se ignora su resultado.");
+    job.reject(new Error("El servicio de PDF tardó demasiado. Probá de nuevo."));
+    release();
+  }, JOB_TIMEOUT_MS);
+
+  job.fn().then(function(result) {
+    clearTimeout(timer);
+    job.resolve(result);
+    release();
+  }).catch(function(err) {
+    clearTimeout(timer);
+    job.reject(err);
+    release();
   });
 }
 
