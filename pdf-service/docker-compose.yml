@@ -1,6 +1,7 @@
 services:
   pdf-service:
     build: .
+    init: true
     ports:
       - "3001:3001"
     restart: always
