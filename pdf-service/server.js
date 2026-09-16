@@ -343,7 +343,20 @@ async function generatePdf(url, waitSelector, delayMs, catalogMode, brand) {
 
       if (!brandFound) {
         const brands = await extractBrandsFromPage(page);
-        if (brands.length) { knownBrands = brands; brandsLoadedAt = Date.now(); }
+
+        // Si no se extrajo NINGUNA marca, lo más probable es que el catálogo
+        // (Vercel/Supabase) todavía no terminó de cargar productos cuando
+        // llegamos acá — no que la marca pedida no exista. Confundir esto
+        // con "marca no encontrada" le manda al usuario un mensaje engañoso
+        // ("no encontrada") cuando el problema real es que hay que
+        // reintentar. Sin código NO_BRAND cae en el catch genérico (500),
+        // que ya tiene el mensaje correcto en el workflow de n8n.
+        if (!brands.length) {
+          const err = new Error("El catálogo no terminó de cargar productos a tiempo");
+          err.code = "CATALOG_NOT_READY";
+          throw err;
+        }
+        knownBrands = brands; brandsLoadedAt = Date.now();
 
         const normQuery = normStr(brand || "");
         const exactMatch = brands.find(function(b) { return normStr(b) === normQuery; });
