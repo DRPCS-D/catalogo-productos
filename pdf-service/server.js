@@ -770,9 +770,21 @@ async function handlePdf(params, req, res) {
   if (!url) return res.status(400).json({ error: "url requerida" });
 
   try {
-    const pdf = await enqueueJob(function() {
-      return generatePdf(url, waitSel, parseInt(delay_ms, 10), catalogMode === "1", brand);
-    });
+    const runJob = function() {
+      return enqueueJob(function() {
+        return generatePdf(url, waitSel, parseInt(delay_ms, 10), catalogMode === "1", brand);
+      });
+    };
+    let pdf;
+    try {
+      pdf = await runJob();
+    } catch (firstErr) {
+      // El catálogo web a veces tarda en traer productos; un segundo intento
+      // casi siempre funciona. Solo se reintenta este caso, una vez.
+      if (firstErr.code !== "CATALOG_NOT_READY") throw firstErr;
+      console.warn("[retry] catálogo no listo, reintentando una vez:", brand || url);
+      pdf = await runJob();
+    }
     const uuid = crypto.randomUUID();
     const filePath = path.join(TMP_DIR, uuid + ".pdf");
     fs.writeFileSync(filePath, pdf);
