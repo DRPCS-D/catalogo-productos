@@ -5241,11 +5241,13 @@ function generatePDFMobile() {
   // En print el grid se fuerza a 3 columnas. Cada card ocupa ~70mm de alto
   // y la hoja útil mide ~277mm. La primera hoja lleva el header (~25mm),
   // por eso entran menos cards que en las siguientes.
-  // Primera hoja: 6 cards (2 filas × 3 cols) — el header le come ~15-20mm
-  // y en iPhone Safari la 3ra fila no entra al 100% (en Android sí, pero
-  // diferenciamos para mantener compatibilidad cross-platform).
+  // Primera hoja: antes 6 cards (2 filas × 3 cols) porque el header grande
+  // hacía que en iPhone Safari la 3ra fila no entrara al 100%. Con el header
+  // compacto en una sola línea y el precio+total en la misma fila de cada
+  // card, se pasa a 9 (3 filas × 3 cols). Si en algún iPhone la 3ra fila se
+  // derrama, volver a 6 o bajar el tamaño de foto con el control "Foto".
   // Hojas siguientes: 9 cards (3 filas × 3 cols) — sin header entran holgadas.
-  var FIRST_PAGE_CARDS = 6;
+  var FIRST_PAGE_CARDS = 9;
   var OTHER_PAGE_CARDS = 9;
 
   var pagesHtml = '';
@@ -5733,8 +5735,10 @@ function renderPdfCard_(p, c) {
         ' · ' + escHtml(p.marca) + '</div>' +
       '<div class="pdf-card-name">' + escHtml(p.nmProduto) + '</div>' +
       '<div class="pdf-card-color">' + escHtml(c.color) + '</div>' +
-      '<div class="pdf-card-price">' + priceHtml + '</div>' +
-      '<div class="pdf-card-stock">Total: ' + stockTot + ' uds</div>' +
+      '<div class="pdf-card-pricerow">' +
+        '<div class="pdf-card-price">' + priceHtml + '</div>' +
+        '<div class="pdf-card-stock">Total: ' + stockTot + ' uds</div>' +
+      '</div>' +
       '<div class="pdf-card-grades">' + gradesHtml + '</div>' +
     '</div>' +
   '</div>';

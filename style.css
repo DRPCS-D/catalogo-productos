@@ -3567,8 +3567,9 @@
       body.pmo-active #pdf-mobile-overlay .pdf-card-cod    { font-size: 6.5pt !important; }
       body.pmo-active #pdf-mobile-overlay .pdf-card-name   { font-size: 8.5pt !important; margin: 0.5mm 0 0.8mm !important; }
       body.pmo-active #pdf-mobile-overlay .pdf-card-color  { font-size: 7pt !important; padding: 0.3mm 1.5mm !important; }
-      body.pmo-active #pdf-mobile-overlay .pdf-card-price  { font-size: 9pt !important; margin-top: 1mm !important; }
-      body.pmo-active #pdf-mobile-overlay .pdf-card-stock  { font-size: 8pt !important; margin-top: 1.2mm !important; }
+      body.pmo-active #pdf-mobile-overlay .pdf-card-pricerow { margin-top: 1mm !important; }
+      body.pmo-active #pdf-mobile-overlay .pdf-card-price  { font-size: 9pt !important; }
+      body.pmo-active #pdf-mobile-overlay .pdf-card-stock  { font-size: 8pt !important; }
       body.pmo-active #pdf-mobile-overlay .pdf-card-grades { font-size: 6.5pt !important; line-height: 1.4 !important; margin-top: 0.6mm !important; }
       /* Encabezado más compacto solo en print */
       body.pmo-active #pdf-mobile-overlay .pdf-header {
@@ -3714,17 +3715,24 @@
         font-weight: 600;
         margin-top: 0.5mm;
       }
+      /* Precio y "Total: N uds" en la misma línea */
+      .pdf-card-pricerow {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        column-gap: 2mm;
+        margin-top: 1.5mm;
+      }
       .pdf-card-price {
         font-size: 10pt;
         font-weight: 700;
         color: #0f172a;
-        margin-top: 1.5mm;
       }
       .pdf-card-stock {
         color: #1e3a5f;
         font-weight: 700;
         font-size: 8.5pt;
-        margin-top: 1.8mm;
       }
       .pdf-card-grades {
         font-size: 7pt;
@@ -3762,8 +3770,9 @@
     #pdf-mobile-overlay .pdf-card-name { font-weight: 700; font-size: 9pt; line-height: 1.15; margin: 0.8mm 0 1mm; color: #0f172a; }
     #pdf-mobile-overlay .pdf-card-color { background: #e0e7ff; color: #1e3a5f; padding: 0.5mm 2mm; border-radius: 1.5mm;
       display: inline-block; font-size: 7.5pt; font-weight: 600; margin-top: 0.5mm; }
-    #pdf-mobile-overlay .pdf-card-price { font-size: 10pt; font-weight: 700; color: #0f172a; margin-top: 1.5mm; }
-    #pdf-mobile-overlay .pdf-card-stock { color: #1e3a5f; font-weight: 700; font-size: 8.5pt; margin-top: 1.8mm; }
+    #pdf-mobile-overlay .pdf-card-pricerow { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; column-gap: 2mm; margin-top: 1.5mm; }
+    #pdf-mobile-overlay .pdf-card-price { font-size: 10pt; font-weight: 700; color: #0f172a; }
+    #pdf-mobile-overlay .pdf-card-stock { color: #1e3a5f; font-weight: 700; font-size: 8.5pt; }
     #pdf-mobile-overlay .pdf-card-grades { font-size: 7pt; color: #334155; margin-top: 1mm; line-height: 1.5; }
     #pdf-mobile-overlay .pdf-card-grades .grade-chip { background: #f1f5f9; padding: 0.3mm 1.5mm; border-radius: 1.2mm;
       margin: 0 1mm 0.6mm 0; display: inline-block; white-space: nowrap; }
