@@ -5288,13 +5288,13 @@ function generatePDFMobile() {
       '<div class="pmo-scale" title="Ajusta el tamaño general con el que se imprime. Se guarda en este dispositivo.">' +
         '<span class="pmo-scale-label">Escala</span>' +
         '<button class="pmo-scale-btn" onclick="adjustPmoScale_(-1)" aria-label="Reducir escala">−</button>' +
-        '<span class="pmo-scale-val" id="pmo-scale-val">110%</span>' +
+        '<span class="pmo-scale-val" id="pmo-scale-val">107%</span>' +
         '<button class="pmo-scale-btn" onclick="adjustPmoScale_(1)" aria-label="Aumentar escala">+</button>' +
       '</div>' +
       '<div class="pmo-scale" title="Ajusta el alto de las fotos en el print. Se guarda en este dispositivo.">' +
         '<span class="pmo-scale-label">Foto</span>' +
         '<button class="pmo-scale-btn" onclick="adjustPmoImg_(-1)" aria-label="Foto más chica">−</button>' +
-        '<span class="pmo-scale-val" id="pmo-img-val">46mm</span>' +
+        '<span class="pmo-scale-val" id="pmo-img-val">50mm</span>' +
         '<button class="pmo-scale-btn" onclick="adjustPmoImg_(1)" aria-label="Foto más grande">+</button>' +
       '</div>' +
       '<button class="pmo-print" onclick="printPdfMobile_(this)">🖨️ Imprimir</button>' +
@@ -5345,8 +5345,8 @@ var PMO_SCALE_MAX = 110;
 function getPmoScale_() {
   var raw = null;
   try { raw = localStorage.getItem(PMO_SCALE_KEY); } catch (e) {}
-  var v = parseInt(raw || '110', 10);
-  if (isNaN(v)) v = 110;
+  var v = parseInt(raw || '107', 10);
+  if (isNaN(v)) v = 107;
   if (v < PMO_SCALE_MIN) v = PMO_SCALE_MIN;
   if (v > PMO_SCALE_MAX) v = PMO_SCALE_MAX;
   return v;
@@ -5371,8 +5371,8 @@ var PMO_IMG_MAX = 50;
 function getPmoImg_() {
   var raw = null;
   try { raw = localStorage.getItem(PMO_IMG_KEY); } catch (e) {}
-  var v = parseInt(raw || '46', 10);
-  if (isNaN(v)) v = 46;
+  var v = parseInt(raw || '50', 10);
+  if (isNaN(v)) v = 50;
   if (v < PMO_IMG_MIN) v = PMO_IMG_MIN;
   if (v > PMO_IMG_MAX) v = PMO_IMG_MAX;
   return v;
@@ -5703,7 +5703,7 @@ function renderPdfCard_(p, c) {
     .map(function (g) {
       var gs = getGradeStock(g);
       if (gs <= 0) return '';
-      return '<span class="grade-chip">T.' + escHtml(g.grade) + ': <b>' + gs + '</b></span>';
+      return '<span class="grade-chip">' + escHtml(g.grade) + ': <b>' + gs + '</b></span>';
     })
     .join('');
 

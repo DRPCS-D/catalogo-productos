@@ -28,8 +28,8 @@ const LAUNCH_ARGS = [
   "--disable-dev-shm-usage", "--disable-gpu"
 ];
 
-const PMO_SCALE = 110;
-const PMO_IMG_HEIGHT = 44;
+const PMO_SCALE = 107;
+const PMO_IMG_HEIGHT = 50;
 const CATALOG_BASE = "https://catalogo-drpcs.vercel.app/";
 
 // ── Config ────────────────────────────────────────────────────────────────────
