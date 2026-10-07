@@ -324,6 +324,45 @@ async function extractSucursalesFromPage(page) {
   }).catch(function() { return []; });
 }
 
+// Esperar a que las fotos del overlay móvil terminen de cargar. Antes eran 3 s
+// fijos: con ~40 imágenes pidiéndose de golpe a Google casi siempre había al
+// menos una que no llegaba a tiempo y esa card salía en blanco.
+// Ojo: acá el Service Worker está apagado (stopAllWorkers), así que el
+// reintento del sw.js no aplica y hay que reintentar del lado del DOM.
+async function waitOverlayImages_(page) {
+  await page.evaluate(function() {
+    var root = document.getElementById("pdf-mobile-overlay");
+    if (!root) return null;
+    var imgs = Array.prototype.slice.call(root.querySelectorAll("img"));
+    return Promise.all(imgs.map(function(img) {
+      if (img.complete && img.naturalWidth > 0) return null;
+      return new Promise(function(resolve) {
+        var done = false;
+        var cap = setTimeout(finish, 25000);
+        function finish() { if (!done) { done = true; clearTimeout(cap); resolve(); } }
+        function onError() {
+          // Un reintento con URL nueva (Google ignora los params extra).
+          if (!img.getAttribute("data-retried")) {
+            img.setAttribute("data-retried", "1");
+            var s = img.src;
+            img.addEventListener("error", finish, { once: true });
+            setTimeout(function() {
+              img.src = s + (s.indexOf("?") < 0 ? "?" : "&") + "r=1";
+            }, 500);
+            return;
+          }
+          finish();
+        }
+        img.addEventListener("load", finish);
+        img.addEventListener("error", onError, { once: true });
+        // Ya falló antes de que llegáramos a escuchar: el evento 'error'
+        // no se repite, así que sin esto quedaría colgado hasta el cap.
+        if (img.complete && img.getAttribute("src")) onError();
+      });
+    }));
+  });
+}
+
 async function generatePdf(url, waitSelector, delayMs, catalogMode, brand) {
   const { browser, page } = await newBrowserPage(url);
   try {
@@ -415,42 +454,7 @@ async function generatePdf(url, waitSelector, delayMs, catalogMode, brand) {
         throw e;
       }
 
-      // Esperar a que las fotos terminen de cargar. Antes eran 3 s fijos:
-      // con ~40 imágenes pidiéndose de golpe a Google casi siempre había al
-      // menos una que no llegaba a tiempo y esa card salía en blanco.
-      // Ojo: acá el Service Worker está apagado (stopAllWorkers), así que el
-      // reintento del sw.js no aplica y hay que reintentar del lado del DOM.
-      await page.evaluate(function() {
-        var root = document.getElementById("pdf-mobile-overlay");
-        if (!root) return null;
-        var imgs = Array.prototype.slice.call(root.querySelectorAll("img"));
-        return Promise.all(imgs.map(function(img) {
-          if (img.complete && img.naturalWidth > 0) return null;
-          return new Promise(function(resolve) {
-            var done = false;
-            var cap = setTimeout(finish, 25000);
-            function finish() { if (!done) { done = true; clearTimeout(cap); resolve(); } }
-            function onError() {
-              // Un reintento con URL nueva (Google ignora los params extra).
-              if (!img.getAttribute("data-retried")) {
-                img.setAttribute("data-retried", "1");
-                var s = img.src;
-                img.addEventListener("error", finish, { once: true });
-                setTimeout(function() {
-                  img.src = s + (s.indexOf("?") < 0 ? "?" : "&") + "r=1";
-                }, 500);
-                return;
-              }
-              finish();
-            }
-            img.addEventListener("load", finish);
-            img.addEventListener("error", onError, { once: true });
-            // Ya falló antes de que llegáramos a escuchar: el evento 'error'
-            // no se repite, así que sin esto quedaría colgado hasta el cap.
-            if (img.complete && img.getAttribute("src")) onError();
-          });
-        }));
-      });
+      await waitOverlayImages_(page);
     }
 
     return await page.pdf({
@@ -515,21 +519,37 @@ async function generateNormalPdf(filters) {
     }, filters || {});
     await new Promise(function(r) { setTimeout(r, 500); });
 
-    const cardCount = await page.evaluate(function() {
-      return (typeof buildPdfCatalogForExport_ === "function")
-        ? buildPdfCatalogForExport_()
-        : Promise.reject(new Error("buildPdfCatalogForExport_ no definida — ¿versión vieja del catálogo?"));
+    // Mismo diseño compacto que el botón "Imprimir PDF" del catálogo (overlay
+    // móvil: escala y alto de foto fijados acá para no depender del
+    // localStorage de nadie).
+    await page.evaluate(function(s, h) {
+      try { localStorage.setItem("pmo_print_scale", String(s)); } catch (_) {}
+      try { localStorage.setItem("pmo_img_height",  String(h)); } catch (_) {}
+    }, PMO_SCALE, PMO_IMG_HEIGHT);
+
+    await page.evaluate(function() {
+      if (typeof generatePDFMobile !== "function") {
+        throw new Error("generatePDFMobile no definida — ¿versión vieja del catálogo?");
+      }
+      generatePDFMobile();
     });
 
-    if (!cardCount) {
+    const overlayOk = await page.waitForSelector("#pdf-mobile-overlay.open", { timeout: 10000 })
+      .then(function() { return true; })
+      .catch(function() { return false; });
+    if (!overlayOk) {
       const e = new Error("Los filtros no dejan productos para exportar");
       e.code = "NO_CARDS";
       throw e;
     }
 
+    await waitOverlayImages_(page);
+
+    // Sin fondos (printBackground:false), igual que al imprimir desde el
+    // navegador: las etiquetas de color y talle quedan sin recuadro de color.
     return await page.pdf({
       format: serverConfig.formato_pdf || "A4",
-      printBackground: true,
+      printBackground: false,
       margin: { top: "0mm", right: "0mm", bottom: "0mm", left: "0mm" }
     });
   } finally {
