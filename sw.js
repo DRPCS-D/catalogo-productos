@@ -11,7 +11,7 @@
  */
 
 // v68: botón código de barra EAN en cada línea del carrito.
-const CACHE_VERSION = 'v116';
+const CACHE_VERSION = 'v121';
 const SHELL_CACHE = 'shell-' + CACHE_VERSION;
 const DATA_CACHE  = 'data-'  + CACHE_VERSION;
 const IMG_CACHE   = 'img-'   + CACHE_VERSION;
@@ -38,7 +38,11 @@ const IMG_TTL = 7 * 24 * 60 * 60 * 1000;
 self.addEventListener('install', function (event) {
   event.waitUntil(
     caches.open(SHELL_CACHE).then(function (cache) {
-      return cache.addAll(SHELL_URLS);
+      // cache:'reload' evita que el precache tome copias viejas del caché HTTP
+      // del navegador (si no, un deploy nuevo puede quedar con CSS/JS anterior).
+      return cache.addAll(SHELL_URLS.map(function (u) {
+        return new Request(u, { cache: 'reload' });
+      }));
     }).then(function () {
       return self.skipWaiting();   // activa el SW nuevo inmediatamente
     })

@@ -5257,12 +5257,16 @@ function generatePDFMobile() {
     var headerHtml = (pageIdx === 0)
       ? '<div class="pdf-header">' +
           '<h1>Catálogo de Productos</h1>' +
-          '<div class="pdf-meta">' + escHtml(filtroResumen) +
-            ' · ' + cardCount + ' artículos · ' + fecha + '</div>' +
+          '<div class="pdf-meta">' + cardCount + ' artículos · ' + fecha + '</div>' +
         '</div>'
+      : '';
+    var isLastPage = (idx + perPage >= cardCount);
+    var footerHtml = isLastPage
+      ? '<div class="pdf-filters-footer">' + escHtml(filtroResumen) + '</div>'
       : '';
     pagesHtml += '<div class="pmo-page">' + headerHtml +
                    '<div class="pdf-grid">' + chunk + '</div>' +
+                   footerHtml +
                  '</div>';
     idx += perPage;
     pageIdx++;
@@ -5470,10 +5474,10 @@ function renderPrintCatalogHtml_() {
   container.innerHTML =
     '<div class="pdf-header">' +
       '<h1>Catálogo de Productos</h1>' +
-      '<div class="pdf-meta">' + escHtml(filtroResumen) +
-        ' · ' + cardCount + ' artículos · ' + fecha + '</div>' +
+      '<div class="pdf-meta">' + cardCount + ' artículos · ' + fecha + '</div>' +
     '</div>' +
-    '<div class="pdf-grid">' + cardsHtml + '</div>';
+    '<div class="pdf-grid">' + cardsHtml + '</div>' +
+    '<div class="pdf-filters-footer">' + escHtml(filtroResumen) + '</div>';
 
   return { container: container, cardCount: cardCount };
 }
