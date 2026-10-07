@@ -3011,10 +3011,15 @@ function openModal(codFabrica, colorName) {
   // Resetear scroll del body: si el usuario llegó acá click-eando una card
   // similar del producto anterior, queremos que vea el nuevo producto desde
   // arriba (precios) y no desde la sección similares.
-  modalBody.scrollTop = 0;
-
-  document.getElementById('modal').classList.add('open');
+  var modalEl = document.getElementById('modal');
+  modalEl.classList.add('open');
   document.body.style.overflow = 'hidden';
+
+  // Hay dos contenedores con scroll (el overlay y el modal-body). Con el modal
+  // oculto (display:none) el scrollTop no se aplica, así que se resetea acá,
+  // ya abierto, para que el detalle siempre arranque desde arriba.
+  modalBody.scrollTop = 0;
+  modalEl.scrollTop = 0;
 }
 
 // =================================================================
