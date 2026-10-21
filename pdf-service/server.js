@@ -505,7 +505,7 @@ async function generateNormalPdf(filters) {
       window.sortTieDir   = f.sortTieDir   || "desc";
       window.pdfIncludePromo = !!f.pdfIncludePromo;
       window.pdfHidePrice    = !!f.pdfHidePrice;
-      window.priceMode       = (f.priceMode === "mayorista") ? "mayorista" : "minorista";
+      window.priceMode       = (f.priceMode === "mayorista" || f.priceMode === "mayorista1") ? f.priceMode : "minorista";
       // Vista Favoritos: los favoritos viven en el localStorage del dispositivo
       // del usuario, al que este browser (recién abierto, sin ese localStorage)
       // no tiene acceso — por eso el cliente manda el objeto `favorites` tal

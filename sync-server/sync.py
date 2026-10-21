@@ -145,7 +145,7 @@ def fetch_products():
     t0 = time.time()
 
     def _do():
-        r = requests.get(API_URL, headers={"Accept": "application/json"}, timeout=180)
+        r = requests.get(API_URL, headers={"Accept": "application/json"}, timeout=(30, 600))
         r.raise_for_status()
         # Hacer el decode acá dentro: si la respuesta vino cortada (JSONDecodeError),
         # with_retry vuelve a intentar.
@@ -248,6 +248,10 @@ def group_raw(raw, image_map):
                 "precioMayoristaPromo":          _num(item.get("precioMayoristaPromo")),
                 "precioMayoristaPromoInicio":    item.get("precioMayoristaPromoInicio"),
                 "precioMayoristaPromoValidade":  item.get("precioMayoristaPromoValidade"),
+                "precioMayorista1":              _num(item.get("precioMayorista1")),
+                "precioMayorista1Promo":         _num(item.get("precioMayorista1Promo")),
+                "precioMayorista1PromoInicio":   item.get("precioMayorista1PromoInicio"),
+                "precioMayorista1PromoValidade": item.get("precioMayorista1PromoValidade"),
                 "qMasVendio":                    int(item.get("qMasVendio") or 0),
                 "_cMap":  {},
                 "_cOrder": [],
@@ -357,6 +361,10 @@ def group_raw(raw, image_map):
             "precioMayoristaPromo":          p["precioMayoristaPromo"],
             "precioMayoristaPromoInicio":    p["precioMayoristaPromoInicio"],
             "precioMayoristaPromoValidade":  p["precioMayoristaPromoValidade"],
+            "precioMayorista1":              p["precioMayorista1"],
+            "precioMayorista1Promo":         p["precioMayorista1Promo"],
+            "precioMayorista1PromoInicio":   p["precioMayorista1PromoInicio"],
+            "precioMayorista1PromoValidade": p["precioMayorista1PromoValidade"],
             "qMasVendio":                    p["qMasVendio"],
             "colorsArr":                     colors_arr,
             "totalStock":                    total_product,
@@ -446,6 +454,10 @@ def write_to_supabase(grouped, api_ms, json_str=None):
             p.get("precioMayoristaPromo"),
             _date(p.get("precioMayoristaPromoInicio")),
             _date(p.get("precioMayoristaPromoValidade")),
+            p.get("precioMayorista1"),
+            p.get("precioMayorista1Promo"),
+            _date(p.get("precioMayorista1PromoInicio")),
+            _date(p.get("precioMayorista1PromoValidade")),
             p.get("qMasVendio"),
             p.get("totalStock"),
         ))
@@ -500,6 +512,8 @@ def write_to_supabase(grouped, api_ms, json_str=None):
                               precio_minorista_promo_inicio, precio_minorista_promo_validade,
                               precio_mayorista, precio_mayorista_promo,
                               precio_mayorista_promo_inicio, precio_mayorista_promo_validade,
+                              precio_mayorista1, precio_mayorista1_promo,
+                              precio_mayorista1_promo_inicio, precio_mayorista1_promo_validade,
                               q_mas_vendio, total_stock
                             ) VALUES %s
                         """, products_rows, page_size=1000)

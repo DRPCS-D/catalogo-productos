@@ -168,7 +168,7 @@ var filterColor      = [];   // colores seleccionados (multi)
 var filterSucursal   = [];   // sucursales seleccionadas (multi-select)
 var filterPrecioMin  = null;
 var filterPrecioMax  = null;
-var priceMode        = 'minorista';   // 'minorista' | 'mayorista' — selector global
+var priceMode        = 'minorista';   // 'minorista' | 'mayorista' | 'mayorista1' — selector global
 
 // SVG icons reutilizables
 var SVG_HEART_EMPTY = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
@@ -706,24 +706,23 @@ function applyPageConfig() {
   if (titleEl) titleEl.textContent = cfg.title;
   document.title = cfg.title;
 
-  // Price mode forzado
-  if (cfg.priceMode) {
-    priceMode = cfg.priceMode;
-    document.querySelectorAll('#filter-pricemode button').forEach(function (b) {
-      b.classList.toggle('active', b.getAttribute('data-value') === cfg.priceMode);
-    });
-  } else {
-    // Modo general: restaurar selección guardada del usuario
+  // Price mode. Mayorista: forzado y sin switch. Minorista: arranca en
+  // Minorista y el switch ofrece Minorista / Mayorista 1. General: switch con
+  // los 3 precios y se restaura la última elección guardada.
+  var allowedModes = allowedPriceModes_();
+  var startMode = cfg.priceMode && allowedModes.indexOf(cfg.priceMode) >= 0 ? cfg.priceMode : 'minorista';
+  if (window.PAGE_MODE === 'minorista') {
+    document.body.classList.add('mode-price-switch');
+  } else if (!cfg.priceMode) {
     try {
       var savedMode = localStorage.getItem('lc_price_mode');
-      if (savedMode === 'mayorista' || savedMode === 'minorista') {
-        priceMode = savedMode;
-        document.querySelectorAll('#filter-pricemode button').forEach(function (b) {
-          b.classList.toggle('active', b.getAttribute('data-value') === savedMode);
-        });
-      }
+      if (savedMode && allowedModes.indexOf(savedMode) >= 0) startMode = savedMode;
     } catch (_) {}
   }
+  priceMode = startMode;
+  document.querySelectorAll('#filter-pricemode button').forEach(function (b) {
+    b.classList.toggle('active', b.getAttribute('data-value') === startMode);
+  });
 
   // Sucursales pre-filtradas
   if (cfg.sucursales && cfg.sucursales.length) {
@@ -974,8 +973,8 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.36.2';
-var APP_BUILD    = '2026-08-10';
+var APP_VERSION  = '1.37.0';
+var APP_BUILD    = '2026-10-21';
 
 function renderAppVersion_() {
   var el = document.getElementById('app-version');
@@ -1553,7 +1552,10 @@ function setupEvents() {
       document.querySelectorAll('#filter-pricemode button').forEach(function (b) {
         b.classList.toggle('active', b === btn);
       });
-      try { localStorage.setItem('lc_price_mode', priceMode); } catch (_) {}
+      // En el modo minorista no se guarda: siempre arranca en Minorista
+      if (window.PAGE_MODE !== 'minorista') {
+        try { localStorage.setItem('lc_price_mode', priceMode); } catch (_) {}
+      }
       applyFilters();
       renderCurrentView();
     });
@@ -1610,6 +1612,10 @@ function groupData(data) {
         precioMayoristaPromo:          Number(item.precioMayoristaPromo)   || 0,
         precioMayoristaPromoInicio:    item.precioMayoristaPromoInicio     || null,
         precioMayoristaPromoValidade:  item.precioMayoristaPromoValidade   || null,
+        precioMayorista1:              Number(item.precioMayorista1)       || 0,
+        precioMayorista1Promo:         Number(item.precioMayorista1Promo)  || 0,
+        precioMayorista1PromoInicio:   item.precioMayorista1PromoInicio    || null,
+        precioMayorista1PromoValidade: item.precioMayorista1PromoValidade  || null,
         qMasVendio: Number(item.qMasVendio) || 0,
         cMap:  {},
         cOrder: []
@@ -4294,7 +4300,7 @@ function renderCartPdf_(opts) {
     { hour: '2-digit', minute: '2-digit' });
   var modoLabel = (window.PAGE_CONFIG && window.PAGE_CONFIG.title)
     ? window.PAGE_CONFIG.title
-    : (priceMode === 'mayorista' ? 'Mayorista' : 'Minorista');
+    : priceModeLabel_(priceMode);
 
   var totalUnits   = getCartTotalUnits_();
   var subtotalAmt  = getCartTotalAmount_();
@@ -4601,17 +4607,31 @@ function shareViaWhatsapp_(text, imgUrl, btn) {
 // =================================================================
 // PRECIOS — Minorista / Mayorista + Promo activa
 // =================================================================
+// Campos de producto por tipo de precio. Mayorista 1 = tercer precio.
+var PRICE_KEYS = {
+  minorista:   { label: 'Minorista',   base: 'precioMinorista',  promo: 'precioMinoristaPromo',  ini: 'precioMinoristaPromoInicio',  fin: 'precioMinoristaPromoValidade'  },
+  mayorista:   { label: 'Mayorista',   base: 'precioMayorista',  promo: 'precioMayoristaPromo',  ini: 'precioMayoristaPromoInicio',  fin: 'precioMayoristaPromoValidade'  },
+  mayorista1:  { label: 'Mayorista 1', base: 'precioMayorista1', promo: 'precioMayorista1Promo', ini: 'precioMayorista1PromoInicio', fin: 'precioMayorista1PromoValidade' }
+};
+
+// Tipos de precio que el usuario puede elegir según la página (?mode=)
+function allowedPriceModes_() {
+  var m = window.PAGE_MODE;
+  if (m === 'mayorista') return ['mayorista'];
+  if (m === 'minorista') return ['minorista', 'mayorista1'];
+  return ['minorista', 'mayorista', 'mayorista1'];
+}
+
+function priceModeLabel_(mode) {
+  return (PRICE_KEYS[mode] || PRICE_KEYS.minorista).label;
+}
+
 function getActivePrice(p) {
-  if (priceMode === 'mayorista') {
-    if (isPromoActive_(p.precioMayoristaPromo, p.precioMayoristaPromoInicio, p.precioMayoristaPromoValidade)) {
-      return { price: p.precioMayoristaPromo, regularPrice: p.precioMayorista, isPromo: true };
-    }
-    return { price: p.precioMayorista || 0, regularPrice: null, isPromo: false };
+  var k = PRICE_KEYS[priceMode] || PRICE_KEYS.minorista;
+  if (isPromoActive_(p[k.promo], p[k.ini], p[k.fin])) {
+    return { price: p[k.promo], regularPrice: p[k.base], isPromo: true };
   }
-  if (isPromoActive_(p.precioMinoristaPromo, p.precioMinoristaPromoInicio, p.precioMinoristaPromoValidade)) {
-    return { price: p.precioMinoristaPromo, regularPrice: p.precioMinorista, isPromo: true };
-  }
-  return { price: p.precioMinorista || 0, regularPrice: null, isPromo: false };
+  return { price: p[k.base] || 0, regularPrice: null, isPromo: false };
 }
 
 function isPromoActive_(promo, inicio, validade) {
@@ -4636,60 +4656,36 @@ function renderPriceHtml(p) {
 // ¿El producto tiene promo activa SEGÚN el priceMode actual?
 // Si priceMode = minorista, mira el promo minorista. Si mayorista, el mayorista.
 function productHasActivePromo_(p) {
-  if (priceMode === 'mayorista') {
-    return isPromoActive_(p.precioMayoristaPromo, p.precioMayoristaPromoInicio, p.precioMayoristaPromoValidade);
-  }
-  return isPromoActive_(p.precioMinoristaPromo, p.precioMinoristaPromoInicio, p.precioMinoristaPromoValidade);
+  var k = PRICE_KEYS[priceMode] || PRICE_KEYS.minorista;
+  return isPromoActive_(p[k.promo], p[k.ini], p[k.fin]);
 }
 
-// Bloque HTML para el modal de detalle: minorista + mayorista (ambos) + top venta
+// Bloque HTML para el modal de detalle: precios del modo + top venta
 function buildModalPriceBlock_(p) {
-  var cfg = window.PAGE_CONFIG || {};
-
-  // ¿Qué precios mostrar?
-  // - Si el modo tiene priceMode = 'minorista' → solo minorista
-  // - Si tiene priceMode = 'mayorista' → solo mayorista
-  // - Si no tiene priceMode (general) → ambos
-  var showMinorista = !cfg.priceMode || cfg.priceMode === 'minorista';
-  var showMayorista = !cfg.priceMode || cfg.priceMode === 'mayorista';
-
-  var minPromoActive = isPromoActive_(p.precioMinoristaPromo, p.precioMinoristaPromoInicio, p.precioMinoristaPromoValidade);
-  var mayPromoActive = isPromoActive_(p.precioMayoristaPromo, p.precioMayoristaPromoInicio, p.precioMayoristaPromoValidade);
-
+  // ¿Qué precios mostrar? Los permitidos por la página (?mode=):
+  // - general → minorista + mayorista + mayorista 1
+  // - minorista → minorista + mayorista 1
+  // - mayorista → solo mayorista
   var html = '<div class="modal-price-block">';
 
-  // Línea minorista (solo si el modo lo permite)
-  if (showMinorista) {
-    html += '<div><strong>Minorista:</strong> ' + fmtPrice(p.precioMinorista || 0);
-    if (p.precioMinoristaPromo > 0) {
-      html += ' · <span class="' + (minPromoActive ? 'price-promo' : 'price-promo-inactive') + '">' +
-              'Promo: ' + fmtPrice(p.precioMinoristaPromo);
-      if (p.precioMinoristaPromoInicio || p.precioMinoristaPromoValidade) {
-        html += ' (' + fmtDate(p.precioMinoristaPromoInicio) +
-                ' a ' + fmtDate(p.precioMinoristaPromoValidade) + ')';
+  allowedPriceModes_().forEach(function (mode) {
+    var k = PRICE_KEYS[mode];
+    var base = p[k.base] || 0, promo = p[k.promo] || 0;
+    // Minorista se muestra siempre; los mayoristas solo si el producto tiene precio
+    if (mode !== 'minorista' && base <= 0 && promo <= 0) return;
+    var active = isPromoActive_(p[k.promo], p[k.ini], p[k.fin]);
+    html += '<div><strong>' + k.label + ':</strong> ' + (base > 0 || mode === 'minorista' ? fmtPrice(base) : '—');
+    if (promo > 0) {
+      html += ' · <span class="' + (active ? 'price-promo' : 'price-promo-inactive') + '">' +
+              'Promo: ' + fmtPrice(promo);
+      if (p[k.ini] || p[k.fin]) {
+        html += ' (' + fmtDate(p[k.ini]) + ' a ' + fmtDate(p[k.fin]) + ')';
       }
-      if (!minPromoActive) html += ' [vencida]';
+      if (!active) html += ' [vencida]';
       html += '</span>';
     }
     html += '</div>';
-  }
-
-  // Línea mayorista (solo si el modo lo permite Y el producto tiene precio mayorista)
-  if (showMayorista && ((p.precioMayorista || 0) > 0 || (p.precioMayoristaPromo || 0) > 0)) {
-    html += '<div><strong>Mayorista:</strong> ' +
-            ((p.precioMayorista || 0) > 0 ? fmtPrice(p.precioMayorista) : '—');
-    if (p.precioMayoristaPromo > 0) {
-      html += ' · <span class="' + (mayPromoActive ? 'price-promo' : 'price-promo-inactive') + '">' +
-              'Promo: ' + fmtPrice(p.precioMayoristaPromo);
-      if (p.precioMayoristaPromoInicio || p.precioMayoristaPromoValidade) {
-        html += ' (' + fmtDate(p.precioMayoristaPromoInicio) +
-                ' a ' + fmtDate(p.precioMayoristaPromoValidade) + ')';
-      }
-      if (!mayPromoActive) html += ' [vencida]';
-      html += '</span>';
-    }
-    html += '</div>';
-  }
+  });
 
   // Top venta (qMasVendio): solo se muestra en el modo general.
   // En mayorista/minorista no aplica porque la sucursal top podría no estar
@@ -5714,9 +5710,7 @@ function renderPdfCard_(p, c) {
   } else if (pdfIncludePromo) {
     priceHtml = renderPriceHtml(p);
   } else {
-    var basePrice = (priceMode === 'mayorista')
-      ? (p.precioMayorista || 0)
-      : (p.precioMinorista || 0);
+    var basePrice = p[(PRICE_KEYS[priceMode] || PRICE_KEYS.minorista).base] || 0;
     priceHtml = fmtPrice(basePrice);
   }
 
@@ -5747,7 +5741,7 @@ function renderPdfCard_(p, c) {
 // Resumen textual de los filtros activos (para el encabezado del PDF)
 function buildFilterSummary_() {
   var parts = [];
-  parts.push('Precio: ' + (priceMode === 'mayorista' ? 'Mayorista' : 'Minorista'));
+  parts.push('Precio: ' + priceModeLabel_(priceMode));
   if (searchText)            parts.push('Búsqueda: "' + searchText + '"');
   if (filterMarca.length)    parts.push('Marca: '    + filterMarca.join(', '));
   if (filterGrupo.length)    parts.push('Grupo: '    + filterGrupo.join(', '));

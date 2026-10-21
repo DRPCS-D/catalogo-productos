@@ -2101,7 +2101,9 @@
        NOTA: el filtro de sucursal sigue visible pero con opciones restringidas
        (ver populateFilters) — el usuario puede deseleccionar pero no agregar
        sucursales fuera del config. */
-    body.mode-locked [data-section="pricemode"] { display: none !important; }
+    body.mode-locked:not(.mode-price-switch) [data-section="pricemode"] { display: none !important; }
+    /* Minorista: el switch de precio se muestra pero sin el botón Mayorista */
+    body.mode-price-switch #filter-pricemode button[data-value="mayorista"] { display: none; }
 
     .card-stock {
       display: flex;
@@ -3153,6 +3155,8 @@
       border-right: 1px solid var(--gray-200);
     }
     .segmented button:last-child { border-right: none; }
+    /* Con el botón del medio oculto (modo minorista) el último sigue sin borde */
+    #filter-pricemode button { white-space: nowrap; }
     .segmented button:hover { background: var(--gray-100); }
     .segmented button.active {
       background: var(--primary);
