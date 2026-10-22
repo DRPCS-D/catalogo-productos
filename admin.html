@@ -567,6 +567,7 @@
           <option value="g">🌐 General (?mode=g)</option>
           <option value="ma">📦 Mayorista (?mode=ma)</option>
           <option value="mi" selected>🛍️ Minorista (?mode=mi)</option>
+          <option value="ma1">🏷️ Mayorista 1 (?mode=ma1)</option>
         </select>
       </div>
       <div class="ql-field" style="flex: 2 1 320px;">
@@ -611,7 +612,8 @@ var allConfigs    = {};   // mode → row de page_config
 var MODE_INFO = {
   general:   { icon: '🌐', label: 'General',   url: '?mode=g'  },
   mayorista: { icon: '📦', label: 'Mayorista', url: '?mode=ma' },
-  minorista: { icon: '🛍️', label: 'Minorista', url: '?mode=mi' }
+  minorista: { icon: '🛍️', label: 'Minorista', url: '?mode=mi' },
+  mayorista1: { icon: '🏷️', label: 'Mayorista 1', url: '?mode=ma1' }
 };
 
 // ===================================================================
@@ -792,7 +794,7 @@ function fetchCatalogMeta_() {
 // RENDER DE LAS 3 CARDS
 // ===================================================================
 function renderConfigs_() {
-  var modes = ['general', 'mayorista', 'minorista'];
+  var modes = ['general', 'mayorista', 'minorista', 'mayorista1'];
   var grid = document.getElementById('config-grid');
   grid.innerHTML = modes.map(function (mode) {
     var cfg = allConfigs[mode] || defaultConfig_(mode);
@@ -837,6 +839,7 @@ function renderConfigCard_(mode, cfg) {
           '<option value=""' + (pm === '' ? ' selected' : '') + '>— Ninguno (usuario decide) —</option>' +
           '<option value="minorista"' + (pm === 'minorista' ? ' selected' : '') + '>Minorista</option>' +
           '<option value="mayorista"' + (pm === 'mayorista' ? ' selected' : '') + '>Mayorista</option>' +
+          '<option value="mayorista1"' + (pm === 'mayorista1' ? ' selected' : '') + '>Mayorista 1</option>' +
         '</select>' +
       '</div>' +
       // Sucursales

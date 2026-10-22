@@ -30,12 +30,14 @@
       var raw = (new URLSearchParams(location.search)).get('mode') || 'g';
       var aliases = { g: 'general', general: 'general',
                       ma: 'mayorista', mayorista: 'mayorista',
-                      mi: 'minorista', minorista: 'minorista' };
+                      mi: 'minorista', minorista: 'minorista',
+                      ma1: 'mayorista1', mayorista1: 'mayorista1' };
       var mode = aliases[raw.toLowerCase()] || 'general';
       var manifests = {
         general:   { file: './manifest.json',           title: 'Catálogo'  },
         mayorista: { file: './manifest-mayorista.json', title: 'Mayorista' },
-        minorista: { file: './manifest-minorista.json', title: 'Minorista' }
+        minorista: { file: './manifest-minorista.json', title: 'Minorista' },
+        mayorista1: { file: './manifest-mayorista1.json', title: 'Patachoca Mayorista' }
       };
       var m = manifests[mode];
       var link = document.createElement('link');

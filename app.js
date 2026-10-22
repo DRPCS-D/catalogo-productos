@@ -9,10 +9,11 @@ var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 // =================================================================
 // MODO DE LA PÁGINA — leído de URL params (?mode=...)
 // =================================================================
-// PAGE_MODE: 'general' | 'mayorista' | 'minorista'
+// PAGE_MODE: 'general' | 'mayorista' | 'minorista' | 'mayorista1'
 // Aliases cortos aceptados:
 //   ?mode=ma  → mayorista
 //   ?mode=mi  → minorista
+//   ?mode=ma1 → mayorista1 (como minorista pero con precio Mayorista 1 fijo)
 //   ?mode=g   → general (o sin parámetro)
 // Las URLs largas (?mode=mayorista, ?mode=minorista) siguen funcionando
 // para no romper bookmarks viejos. El panel admin vive en admin.html.
@@ -24,7 +25,9 @@ window.PAGE_MODE = (function () {
     'ma':        'mayorista',
     'mayorista': 'mayorista',
     'mi':        'minorista',
-    'minorista': 'minorista'
+    'minorista': 'minorista',
+    'ma1':        'mayorista1',
+    'mayorista1': 'mayorista1'
   };
   return aliases[raw.toLowerCase()] || 'general';
 })();
@@ -58,6 +61,21 @@ var PAGE_CONFIGS = {
     mode:                    'minorista',
     title:                   'Catálogo Minorista',
     priceMode:               'minorista',
+    sucursales:              [
+      'PATA 1', 'PATA KM 7', 'PCH KM 4', 'PCH LUQUE',
+      'PATA LIMPIO', 'PATA MULTIPLAZA', 'PATA SAN LORENZO',
+      'ROCK SPORT', 'ROCK SPORT KM7'
+    ],
+    marcasExcluidas:         [],
+    promoVisible:            true,
+    locked:                  true,
+    restrictModalSucursales: true
+  },
+  // Igual que minorista, pero con el precio Mayorista 1 fijo (sin switch de precio)
+  mayorista1: {
+    mode:                    'mayorista1',
+    title:                   'Tiendas Patachoca Mayorista',
+    priceMode:               'mayorista1',
     sucursales:              [
       'PATA 1', 'PATA KM 7', 'PCH KM 4', 'PCH LUQUE',
       'PATA LIMPIO', 'PATA MULTIPLAZA', 'PATA SAN LORENZO',
@@ -973,7 +991,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.37.0';
+var APP_VERSION  = '1.38.0';
 var APP_BUILD    = '2026-10-21';
 
 function renderAppVersion_() {
@@ -4618,6 +4636,7 @@ var PRICE_KEYS = {
 function allowedPriceModes_() {
   var m = window.PAGE_MODE;
   if (m === 'mayorista') return ['mayorista'];
+  if (m === 'mayorista1') return ['mayorista1'];
   if (m === 'minorista') return ['minorista', 'mayorista1'];
   return ['minorista', 'mayorista', 'mayorista1'];
 }
