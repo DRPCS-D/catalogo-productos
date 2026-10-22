@@ -17,7 +17,18 @@ app.use(function (req, res, next) {
   next();
 });
 
-const CHROMIUM_PATH = "/usr/bin/chromium";
+// Registro de pedidos: una línea por pedido (ruta, status, duración) para poder
+// medir cuánto se usa el servicio. /health y /files quedan fuera (ruido).
+app.use(function (req, res, next) {
+  if (req.path === "/health" || req.path.indexOf("/files/") === 0) return next();
+  const t0 = Date.now();
+  res.on("finish", function () {
+    console.log("[req]", req.method, req.path, res.statusCode, (Date.now() - t0) + "ms");
+  });
+  next();
+});
+
+const CHROMIUM_PATH = process.env.CHROMIUM_PATH || "/usr/bin/chromium";
 // Sin --single-process: corre todo (browser + renderer) en un solo proceso,
 // modo no soportado oficialmente por Chromium y conocido por causar fallos
 // intermitentes de lanzamiento ("Failed to launch the browser process!") en
@@ -31,6 +42,91 @@ const LAUNCH_ARGS = [
 const PMO_SCALE = 107;
 const PMO_IMG_HEIGHT = 50;
 const CATALOG_BASE = "https://catalogo-drpcs.vercel.app/";
+
+// ── Copia del catálogo en memoria ─────────────────────────────────────────────
+// Cada pedido abre un Chromium nuevo, sin caché, y la web le pide a Supabase el
+// catálogo completo (~2,4 MB gzip). Para no pagar ese egress en cada pedido, el
+// servicio guarda su propia copia y se la entrega a Chromium interceptando esa
+// petición. Antes de reusarla pregunta solo updated_at (unos bytes); si cambió,
+// baja el catálogo una vez. Si algo falla, la petición sigue a Supabase como
+// siempre. La URL y la clave anon son las mismas públicas que ya usa app.js.
+const SUPABASE_URL = "https://uhodmtxzpvilnxyjleri.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVob2RtdHh6cHZpbG54eWpsZXJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NzMyMzQsImV4cCI6MjA5NjA0OTIzNH0.s9Axz-7qqUj6RFFL2Yh47cPIypDZ6RorUq9-RGNa6rw";
+const CATALOG_CHECK_MS = 60 * 1000;   // como mucho 1 chequeo de updated_at por minuto
+
+let catalogCopy = null;       // { body: Buffer, updatedAt: string, checkedAt: number }
+let catalogInflight = null;   // evita bajadas simultáneas
+
+function supabaseGet_(query) {
+  return fetch(SUPABASE_URL + "/rest/v1/catalog_cache?" + query, {
+    headers: {
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": "Bearer " + SUPABASE_ANON_KEY,
+      "Accept": "application/json"
+    }
+  }).then(function (r) {
+    if (!r.ok) throw new Error("catalog_cache HTTP " + r.status);
+    return r;
+  });
+}
+
+async function refreshCatalogCopy_() {
+  if (catalogCopy) {
+    const rows = await supabaseGet_("select=updated_at&id=eq.1").then(function (r) { return r.json(); });
+    const serverUpdatedAt = rows && rows[0] && rows[0].updated_at;
+    if (serverUpdatedAt && serverUpdatedAt === catalogCopy.updatedAt) {
+      catalogCopy.checkedAt = Date.now();
+      return catalogCopy;
+    }
+  }
+  const body = Buffer.from(await supabaseGet_("select=data,updated_at&id=eq.1").then(function (r) { return r.arrayBuffer(); }));
+  const arr = JSON.parse(body.toString("utf8"));
+  if (!arr || !arr.length || !arr[0].data) throw new Error("catalog_cache vacío");
+  catalogCopy = { body: body, updatedAt: arr[0].updated_at, checkedAt: Date.now() };
+  console.log("[catalog] copia descargada:", (body.length / 1048576).toFixed(1), "MB sin comprimir, updated_at", catalogCopy.updatedAt);
+  return catalogCopy;
+}
+
+// Devuelve la copia vigente, o null si no se pudo obtener (el caller sigue a Supabase).
+async function getCatalogCopy_() {
+  if (catalogCopy && Date.now() - catalogCopy.checkedAt < CATALOG_CHECK_MS) return catalogCopy;
+  if (!catalogInflight) {
+    catalogInflight = refreshCatalogCopy_()
+      .catch(function (e) {
+        console.warn("[catalog] no se pudo actualizar la copia:", e.message || e);
+        return catalogCopy;   // copia vieja si existe; si no, null
+      })
+      .finally(function () { catalogInflight = null; });
+  }
+  return catalogInflight;
+}
+
+// Intercepta en esta página las lecturas de catalog_cache y las responde con la copia.
+async function installCatalogInterception_(page) {
+  await page.setRequestInterception(true);
+  page.on("request", async function (req) {
+    try {
+      const u = req.url();
+      if (req.method() === "GET" && u.indexOf(SUPABASE_URL + "/rest/v1/catalog_cache") === 0 && u.indexOf("id=eq.1") >= 0) {
+        const copy = await getCatalogCopy_();
+        if (copy) {
+          const headers = { "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" };
+          if (u.indexOf("select=data") >= 0) {
+            console.log("[catalog] copia entregada a Chromium (sin pasar por Supabase)");
+            return await req.respond({ status: 200, headers: headers, contentType: "application/json", body: copy.body });
+          }
+          if (u.indexOf("select=updated_at") >= 0) {
+            return await req.respond({ status: 200, headers: headers, contentType: "application/json",
+                                 body: JSON.stringify([{ updated_at: copy.updatedAt }]) });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("[catalog] interceptación falló, sigo a Supabase:", e.message || e);
+    }
+    if (!req.isInterceptResolutionHandled()) req.continue().catch(function () {});
+  });
+}
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const DATA_DIR   = path.join(__dirname, "data");
@@ -276,6 +372,9 @@ async function newBrowserPage(url) {
   const cdp = await page.createCDPSession();
   await cdp.send("ServiceWorker.enable");
   await cdp.send("ServiceWorker.stopAllWorkers");
+  // Sin service worker de por medio, para que la interceptación vea todas las peticiones
+  await cdp.send("Network.setBypassServiceWorker", { bypass: true }).catch(function () {});
+  await installCatalogInterception_(page);
   await page.goto(url, { waitUntil: "networkidle2", timeout: 45000 });
   return { browser, page };
 }
@@ -1316,4 +1415,8 @@ async function clearCache() {
 </html>`);
 });
 
-app.listen(3001, function() { console.log("pdf-service :3001"); });
+if (require.main === module) {
+  app.listen(3001, function() { console.log("pdf-service :3001"); });
+} else {
+  module.exports = { installCatalogInterception_, getCatalogCopy_ };   // para pruebas
+}
