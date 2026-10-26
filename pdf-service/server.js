@@ -45,79 +45,105 @@ const CATALOG_BASE = "https://catalogo-drpcs.vercel.app/";
 
 // ── Copia del catálogo en memoria ─────────────────────────────────────────────
 // Cada pedido abre un Chromium nuevo, sin caché, y la web le pide a Supabase el
-// catálogo completo (~2,4 MB gzip). Para no pagar ese egress en cada pedido, el
-// servicio guarda su propia copia y se la entrega a Chromium interceptando esa
-// petición. Antes de reusarla pregunta solo updated_at (unos bytes); si cambió,
-// baja el catálogo una vez. Si algo falla, la petición sigue a Supabase como
-// siempre. La URL y la clave anon son las mismas públicas que ya usa app.js.
+// catálogo de la vista (~0,5–1,9 MB gzip). Para no pagar ese egress en cada
+// pedido, el servicio guarda su propia copia y se la entrega a Chromium
+// interceptando esa petición. Antes de reusarla pregunta solo la versión
+// (updated_at, unos bytes); si cambió, baja el catálogo una vez. Si algo falla,
+// la petición sigue a Supabase como siempre. La URL y la clave anon son las
+// mismas públicas que ya usa app.js.
+//
+// La app pide el catálogo por RPC (get_catalog_mode / get_catalog_version) con
+// { p_mode, pw }. La copia se guarda por (vista, contraseña) y SOLO se entrega
+// si Supabase ya aceptó esa misma contraseña: nunca se sirve un catálogo a una
+// petición con una contraseña que el servidor no validó.
 const SUPABASE_URL = "https://uhodmtxzpvilnxyjleri.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVob2RtdHh6cHZpbG54eWpsZXJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NzMyMzQsImV4cCI6MjA5NjA0OTIzNH0.s9Axz-7qqUj6RFFL2Yh47cPIypDZ6RorUq9-RGNa6rw";
-const CATALOG_CHECK_MS = 60 * 1000;   // como mucho 1 chequeo de updated_at por minuto
+const CATALOG_CHECK_MS = 60 * 1000;   // como mucho 1 chequeo de versión por minuto
+const CATALOG_MAX_COPIES = 8;
 
-let catalogCopy = null;       // { body: Buffer, updatedAt: string, checkedAt: number }
-let catalogInflight = null;   // evita bajadas simultáneas
+const catalogCopies = {};     // "vista|sha256(pw)" → { body: Buffer, updatedAt, checkedAt }
+const catalogInflight = {};   // evita bajadas simultáneas de la misma copia
 
-function supabaseGet_(query) {
-  return fetch(SUPABASE_URL + "/rest/v1/catalog_cache?" + query, {
-    headers: {
-      "apikey": SUPABASE_ANON_KEY,
-      "Authorization": "Bearer " + SUPABASE_ANON_KEY,
-      "Accept": "application/json"
-    }
-  }).then(function (r) {
-    if (!r.ok) throw new Error("catalog_cache HTTP " + r.status);
-    return r;
-  });
+function supabaseHeaders_() {
+  return {
+    "apikey": SUPABASE_ANON_KEY,
+    "Authorization": "Bearer " + SUPABASE_ANON_KEY,
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+  };
 }
 
-async function refreshCatalogCopy_() {
-  if (catalogCopy) {
-    const rows = await supabaseGet_("select=updated_at&id=eq.1").then(function (r) { return r.json(); });
+function supabaseRpc_(fn, bodyStr) {
+  return fetch(SUPABASE_URL + "/rest/v1/rpc/" + fn, { method: "POST", headers: supabaseHeaders_(), body: bodyStr })
+    .then(function (r) {
+      if (!r.ok) throw new Error(fn + " HTTP " + r.status);
+      return r;
+    });
+}
+
+async function refreshCatalogCopy_(key, bodyStr) {
+  const cur = catalogCopies[key];
+  if (cur) {
+    const rows = await supabaseRpc_("get_catalog_version", bodyStr).then(function (r) { return r.json(); });
     const serverUpdatedAt = rows && rows[0] && rows[0].updated_at;
-    if (serverUpdatedAt && serverUpdatedAt === catalogCopy.updatedAt) {
-      catalogCopy.checkedAt = Date.now();
-      return catalogCopy;
+    if (serverUpdatedAt && serverUpdatedAt === cur.updatedAt) {
+      cur.checkedAt = Date.now();
+      return cur;
     }
   }
-  const body = Buffer.from(await supabaseGet_("select=data,updated_at&id=eq.1").then(function (r) { return r.arrayBuffer(); }));
+  const body = Buffer.from(await supabaseRpc_("get_catalog_mode", bodyStr).then(function (r) { return r.arrayBuffer(); }));
   const arr = JSON.parse(body.toString("utf8"));
-  if (!arr || !arr.length || !arr[0].data) throw new Error("catalog_cache vacío");
-  catalogCopy = { body: body, updatedAt: arr[0].updated_at, checkedAt: Date.now() };
-  console.log("[catalog] copia descargada:", (body.length / 1048576).toFixed(1), "MB sin comprimir, updated_at", catalogCopy.updatedAt);
-  return catalogCopy;
+  if (!arr || !arr.length || !arr[0].data) throw new Error("catálogo vacío");
+  catalogCopies[key] = { body: body, updatedAt: arr[0].updated_at, checkedAt: Date.now() };
+  const keys = Object.keys(catalogCopies);
+  if (keys.length > CATALOG_MAX_COPIES) {
+    keys.sort(function (a, b) { return catalogCopies[a].checkedAt - catalogCopies[b].checkedAt; });
+    delete catalogCopies[keys[0]];
+  }
+  console.log("[catalog] copia descargada:", key.split("|")[0], (body.length / 1048576).toFixed(1), "MB sin comprimir, updated_at", arr[0].updated_at);
+  return catalogCopies[key];
 }
 
-// Devuelve la copia vigente, o null si no se pudo obtener (el caller sigue a Supabase).
-async function getCatalogCopy_() {
-  if (catalogCopy && Date.now() - catalogCopy.checkedAt < CATALOG_CHECK_MS) return catalogCopy;
-  if (!catalogInflight) {
-    catalogInflight = refreshCatalogCopy_()
+// Devuelve la copia vigente para el cuerpo { p_mode, pw } de la petición, o
+// null si no se pudo obtener (el caller deja seguir la petición a Supabase).
+async function getCatalogCopy_(bodyStr) {
+  let parsed;
+  try { parsed = JSON.parse(bodyStr); } catch (_) { return null; }
+  if (!parsed || typeof parsed.p_mode !== "string" || typeof parsed.pw !== "string") return null;
+  const key = parsed.p_mode + "|" + crypto.createHash("sha256").update(parsed.pw).digest("hex");
+  const cur = catalogCopies[key];
+  if (cur && Date.now() - cur.checkedAt < CATALOG_CHECK_MS) return cur;
+  if (!catalogInflight[key]) {
+    catalogInflight[key] = refreshCatalogCopy_(key, bodyStr)
       .catch(function (e) {
         console.warn("[catalog] no se pudo actualizar la copia:", e.message || e);
-        return catalogCopy;   // copia vieja si existe; si no, null
+        return null;   // contraseña rechazada o error: no se entrega nada desde la copia
       })
-      .finally(function () { catalogInflight = null; });
+      .finally(function () { delete catalogInflight[key]; });
   }
-  return catalogInflight;
+  return catalogInflight[key];
 }
 
-// Intercepta en esta página las lecturas de catalog_cache y las responde con la copia.
+// Intercepta en esta página las lecturas del catálogo y las responde con la copia.
 async function installCatalogInterception_(page) {
   await page.setRequestInterception(true);
+  const rpcBase = SUPABASE_URL + "/rest/v1/rpc/";
   page.on("request", async function (req) {
     try {
       const u = req.url();
-      if (req.method() === "GET" && u.indexOf(SUPABASE_URL + "/rest/v1/catalog_cache") === 0 && u.indexOf("id=eq.1") >= 0) {
-        const copy = await getCatalogCopy_();
-        if (copy) {
-          const headers = { "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" };
-          if (u.indexOf("select=data") >= 0) {
-            console.log("[catalog] copia entregada a Chromium (sin pasar por Supabase)");
-            return await req.respond({ status: 200, headers: headers, contentType: "application/json", body: copy.body });
-          }
-          if (u.indexOf("select=updated_at") >= 0) {
+      if (req.method() === "POST" && u.indexOf(rpcBase) === 0) {
+        const fn = u.slice(rpcBase.length).split("?")[0];
+        const bodyStr = req.postData();
+        if ((fn === "get_catalog_mode" || fn === "get_catalog_version") && bodyStr) {
+          const copy = await getCatalogCopy_(bodyStr);
+          if (copy) {
+            const headers = { "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" };
+            if (fn === "get_catalog_mode") {
+              console.log("[catalog] copia entregada a Chromium (sin pasar por Supabase)");
+              return await req.respond({ status: 200, headers: headers, contentType: "application/json", body: copy.body });
+            }
             return await req.respond({ status: 200, headers: headers, contentType: "application/json",
-                                 body: JSON.stringify([{ updated_at: copy.updatedAt }]) });
+                                       body: JSON.stringify([{ updated_at: copy.updatedAt }]) });
           }
         }
       }

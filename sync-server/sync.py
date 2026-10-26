@@ -411,6 +411,99 @@ def _date(v):
     return str(v)[:10]
 
 
+# ---------------------------------------------------------------------------
+# Un catálogo por vista (?mode=): cada vista descarga solo lo que necesita
+# ---------------------------------------------------------------------------
+# Campos de precio por tipo. Cada vista conserva solo los tipos que muestra;
+# el resto se quita del archivo de esa vista (no viaja al navegador).
+PRICE_FIELDS = {
+    "minorista":  ["precioMinorista", "precioMinoristaPromo",
+                   "precioMinoristaPromoInicio", "precioMinoristaPromoValidade"],
+    "mayorista":  ["precioMayorista", "precioMayoristaPromo",
+                   "precioMayoristaPromoInicio", "precioMayoristaPromoValidade"],
+    "mayorista1": ["precioMayorista1", "precioMayorista1Promo",
+                   "precioMayorista1PromoInicio", "precioMayorista1PromoValidade"],
+}
+MODE_PRICES = {
+    "general":    ["minorista", "mayorista", "mayorista1"],
+    "mayorista":  ["mayorista"],
+    "minorista":  ["minorista", "mayorista1"],
+    "mayorista1": ["mayorista1"],
+}
+# Si una vista no tiene fila en page_config, usa la de este modo
+MODE_CONFIG_FALLBACK = {"mayorista1": "minorista"}
+
+
+def build_mode_catalog(grouped, mode, sucursales, marcas_excluidas):
+    """Devuelve la lista de productos que debe ver `mode`: sin las marcas
+    excluidas, con el stock solo de las sucursales permitidas (y sin los
+    colores/productos que quedan sin stock en ellas) y solo con sus precios.
+    `sucursales` vacío/None = todas. No modifica `grouped`."""
+    keep = {f for t in MODE_PRICES[mode] for f in PRICE_FIELDS[t]}
+    drop = {f for fs in PRICE_FIELDS.values() for f in fs} - keep
+    suc_set = set(sucursales) if sucursales else None
+    excluded = set(marcas_excluidas or [])
+
+    out = []
+    for p in grouped:
+        if p.get("marca") in excluded:
+            continue
+        if suc_set is None:
+            colors = p["colorsArr"]
+            total = p["totalStock"]
+        else:
+            colors = []
+            for c in p["colorsArr"]:
+                grades = []
+                for g in c["gradesArr"]:
+                    stock = [s for s in g["stock"] if s.get("sucursal") in suc_set]
+                    if not stock:
+                        continue
+                    grades.append({**g, "stock": stock,
+                                   "totalStock": sum(s["cantidad"] for s in stock)})
+                if grades:
+                    colors.append({**c, "gradesArr": grades,
+                                   "totalStock": sum(g["totalStock"] for g in grades)})
+            if not colors:
+                continue
+            total = sum(c["totalStock"] for c in colors)
+        q = {k: v for k, v in p.items() if k not in drop}
+        q["colorsArr"] = colors
+        q["totalStock"] = total
+        out.append(q)
+    return out
+
+
+def write_mode_catalogs(cur, grouped):
+    """Escribe un catálogo por vista en catalog_mode_cache, leyendo las
+    sucursales y marcas excluidas de page_config. Igual que catalog_cache,
+    no toca updated_at si el contenido de esa vista no cambió. Si la tabla
+    todavía no existe (migración pendiente) avisa y sigue."""
+    cur.execute("SELECT to_regclass('public.catalog_mode_cache')")
+    if cur.fetchone()[0] is None:
+        print("   ⚠ catalog_mode_cache no existe todavía; salto los catálogos por vista")
+        return
+    cur.execute("SELECT mode, sucursales, marcas_excluidas FROM page_config")
+    cfgs = {r[0]: r for r in cur.fetchall()}
+    for mode in MODE_PRICES:
+        row = cfgs.get(mode) or cfgs.get(MODE_CONFIG_FALLBACK.get(mode, ""))
+        sucursales = row[1] if row else []
+        excluidas = row[2] if row else []
+        catalog = build_mode_catalog(grouped, mode, sucursales, excluidas)
+        data_str = json.dumps(catalog, ensure_ascii=False, default=str)
+        cur.execute("""
+            INSERT INTO catalog_mode_cache (mode, data, updated_at)
+            VALUES (%s, %s::jsonb, NOW())
+            ON CONFLICT (mode) DO UPDATE
+              SET data = EXCLUDED.data,
+                  updated_at = NOW()
+            WHERE catalog_mode_cache.data IS DISTINCT FROM EXCLUDED.data
+        """, (mode, data_str))
+        estado = "actualizado" if cur.rowcount else "sin cambios"
+        print(f"   → catálogo '{mode}': {len(catalog):,} productos, "
+              f"{len(data_str)/1048576:.1f} MB ({estado})")
+
+
 def write_to_supabase(grouped, api_ms, json_str=None):
     """Escribe el catálogo agrupado a Supabase en una transacción atómica.
     Si SUPABASE_DB_URL no está seteada, no hace nada (skip silencioso).
@@ -563,6 +656,9 @@ def write_to_supabase(grouped, api_ms, json_str=None):
                         if cur.rowcount == 0:
                             print("   → catalog_cache sin cambios; updated_at "
                                   "intacto (los clientes reusan su cache)")
+
+                    # Un catálogo por vista (lo que lee la app según ?mode=)
+                    write_mode_catalogs(cur, grouped)
         finally:
             conn.close()
 

@@ -766,8 +766,24 @@ function fetchConfigs_() {
     });
 }
 
-// Extrae sucursales y marcas únicas del catálogo activo
+// Sucursales y marcas únicas del catálogo. Se piden por RPC con el PIN
+// (admin_catalog_meta), porque la lectura pública de catalog_cache se cierra.
+// Si la RPC no existe todavía, cae a la lectura directa de antes.
 function fetchCatalogMeta_() {
+  var pin = sessionStorage.getItem(SESSION_PIN_KEY);
+  return supaRpc_('admin_catalog_meta', { pin: pin })
+    .then(function (r) {
+      if (!r.ok) throw new Error('admin_catalog_meta HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function (meta) {
+      allSucursales = ((meta && meta.sucursales) || []).slice().sort();
+      allMarcas     = ((meta && meta.marcas) || []).slice().sort();
+    })
+    .catch(function () { return fetchCatalogMetaLegacy_(); });
+}
+
+function fetchCatalogMetaLegacy_() {
   return supaFetch_('/rest/v1/catalog_cache?select=data&id=eq.1')
     .then(function (r) { return r.json(); })
     .then(function (arr) {

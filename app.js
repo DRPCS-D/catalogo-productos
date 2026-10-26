@@ -200,7 +200,9 @@ var SVG_IMG_OFF   = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
 // Se guarda la contraseña en claro en localStorage para re-verificarla por RPC
 // en cada carga (así una rotación en el server deslogea a todos). Es una traba
 // client-side: frena accesos casuales, no es blindaje.
-var ACCESS_STORAGE_KEY = 'lc_access_pw_v1';
+// La vista Mayorista 1 tiene su propia contraseña, guardada aparte para no pisar
+// la de las demás vistas (el localStorage es compartido entre todas las ?mode=).
+var ACCESS_STORAGE_KEY = window.PAGE_MODE === 'mayorista1' ? 'lc_access_pw_ma1_v1' : 'lc_access_pw_v1';
 
 // ============ FAVORITOS ============
 var FAVORITES_STORAGE_KEY = 'lc_fav_v1';
@@ -260,7 +262,9 @@ var SYNC_WARNING_THRESHOLD_MS = 3 * 60 * 60 * 1000; // 3 h sin sync → ícono �
 
 var IDB_NAME = 'lacosta_catalogo';
 var IDB_STORE = 'cache';
-var IDB_KEY = 'productos_v1';
+// Cada vista tiene su propio catálogo (distinto contenido), así que su propia caché local.
+// General conserva la clave de siempre para no obligar a bajarlo de nuevo.
+var IDB_KEY = window.PAGE_MODE === 'general' ? 'productos_v1' : 'productos_v1_' + window.PAGE_MODE;
 var IDB_TTL_MS = 60 * 60 * 1000;   // 1 hora
 
 function idbOpen_() {
@@ -328,7 +332,10 @@ window.onload = function () {
 // Verifica la contraseña contra Supabase vía RPC (verify_access_password).
 // El hash nunca sale del server; acá sólo se manda la clave y se recibe boolean.
 function verifyAccessPassword_(pw) {
-  var endpoint = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/rpc/verify_access_password';
+  // Mayorista 1 verifica contra su propia contraseña; el resto, como siempre.
+  var isMa1 = window.PAGE_MODE === 'mayorista1';
+  var endpoint = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/rpc/' +
+                 (isMa1 ? 'verify_access_password_mode' : 'verify_access_password');
   return fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -337,7 +344,7 @@ function verifyAccessPassword_(pw) {
       'Content-Type':  'application/json',
       'Accept':        'application/json'
     },
-    body: JSON.stringify({ pw: pw })
+    body: JSON.stringify(isMa1 ? { p_mode: 'mayorista1', pw: pw } : { pw: pw })
   }).then(function (resp) {
     if (!resp.ok) throw new Error('verify_access_password HTTP ' + resp.status);
     return resp.json();
@@ -564,15 +571,70 @@ function fetchFullCatalog_() {
 }
 
 /**
- * Lee el catálogo agrupado desde Supabase REST API (tabla catalog_cache).
+ * Lee el catálogo de la vista activa (?mode=) desde Supabase, por la RPC
+ * get_catalog_mode con la contraseña de acceso guardada en este dispositivo.
  * Devuelve una Promise con { data, updatedAt }: data es el array de productos
- * agrupado, updatedAt es la verdad del servidor sobre cuándo corrió el sync
- * exitosamente por última vez (columna catalog_cache.updated_at).
+ * agrupado y ya viene recortado para esta vista (sus sucursales, sus marcas y
+ * solo sus precios); updatedAt es la fecha de la última sincronización.
  *
  * El JSON ya viene con imgId de Drive resuelto server-side (lo escribe sync.py),
  * así que el browser no necesita llamar a Drive API.
  */
 function fetchSupabaseCatalog_() {
+  // Catálogo de ESTA vista, pedido por RPC con la contraseña de acceso (la
+  // tabla ya no se lee directo). Cada vista baja solo lo que necesita.
+  return catalogRpc_('get_catalog_mode')
+    .then(function (arr) {
+      if (!arr || !arr.length || !arr[0].data) throw new Error('catálogo vacío');
+      return { data: arr[0].data, updatedAt: arr[0].updated_at };
+    })
+    .catch(function (e) {
+      // Respaldo mientras la tabla pública siga abierta (no aplica a Mayorista 1)
+      if (window.PAGE_MODE === 'mayorista1') throw e;
+      console.warn('[catálogo] RPC falló, uso lectura directa:', e && e.message || e);
+      return legacyFetchCatalog_();
+    });
+}
+
+/**
+ * Igual que fetchSupabaseCatalog_ pero pidiendo SOLO updated_at (sin la
+ * columna data) — se usa para decidir si vale la pena bajar el catálogo
+ * completo cuando el cache local venció por TTL.
+ */
+function fetchCatalogUpdatedAt_() {
+  return catalogRpc_('get_catalog_version')
+    .then(function (arr) {
+      if (!arr || !arr.length) throw new Error('catálogo vacío');
+      return arr[0].updated_at;
+    })
+    .catch(function (e) {
+      if (window.PAGE_MODE === 'mayorista1') throw e;
+      return legacyFetchUpdatedAt_();
+    });
+}
+
+// POST a una RPC de catálogo con { p_mode, pw }. pw es la contraseña guardada en este dispositivo.
+function catalogRpc_(fn) {
+  var pw = '';
+  try { pw = localStorage.getItem(ACCESS_STORAGE_KEY) || ''; } catch (_) {}
+  return fetch(SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/rpc/' + fn, {
+    method: 'POST',
+    headers: {
+      'apikey':        SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      'Content-Type':  'application/json',
+      'Accept':        'application/json'
+      // Accept-Encoding: gzip lo agrega el browser automáticamente
+    },
+    body: JSON.stringify({ p_mode: window.PAGE_MODE, pw: pw })
+  }).then(function (resp) {
+    if (!resp.ok) throw new Error(fn + ' HTTP ' + resp.status);
+    return resp.json();
+  });
+}
+
+// --- Lectura directa de catalog_cache (versión anterior) ---
+function legacyFetchCatalog_() {
   var endpoint = SUPABASE_URL.replace(/\/$/, '') +
                  '/rest/v1/catalog_cache?select=data,updated_at&id=eq.1';
   return fetch(endpoint, {
@@ -581,7 +643,6 @@ function fetchSupabaseCatalog_() {
       'apikey':        SUPABASE_ANON_KEY,
       'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
       'Accept':        'application/json'
-      // Accept-Encoding: gzip lo agrega el browser automáticamente
     }
   }).then(function (resp) {
     if (!resp.ok) throw new Error('Supabase HTTP ' + resp.status);
@@ -594,12 +655,7 @@ function fetchSupabaseCatalog_() {
   });
 }
 
-/**
- * Igual que fetchSupabaseCatalog_ pero pidiendo SOLO updated_at (sin la
- * columna data) — se usa para decidir si vale la pena bajar el catálogo
- * completo cuando el cache local venció por TTL.
- */
-function fetchCatalogUpdatedAt_() {
+function legacyFetchUpdatedAt_() {
   var endpoint = SUPABASE_URL.replace(/\/$/, '') +
                  '/rest/v1/catalog_cache?select=updated_at&id=eq.1';
   return fetch(endpoint, {
@@ -991,7 +1047,7 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.38.0';
+var APP_VERSION  = '1.39.0';
 var APP_BUILD    = '2026-10-21';
 
 function renderAppVersion_() {
