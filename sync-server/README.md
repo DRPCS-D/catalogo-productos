@@ -109,7 +109,7 @@ docker compose exec catalog-sync python sync.py
 |---|---|---|
 | `credenciales no encontradas` | Falta `service-account.json` | Descargarlo y ponerlo en esta carpeta |
 | `403: The caller does not have permission` | No compartiste la carpeta Drive con el SA | Compartirla con permiso **Lector** |
-| `ConnectionError` al API | El server del API no está accesible | Probar `curl http://api.lacostasrl.com.py:56181/productos` |
+| `ConnectionError` al API | El server del API no está accesible | Probar `curl http://lacosta.gestor.eti.br:56181/productos` |
 | `SUPABASE_DB_URL no seteada` | Falta `.env` | Crear el archivo con la connection string |
 | `psycopg2.OperationalError: SSL...` | Pooler de Supabase rechaza | Verificar que la connection string sea la del pooler (puerto 6543) |
 

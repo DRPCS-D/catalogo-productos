@@ -28,12 +28,13 @@ echo "[$(date +'%Y-%m-%d %H:%M:%S %Z')] Configurando crontab con env vars del co
   echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
   echo ""
   echo "# Ejecutar sync cada hora en el minuto 5 (00:05, 01:05, ...)"
-  echo "5 * * * * cd /app && /usr/local/bin/python sync.py > /proc/1/fd/1 2>/proc/1/fd/2"
+  echo "# flock: no solapar corridas · timeout 45m: cortar una corrida colgada · python -u: log sin buffer"
+  echo "5 * * * * cd /app && flock -n -E 99 /tmp/sync.lock timeout 45m /usr/local/bin/python -u sync.py > /proc/1/fd/1 2>/proc/1/fd/2; [ \$? -eq 99 ] && echo \"[sync] la corrida anterior sigue activa; salto esta\" > /proc/1/fd/1"
 } | crontab -
 
 echo "[$(date +'%Y-%m-%d %H:%M:%S %Z')] Ejecutando sync inicial..."
 
-if /usr/local/bin/python /app/sync.py; then
+if flock -n /tmp/sync.lock timeout 45m /usr/local/bin/python -u /app/sync.py; then
   echo "[$(date +'%Y-%m-%d %H:%M:%S %Z')] Sync inicial OK"
 else
   echo "[$(date +'%Y-%m-%d %H:%M:%S %Z')] Sync inicial FAILED (se reintentará en el próximo ciclo horario)"

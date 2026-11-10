@@ -48,7 +48,7 @@ except ImportError:
 # CONFIGURACIÓN — editar antes del primer uso
 # ============================================================================
 
-API_URL          = "http://api.lacostasrl.com.py:56181/productos"
+API_URL          = "http://lacosta.gestor.eti.br:56181/productos"
 DRIVE_FOLDER_ID  = "1ZiSrtS6XK698C1rwd3Pn7zgT9nVog-7n"
 
 SCOPES = [
@@ -59,6 +59,18 @@ SCOPES = [
 RETRY_MAX_ATTEMPTS = 4
 RETRY_BASE_DELAY   = 5
 RETRYABLE_HTTP_STATUSES = {429, 500, 502, 503, 504}
+
+# Conexión a Postgres con límites de tiempo. Sin esto, una base que deja de
+# responder cuelga la escritura sin fin: el 09/11/2026 una escritura quedó ~1 h
+# esperando hasta que el servidor cortó la conexión ("connection already
+# closed"). Los keepalives detectan un servidor caído (~60 s) y los timeouts
+# SET LOCAL de la transacción cortan un lock o una sentencia que no avanza.
+PG_CONNECT_KW = dict(
+    keepalives=1, keepalives_idle=30, keepalives_interval=10, keepalives_count=3,
+    tcp_user_timeout=60000,
+)
+PG_LOCK_TIMEOUT      = "60s"    # esperar un lock más que esto = abortar
+PG_STATEMENT_TIMEOUT = "10min"  # una sentencia sola (el insert más grande dura segundos)
 
 
 # ============================================================================
@@ -586,10 +598,14 @@ def write_to_supabase(grouped, api_ms, json_str=None):
 
     # --- TRUNCATE + INSERT en una sola transacción ---
     def _do():
-        conn = psycopg2.connect(db_url, connect_timeout=15)
+        conn = psycopg2.connect(db_url, connect_timeout=15, **PG_CONNECT_KW)
         try:
             with conn:  # commit al salir si OK, rollback si exception
                 with conn.cursor() as cur:
+                    # Límites solo para esta transacción (ver PG_CONNECT_KW)
+                    cur.execute(f"SET LOCAL lock_timeout = '{PG_LOCK_TIMEOUT}'")
+                    cur.execute(f"SET LOCAL statement_timeout = '{PG_STATEMENT_TIMEOUT}'")
+
                     # TRUNCATE con CASCADE: borra products + las 3 tablas hijas
                     # (CASCADE recorre las FKs ON DELETE CASCADE)
                     cur.execute(
@@ -676,7 +692,7 @@ def write_supabase_sync_log(status, info):
     if not db_url or not HAS_PSYCOPG2:
         return
     try:
-        conn = psycopg2.connect(db_url, connect_timeout=10)
+        conn = psycopg2.connect(db_url, connect_timeout=10, **PG_CONNECT_KW)
         try:
             with conn:
                 with conn.cursor() as cur:

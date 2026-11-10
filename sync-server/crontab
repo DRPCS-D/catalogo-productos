@@ -5,5 +5,8 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # Ejecutar sync cada hora en el minuto 5 (ej. 00:05, 01:05, 02:05, ...)
 # La salida va a stdout del contenedor (visible con: docker compose logs)
-5 * * * * cd /app && /usr/local/bin/python sync.py > /proc/1/fd/1 2>/proc/1/fd/2
+# - flock: si la corrida anterior sigue activa, esta se salta (código 99) en vez de solaparse.
+# - timeout 45m: una corrida colgada se corta antes de la siguiente tanda.
+# - python -u: salida sin buffer, así las horas del log son las reales.
+5 * * * * cd /app && flock -n -E 99 /tmp/sync.lock timeout 45m /usr/local/bin/python -u sync.py > /proc/1/fd/1 2>/proc/1/fd/2; [ $? -eq 99 ] && echo "[sync] la corrida anterior sigue activa; salto esta" > /proc/1/fd/1
 
