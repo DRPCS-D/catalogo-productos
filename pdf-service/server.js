@@ -56,8 +56,8 @@ const CATALOG_BASE = "https://catalogo-drpcs.vercel.app/";
 // { p_mode, pw }. La copia se guarda por (vista, contraseña) y SOLO se entrega
 // si Supabase ya aceptó esa misma contraseña: nunca se sirve un catálogo a una
 // petición con una contraseña que el servidor no validó.
-const SUPABASE_URL = "https://bjquqvjdwvbimsffpbmh.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJqcXVxdmpkd3ZiaW1zZmZwYm1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwMzc2NjYsImV4cCI6MjEwODYxMzY2Nn0.BBnaGtf1dsdzCFFNCfpLOhRaZFLd8cOj8SWIbWmpgbk";
+const SUPABASE_URL = "https://hyjshnfeioabpqqlvmmt.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5anNobmZlaW9hYnBxcWx2bW10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ0MDAyNDUsImV4cCI6MjEwOTk3NjI0NX0.UfgmAScADPzmYmeNrAfZjP9L_R0O9gQa3y8GB_SM7KI";
 const CATALOG_CHECK_MS = 60 * 1000;   // como mucho 1 chequeo de versión por minuto
 const CATALOG_MAX_COPIES = 8;
 

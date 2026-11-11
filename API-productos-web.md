@@ -1,6 +1,6 @@
 # API de productos (solo lectura, sin contraseña, solo precio minorista)
 
-**URL:** `https://bjquqvjdwvbimsffpbmh.supabase.co`
+**URL:** `https://hyjshnfeioabpqqlvmmt.supabase.co`
 **KEY:** `<la anon larga, eyJ...>` (va en los encabezados `apikey` y `Authorization: Bearer <KEY>`)
 
 Se llama con `POST` a `{URL}/rest/v1/rpc/<funcion>`, con body JSON y `Content-Type: application/json`.
@@ -49,7 +49,7 @@ Para los desplegables. Pedirla una sola vez por visita.
 ## Ejemplo
 
 ```js
-const URL = "https://bjquqvjdwvbimsffpbmh.supabase.co";
+const URL = "https://hyjshnfeioabpqqlvmmt.supabase.co";
 const KEY = "LA_CLAVE_ANON_LARGA"; // eyJ...
 
 async function rpc(fn, args = {}) {

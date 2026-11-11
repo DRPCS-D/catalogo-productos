@@ -3,8 +3,8 @@
 // =================================================================
 // Supabase: anon key es pública por diseño, RLS protege los datos.
 // Si querés rotarla, generá una nueva en Supabase Dashboard → API y reemplazá acá.
-var SUPABASE_URL      = 'https://bjquqvjdwvbimsffpbmh.supabase.co';
-var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJqcXVxdmpkd3ZiaW1zZmZwYm1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwMzc2NjYsImV4cCI6MjEwODYxMzY2Nn0.BBnaGtf1dsdzCFFNCfpLOhRaZFLd8cOj8SWIbWmpgbk';
+var SUPABASE_URL      = 'https://hyjshnfeioabpqqlvmmt.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5anNobmZlaW9hYnBxcWx2bW10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ0MDAyNDUsImV4cCI6MjEwOTk3NjI0NX0.UfgmAScADPzmYmeNrAfZjP9L_R0O9gQa3y8GB_SM7KI';
 
 // =================================================================
 // MODO DE LA PÁGINA — leído de URL params (?mode=...)
@@ -1047,8 +1047,8 @@ function updateSyncWarningIcon_() {
    Bumpear APP_VERSION en cada deploy notable.
    El sw.js debe mantener su CACHE_VERSION sincronizado para invalidar
    el shell cacheado en clientes existentes. */
-var APP_VERSION  = '1.40.0';
-var APP_BUILD    = '2026-10-21';
+var APP_VERSION  = '1.41.0';
+var APP_BUILD    = '2026-11-11';
 
 function renderAppVersion_() {
   var el = document.getElementById('app-version');
