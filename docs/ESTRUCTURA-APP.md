@@ -46,7 +46,7 @@ Extensiones: `pgcrypto`, `unaccent`, `uuid-ossp` (schema `extensions`). Sin tabl
 | `catalog_mode_cache` (PK `mode`) | 4 | Catálogo completo en JSON por vista: `general`, `mayorista`, `mayorista1`, `minorista`. ~22 MB. | sync.py | app vía `get_catalog_mode` |
 | `catalog_cache` (id=1) | 1 | Catálogo legado (versión anterior). | sync.py | nadie activo (se conserva) |
 | `page_config` (PK `mode`) | 4 | Config por vista: título, `price_mode`, `sucursales`, `marcas_excluidas`, `promo_visible`, `locked`, `restrict_modal_sucursales`. | admin vía `save_page_config` | app (SELECT público) y `buscar_productos_retail` |
-| `products` / `product_colors` / `product_grades` / `product_stock` | ~12.7k / 16.6k / 51.8k / 99.4k | Datos normalizados (producto → color → talle → stock por sucursal). Se **vacían y reescriben cada hora** (TRUNCATE+INSERT en una transacción). | sync.py | `buscar_productos_retail` (agente n8n) |
+| `products` / `product_colors` / `product_grades` / `product_stock` | ~12.7k / 16.6k / 51.8k / 99.4k | Datos normalizados (producto → color → talle → stock por sucursal). Se actualizan **cada hora de forma incremental**: solo se insertan/actualizan las filas nuevas o cambiadas y se borran las que ya no vienen (una transacción). | sync.py | `buscar_productos_retail` (agente n8n) |
 | `web_catalog` (PK `cod_fabrica`) | ~10.4k | Versión compacta **solo minorista** para la API pública paginada; columnas de búsqueda/orden + JSON `data`. | trigger `web_catalog_refresh` | `get_products_page`, `get_products_filters` |
 | `sync_log` | crece | Un registro por sincronización (estado, filas, tiempos, error). | sync.py | lectura pública |
 | `access_secret`, `access_secret_mode`, `admin_secret` | 1 / 1 / 1 | **Hashes bcrypt** de contraseñas de acceso y PIN. RLS sin políticas: solo vía funciones. | manual (ver §5) | funciones `SECURITY DEFINER` |
@@ -87,7 +87,7 @@ Todas se llaman por `POST {SUPABASE_URL}/rest/v1/rpc/<nombre>` con la clave anon
 
 - **Fuente de datos:** `API_URL` en `sync.py` (hoy `http://lacosta.gestor.eti.br:56181/productos`; alternativa equivalente `api.lacostasrl.com.py`, misma IP). ~72 MB, sin gzip, cada llamada tarda 60–130 s por cálculo del servidor; `limite` máximo 500. **No paginar:** una sola llamada es lo más rápido.
 - **Fotos:** lista la carpeta de Google Drive con una service account (`service-account.json`, montada de solo lectura).
-- **Salida:** 4 catálogos JSON en `catalog_mode_cache` (cada uno solo se reescribe si cambió) + tablas normalizadas + `sync_log`.
+- **Salida:** 4 catálogos JSON en `catalog_mode_cache` (cada uno solo se reescribe si cambió) + tablas normalizadas (upsert incremental con tablas temporales; antes TRUNCATE+INSERT de ~180k filas por hora) + `sync_log`.
 - **Programación:** cron cada hora en el minuto :05 (hora Paraguay), dentro del contenedor. Dura ~5–6 min.
 - **Protecciones** (desde 2026-11-10): `flock` (no se solapan corridas; si la anterior sigue, se salta y lo escribe), `timeout 45m`, `python -u` (log sin buffer), keepalives TCP y `lock_timeout 60 s` / `statement_timeout 10 min` en la escritura a Postgres.
 - **Config:** `sync-server/.env` (solo en el servidor, chmod 600) con `SUPABASE_DB_URL` (pooler de sesión, puerto 5432). `entrypoint.sh` regenera el crontab al arrancar inyectando esas variables (cron no hereda el entorno).
@@ -138,6 +138,7 @@ insert into admin_secret (id, pin_hash) values (1, extensions.crypt('<PIN_ADMIN>
 
 | Fecha | Cambio |
 |---|---|
+| 2026-11-11 | `sync.py`: las 4 tablas normalizadas pasan de TRUNCATE+INSERT a **upsert incremental** (tabla temporal + `INSERT … ON CONFLICT DO UPDATE … WHERE … IS DISTINCT FROM` + borrado de lo que ya no viene). Motivo: la reescritura total dejaba mucho espacio muerto (la base nueva pasó de 72 a 87 MB en pocas horas con datos iguales). Lógica probada en Supabase con rollback: corrida sin cambios = 0 filas escritas; cambio, alta y baja de producto con hijos correctos. |
 | 2026-11-11 | **Migración a un proyecto nuevo de Supabase** (cuenta nueva, `catalogo-productos`, ref `hyjshnfeioabpqqlvmmt`, sa-east-1): esquema aplicado desde `supabase/schema.sql`, contraseñas/PIN fijados a mano, primera sincronización OK (base de 72 MB frente a 334 MB). `app.js`, `admin.html`, `pdf-service/server.js` y `API-productos-web.md` apuntan al nuevo; `sync-server/.env` con la nueva `SUPABASE_DB_URL`. App 1.41.0, `sw.js` v129. El proyecto viejo (`bjquqvjdwvbimsffpbmh`) queda como respaldo temporal. |
 | 2026-11-11 | Creado este manual y `supabase/schema.sql` / `supabase/seed-page_config.sql` extrayendo el esquema del proyecto original. |
 | 2026-11-10 | `sync.py`: API apunta a `lacosta.gestor.eti.br`; keepalives TCP, `lock_timeout`/`statement_timeout`; `crontab`/`entrypoint.sh`: `flock`, `timeout 45m`, `python -u`. |

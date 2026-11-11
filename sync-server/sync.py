@@ -404,9 +404,10 @@ def _grade_sort_key(g):
 # ============================================================================
 # ESCRITURA A SUPABASE (PostgreSQL directo, atomico)
 # ============================================================================
-# Conecta directo a la DB Postgres de Supabase via el pooler. Hace TRUNCATE +
-# bulk INSERT dentro de una sola transacción → atómico (todo o nada). Si algo
-# falla a mitad, ROLLBACK y la DB queda exactamente como estaba antes.
+# Conecta directo a la DB Postgres de Supabase via el pooler. Las 4 tablas
+# normalizadas se actualizan de forma incremental (upsert de lo nuevo/cambiado
+# + borrado de lo que ya no viene) dentro de una sola transacción → atómico
+# (todo o nada). Si algo falla a mitad, ROLLBACK y la DB queda como estaba.
 #
 # Tabla mapping:
 #   grouped (lista de productos)
@@ -516,6 +517,62 @@ def write_mode_catalogs(cur, grouped):
               f"{len(data_str)/1048576:.1f} MB ({estado})")
 
 
+PRODUCTS_COLS = [
+    "cod_fabrica", "id", "nm_produto", "marca", "grupo", "subgrupo", "colecao",
+    "precio_minorista", "precio_minorista_promo",
+    "precio_minorista_promo_inicio", "precio_minorista_promo_validade",
+    "precio_mayorista", "precio_mayorista_promo",
+    "precio_mayorista_promo_inicio", "precio_mayorista_promo_validade",
+    "precio_mayorista1", "precio_mayorista1_promo",
+    "precio_mayorista1_promo_inicio", "precio_mayorista1_promo_validade",
+    "q_mas_vendio", "total_stock",
+]
+COLORS_COLS = ["cod_fabrica", "color", "imagen", "img_id", "total_stock"]
+GRADES_COLS = ["cod_fabrica", "color", "grade", "ean", "total_stock"]
+STOCK_COLS  = ["cod_fabrica", "color", "grade", "sucursal", "cantidad",
+               "data_ult_cmp", "data_ult_vnd"]
+
+
+def _tmp_name(table):
+    return "tmp_" + table
+
+
+def _upsert_table(cur, table, cols, pk, rows):
+    """Carga `rows` en una tabla temporal (sin WAL, se borra al terminar la
+    transacción) y hace INSERT ... ON CONFLICT DO UPDATE solo de las filas
+    nuevas o cuyos valores cambiaron. Devuelve cuántas filas tocó."""
+    tmp = _tmp_name(table)
+    col_list = ", ".join(cols)
+    cur.execute(f"CREATE TEMP TABLE {tmp} (LIKE {table}) ON COMMIT DROP")
+    if rows:
+        execute_values(cur, f"INSERT INTO {tmp} ({col_list}) VALUES %s",
+                       rows, page_size=1000)
+    cur.execute(f"ANALYZE {tmp}")
+    non_pk = [c for c in cols if c not in pk]
+    set_sql = ", ".join(f"{c} = EXCLUDED.{c}" for c in non_pk)
+    if table == "products":
+        set_sql += ", updated_at = NOW()"
+    old = ", ".join(f"t.{c}" for c in non_pk)
+    new = ", ".join(f"EXCLUDED.{c}" for c in non_pk)
+    cur.execute(f"""
+        INSERT INTO {table} AS t ({col_list})
+        SELECT {col_list} FROM {tmp}
+        ON CONFLICT ({", ".join(pk)}) DO UPDATE
+          SET {set_sql}
+          WHERE ({old}) IS DISTINCT FROM ({new})
+    """)
+    return cur.rowcount
+
+
+def _delete_missing(cur, table, pk):
+    """Borra de `table` las filas que ya no vinieron en esta corrida."""
+    tmp = _tmp_name(table)
+    cond = " AND ".join(f"s.{c} = t.{c}" for c in pk)
+    cur.execute(f"DELETE FROM {table} t "
+                f"WHERE NOT EXISTS (SELECT 1 FROM {tmp} s WHERE {cond})")
+    return cur.rowcount
+
+
 def write_to_supabase(grouped, api_ms, json_str=None):
     """Escribe el catálogo agrupado a Supabase en una transacción atómica.
     Si SUPABASE_DB_URL no está seteada, no hace nada (skip silencioso).
@@ -596,7 +653,7 @@ def write_to_supabase(grouped, api_ms, json_str=None):
     print(f"   → {len(products_rows):,} products, {len(colors_rows):,} colors, "
           f"{len(grades_rows):,} grades, {len(stock_rows):,} stock rows")
 
-    # --- TRUNCATE + INSERT en una sola transacción ---
+    # --- Upsert incremental en una sola transacción ---
     def _do():
         conn = psycopg2.connect(db_url, connect_timeout=15, **PG_CONNECT_KW)
         try:
@@ -606,48 +663,28 @@ def write_to_supabase(grouped, api_ms, json_str=None):
                     cur.execute(f"SET LOCAL lock_timeout = '{PG_LOCK_TIMEOUT}'")
                     cur.execute(f"SET LOCAL statement_timeout = '{PG_STATEMENT_TIMEOUT}'")
 
-                    # TRUNCATE con CASCADE: borra products + las 3 tablas hijas
-                    # (CASCADE recorre las FKs ON DELETE CASCADE)
-                    cur.execute(
-                        "TRUNCATE products, product_colors, product_grades, product_stock "
-                        "RESTART IDENTITY CASCADE"
-                    )
-
-                    if products_rows:
-                        execute_values(cur, """
-                            INSERT INTO products (
-                              cod_fabrica, id, nm_produto, marca, grupo, subgrupo, colecao,
-                              precio_minorista, precio_minorista_promo,
-                              precio_minorista_promo_inicio, precio_minorista_promo_validade,
-                              precio_mayorista, precio_mayorista_promo,
-                              precio_mayorista_promo_inicio, precio_mayorista_promo_validade,
-                              precio_mayorista1, precio_mayorista1_promo,
-                              precio_mayorista1_promo_inicio, precio_mayorista1_promo_validade,
-                              q_mas_vendio, total_stock
-                            ) VALUES %s
-                        """, products_rows, page_size=1000)
-
-                    if colors_rows:
-                        execute_values(cur, """
-                            INSERT INTO product_colors
-                              (cod_fabrica, color, imagen, img_id, total_stock)
-                            VALUES %s
-                        """, colors_rows, page_size=1000)
-
-                    if grades_rows:
-                        execute_values(cur, """
-                            INSERT INTO product_grades
-                              (cod_fabrica, color, grade, ean, total_stock)
-                            VALUES %s
-                        """, grades_rows, page_size=1000)
-
-                    if stock_rows:
-                        execute_values(cur, """
-                            INSERT INTO product_stock
-                              (cod_fabrica, color, grade, sucursal, cantidad,
-                               data_ult_cmp, data_ult_vnd)
-                            VALUES %s
-                        """, stock_rows, page_size=1000)
+                    # Escritura incremental: solo se tocan las filas que
+                    # cambiaron (antes: TRUNCATE + reinsertar ~180k filas
+                    # cada hora, que dejaba mucho espacio muerto en disco).
+                    # Padres primero (por las FKs); los borrados van después,
+                    # de hijos a padres.
+                    stats = {}
+                    for table, cols, pk, rows in (
+                        ("products",       PRODUCTS_COLS, ["cod_fabrica"], products_rows),
+                        ("product_colors", COLORS_COLS,   ["cod_fabrica", "color"], colors_rows),
+                        ("product_grades", GRADES_COLS,   ["cod_fabrica", "color", "grade"], grades_rows),
+                        ("product_stock",  STOCK_COLS,    ["cod_fabrica", "color", "grade", "sucursal"], stock_rows),
+                    ):
+                        stats[table] = _upsert_table(cur, table, cols, pk, rows)
+                    for table, cols, pk, _rows in (
+                        ("product_stock",  STOCK_COLS,    ["cod_fabrica", "color", "grade", "sucursal"], None),
+                        ("product_grades", GRADES_COLS,   ["cod_fabrica", "color", "grade"], None),
+                        ("product_colors", COLORS_COLS,   ["cod_fabrica", "color"], None),
+                        ("products",       PRODUCTS_COLS, ["cod_fabrica"], None),
+                    ):
+                        stats[table] = (stats[table], _delete_missing(cur, table, pk))
+                    print("   → cambios (insertadas/actualizadas, borradas): " +
+                          ", ".join(f"{t}={u:,}/{d:,}" for t, (u, d) in stats.items()))
 
                     # catalog_cache: fila única JSONB con la jerarquía
                     # completa. Es lo que lee el web app en runtime.
